@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BudgetMonth {
+  id          String      @id @default(uuid()) @db.Uuid
+  period      String      @unique @db.VarChar(7)
+  status      MonthStatus @default(open)
+  incomeMinor Int         @map("income_minor")
+  version     Int         @default(1)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  allocations Allocation[]
+  operations  Operation[]
+  snapshots   EnvelopeMonthSnapshot[]
+
+  @@map("budget_month")
+}
+
+model Envelope {
+  id             String          @id @default(uuid()) @db.Uuid
+  name           String          @unique @db.VarChar(100)
+  status         EnvelopeStatus  @default(active)
+  createdPeriod  String          @map("created_period") @db.VarChar(7)
+  archivedPeriod String?         @map("archived_period") @db.VarChar(7)
+  displayOrder   Int             @default(0) @map("display_order")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  allocations Allocation[]
+  operationsSource      Operation[] @relation("OperationSource")
+  operationsDestination Operation[] @relation("OperationDestination")
+  snapshots             EnvelopeMonthSnapshot[]
+
+  @@map("envelope")
+}
+
+model Allocation {
+  id         String @id @default(uuid()) @db.Uuid
+  monthId    String @map("month_id") @db.Uuid
+  envelopeId String @map("envelope_id") @db.Uuid
+  amountMinor Int   @map("amount_minor")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  month    BudgetMonth @relation(fields: [monthId], references: [id], onDelete: Cascade)
+  envelope Envelope    @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+
+  @@unique([monthId, envelopeId])
+  @@map("allocation")
+}
+
+model Operation {
+  id                    String        @id @default(uuid()) @db.Uuid
+  monthId               String        @map("month_id") @db.Uuid
+  sequenceNo            Int           @map("sequence_no")
+  type                  OperationType
+  sourceEnvelopeId      String        @map("source_envelope_id") @db.Uuid
+  destinationEnvelopeId String?       @map("destination_envelope_id") @db.Uuid
+  requestedMinor        Int           @map("requested_minor")
+  sign                  String?       @db.VarChar(1)
+  isInitial             Boolean       @default(false) @map("is_initial")
+  comment               String?       @db.VarChar(500)
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  month              BudgetMonth       @relation(fields: [monthId], references: [id], onDelete: Cascade)
+  sourceEnvelope     Envelope          @relation("OperationSource", fields: [sourceEnvelopeId], references: [id])
+  destinationEnvelope Envelope?        @relation("OperationDestination", fields: [destinationEnvelopeId], references: [id])
+  result             OperationResult?
+
+  @@unique([monthId, sequenceNo])
+  @@map("operation")
+}
+
+model OperationResult {
+  id                      String   @id @default(uuid()) @db.Uuid
+  operationId             String   @unique @map("operation_id") @db.Uuid
+  coveredMinor            Int      @map("covered_minor")
+  uncoveredMinor          Int      @map("uncovered_minor")
+  sourceBalanceBefore     Int      @map("source_balance_before")
+  sourceBalanceAfter      Int      @map("source_balance_after")
+  destinationBalanceBefore Int?     @map("destination_balance_before")
+  destinationBalanceAfter  Int?     @map("destination_balance_after")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  operation Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@map("operation_result")
+}
+
+model EnvelopeMonthSnapshot {
+  id               String   @id @default(uuid()) @db.Uuid
+  monthId          String   @map("month_id") @db.Uuid
+  envelopeId       String   @map("envelope_id") @db.Uuid
+  opening          Int
+  initial          Int
+  allocation       Int
+  expensesRequested Int     @map("expenses_requested")
+  expensesCovered   Int     @map("expenses_covered")
+  adjustmentApplied Int     @map("adjustment_applied")
+  transfersIn      Int      @map("transfers_in")
+  transfersOut     Int      @map("transfers_out")
+  closing          Int
+  uncoveredByType  Json     @map("uncovered_by_type")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  month    BudgetMonth @relation(fields: [monthId], references: [id], onDelete: Cascade)
+  envelope Envelope    @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+
+  @@unique([monthId, envelopeId])
+  @@map("envelope_month_snapshot")
+}
+
+model AppSettings {
+  id            String   @id @default(uuid()) @db.Uuid
+  currency      String   @default("RUB") @db.VarChar(3)
+  locale        String   @default("ru-RU") @db.VarChar(10)
+  schemaVersion Int      @default(1) @map("schema_version")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("app_settings")
+}
+
+enum MonthStatus {
+  draft
+  open
+  closed
+  reopened
+}
+
+enum EnvelopeStatus {
+  active
+  archived
+}
+
+enum OperationType {
+  expense
+  transfer
+  adjustment
+  initial_balance
+}
