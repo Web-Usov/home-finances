@@ -1,0 +1,43 @@
+{
+  "name": "@family-budget/mobile",
+  "version": "0.1.0",
+  "main": "expo/AppEntry.js",
+  "private": true,
+  "scripts": {
+    "dev": "expo start",
+    "dev:web": "expo start --web",
+    "build:web": "expo export --platform web",
+    "lint": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .expo dist web-build",
+    "orval": "orval --config orval.config.js"
+  },
+  "dependencies": {
+    "@family-budget/types": "workspace:*",
+    "expo": "~51.0.39",
+    "expo-router": "~3.5.24",
+    "expo-status-bar": "~1.12.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.74.5",
+    "react-native-web": "~0.19.12",
+    "nativewind": "^4.1.23",
+    "tailwindcss": "^3.4.17",
+    "@tanstack/react-query": "^5.62.16",
+    "zustand": "^5.0.2",
+    "react-hook-form": "^7.54.2",
+    "@hookform/resolvers": "^3.9.1",
+    "zod": "^3.24.1",
+    "axios": "^1.7.9"
+  },
+  "devDependencies": {
+    "@family-budget/eslint-config": "workspace:*",
+    "@family-budget/tsconfig": "workspace:*",
+    "@types/react": "^18.3.18",
+    "@types/react-native": "^0.72.8",
+    "babel-preset-expo": "~11.0.14",
+    "eslint": "^9.17.0",
+    "orval": "^7.4.1",
+    "typescript": "^5.7.2"
+  }
+}

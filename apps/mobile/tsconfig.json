@@ -1,0 +1,17 @@
+{
+  "extends": "@family-budget/tsconfig/react-native.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", ".expo", "web-build"]
+}
