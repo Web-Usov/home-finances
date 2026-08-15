@@ -114,7 +114,7 @@ export class CalculationEngineService {
     const month = await this.prisma.budgetMonth.findUnique({ where: { id: monthId } });
     if (month === null) {
       throw new NotFoundException(
-        'ENVELOPE_NOT_FOUND',
+        'MONTH_NOT_FOUND',
         `Budget month not found: ${monthId}`,
       );
     }
