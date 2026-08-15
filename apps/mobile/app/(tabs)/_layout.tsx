@@ -1,7 +1,10 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text, useWindowDimensions } from 'react-native';
 import { useUIStore } from '../../src/stores';
+
+type TabIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 function TabLabel({ focused, title }: { focused: boolean; title: string }) {
   return (
@@ -13,15 +16,21 @@ function TabLabel({ focused, title }: { focused: boolean; title: string }) {
   );
 }
 
+function TabIcon({ color, focused, name }: { color: string; focused: boolean; name: TabIconName }) {
+  return <MaterialCommunityIcons color={color} name={name} size={focused ? 24 : 22} />;
+}
+
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isWeb = width >= 768;
-  const { activeTab, setActiveTab } = useUIStore();
+  const { setActiveTab } = useUIStore();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#6b7280',
         tabBarStyle: isWeb ? { display: 'none' } : undefined,
       }}
       screenListeners={{
@@ -34,6 +43,9 @@ export default function TabLayout() {
         name="month"
         options={{
           title: 'Месяц',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon color={color} focused={focused} name="view-dashboard-outline" />
+          ),
           tabBarLabel: ({ focused }) => <TabLabel focused={focused} title="Месяц" />,
         }}
       />
@@ -41,6 +53,9 @@ export default function TabLayout() {
         name="history"
         options={{
           title: 'История',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon color={color} focused={focused} name="history" />
+          ),
           tabBarLabel: ({ focused }) => <TabLabel focused={focused} title="История" />,
         }}
       />
@@ -48,6 +63,9 @@ export default function TabLayout() {
         name="analytics"
         options={{
           title: 'Аналитика',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon color={color} focused={focused} name="chart-line" />
+          ),
           tabBarLabel: ({ focused }) => <TabLabel focused={focused} title="Аналитика" />,
         }}
       />
@@ -55,6 +73,9 @@ export default function TabLayout() {
         name="envelopes"
         options={{
           title: 'Конверты',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon color={color} focused={focused} name="wallet-outline" />
+          ),
           tabBarLabel: ({ focused }) => <TabLabel focused={focused} title="Конверты" />,
         }}
       />

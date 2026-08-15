@@ -1,7 +1,7 @@
 {
   "name": "@family-budget/mobile",
   "version": "0.1.0",
-  "main": "expo/AppEntry.js",
+  "main": "index.js",
   "private": true,
   "scripts": {
     "dev": "expo start",
@@ -13,22 +13,27 @@
     "orval": "orval --config orval.config.js"
   },
   "dependencies": {
+    "@babel/runtime": "^7.29.7",
+    "@expo/vector-icons": "14.1.0",
     "@family-budget/types": "workspace:*",
+    "@hookform/resolvers": "^3.9.1",
+    "@tanstack/react-query": "^5.62.16",
+    "axios": "^1.7.9",
     "expo": "~51.0.39",
     "expo-router": "~3.5.24",
     "expo-status-bar": "~1.12.1",
+    "nativewind": "4.1.23",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-native": "0.74.5",
-    "react-native-web": "~0.19.12",
-    "nativewind": "^4.1.23",
-    "tailwindcss": "^3.4.17",
-    "@tanstack/react-query": "^5.62.16",
-    "zustand": "^5.0.2",
     "react-hook-form": "^7.54.2",
-    "@hookform/resolvers": "^3.9.1",
+    "react-native": "0.74.5",
+    "react-native-css-interop": "0.1.22",
+    "react-native-reanimated": "~3.10.1",
+    "react-native-safe-area-context": "4.10.5",
+    "react-native-web": "~0.19.12",
+    "tailwindcss": "^3.4.17",
     "zod": "^3.24.1",
-    "axios": "^1.7.9"
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@family-budget/eslint-config": "workspace:*",
