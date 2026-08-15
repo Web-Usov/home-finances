@@ -1,0 +1,69 @@
+=== Task 9: EnvelopesService CRUD — QA evidence (2026-08-03T23:22:47Z) ===
+
+=== pnpm test -- envelopes.service.spec.ts ===
+> jest "envelopes.service.spec.ts"
+
+PASS src/modules/envelopes/envelopes.service.spec.ts
+  EnvelopesService
+    list
+      ✓ returns an empty list when there are no envelopes (4 ms)
+      ✓ returns balance 0 for envelopes without any snapshot (1 ms)
+      ✓ returns the closing balance of the latest snapshot per envelope (1 ms)
+    create
+      ✓ creates an envelope in the open month without initial balance (1 ms)
+      ✓ rejects a duplicate name with different casing (ENVELOPE_NAME_DUPLICATE) (2 ms)
+      ✓ rejects creation when the latest month is closed (MONTH_LOCKED) (1 ms)
+      ✓ creates an initial_balance operation in the open month when initialBalance is set
+      ✓ uses sequenceNo 1 for the first operation of the month (1 ms)
+      ✓ does not create an operation for a zero initial balance (1 ms)
+      ✓ rejects initial balance when no budget month exists (MONTH_LOCKED) (1 ms)
+      ✓ creates without a month using the current calendar period when no initial balance (1 ms)
+      ✓ prefers the open month over a future draft for the initial balance operation (1 ms)
+      ✓ allows creation in a reopened month when no open month exists (1 ms)
+    update
+      ✓ renames an envelope after a case-insensitive duplicate check excluding itself (1 ms)
+      ✓ skips the duplicate check when the name is unchanged
+      ✓ rejects rename to an existing envelope name with different casing
+      ✓ changes displayOrder without touching the name (1 ms)
+      ✓ throws NotFoundException for an unknown id (1 ms)
+      ✓ never queries months — rename/reorder is independent of month status
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        0.651 s, estimated 1 s
+Ran all test suites matching /envelopes.service.spec.ts/i.
+
+=== pnpm typecheck ===
+> @family-budget/api@0.1.0 typecheck /root/workspace/finance/apps/api
+> tsc --noEmit
+
+typecheck exit: 0
+
+=== pnpm build ===
+> @family-budget/api@0.1.0 build /root/workspace/finance/apps/api
+> nest build
+
+build exit: 0
+
+=== Runtime smoke test (real Fastify server + PostgreSQL 16 in Docker, port 3100) ===
+GET  /api/v1/envelopes                          -> 200 {"envelopes":[]}
+POST {name:"Еда"} (no months)                   -> 201, createdPeriod=2026-08 (calendar), balanceMinor=0
+POST {name:"еда"} (duplicate, diff case)        -> 409 {"error":"ENVELOPE_NAME_DUPLICATE"}
+POST {name:"Дом",initialBalance:"1500.50"} no month -> 409 {"error":"MONTH_LOCKED"}
+[insert open month 2026-08]
+POST {name:"Дом",initialBalance:"1500.50"}      -> 201, balanceMinor=150050 (integer kopecks)
+  DB operation row: type=initial_balance, is_initial=t, sequence_no=1, requested_minor=150050, sign=null, destination=null
+PATCH rename Еда->Продукты                      -> 200
+PATCH rename Продукты->дом (dup of Дом)         -> 409 {"error":"ENVELOPE_NAME_DUPLICATE"}
+PATCH unknown id                                -> 404 {"error":"ENVELOPE_NOT_FOUND"}
+[close month 2026-08]
+POST {name:"Отпуск"}                            -> 409 {"error":"MONTH_LOCKED","message":"Месяц 2026-08 закрыт..."}
+PATCH {displayOrder:5} in closed month          -> 200 (rename/reorder not month-gated, spec line 281)
+GET  /api/v1/envelopes                          -> 200, ordered by displayOrder, balanceMinor=0 (no snapshots)
+POST {name:""} (Zod pipe)                       -> 400 {"message":"Validation failed",...}
+
+FIXED during smoke test: DomainExceptionFilter (todo 2) used Express API
+`response.status(n).json(body)` on a Fastify reply -> TypeError -> HTTP 500 for ALL
+domain exceptions. Switched to Fastify `response.code(n).send(body)`.
+Smoke DB rows cleaned up afterwards.

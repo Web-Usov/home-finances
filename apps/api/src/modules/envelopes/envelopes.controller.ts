@@ -1,6 +1,9 @@
 import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CreateEnvelopeRequestSchema, UpdateEnvelopeRequestSchema } from '@family-budget/types';
+import { ZodValidationPipe } from '../../common/pipes';
 import { EnvelopesService } from './envelopes.service';
+import type { CreateEnvelopeRequest, UpdateEnvelopeRequest } from './envelopes.service';
 
 @ApiTags('Envelopes')
 @Controller('envelopes')
@@ -17,14 +20,20 @@ export class EnvelopesController {
   @Post()
   @ApiOperation({ summary: 'Create a new envelope' })
   @ApiResponse({ status: 201, description: 'Created envelope with calculated balance' })
-  create(@Body() dto: unknown) {
+  @ApiResponse({ status: 409, description: 'ENVELOPE_NAME_DUPLICATE or MONTH_LOCKED' })
+  create(@Body(new ZodValidationPipe(CreateEnvelopeRequestSchema)) dto: CreateEnvelopeRequest) {
     return this.envelopesService.create(dto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Rename or change display order' })
   @ApiResponse({ status: 200, description: 'Updated envelope' })
-  update(@Param('id') id: string, @Body() dto: unknown) {
+  @ApiResponse({ status: 404, description: 'ENVELOPE_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'ENVELOPE_NAME_DUPLICATE' })
+  update(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(UpdateEnvelopeRequestSchema)) dto: UpdateEnvelopeRequest,
+  ) {
     return this.envelopesService.update(id, dto);
   }
 

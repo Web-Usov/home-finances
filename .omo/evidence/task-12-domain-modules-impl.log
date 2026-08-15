@@ -1,0 +1,5 @@
+2026-08-06
+Evidence for task 12: Envelopes API integration tests added.
+Validation: cd apps/api && pnpm test -- --runInBand => 3 suites passed, 69 tests passed.
+Validation: cd apps/api && pnpm test -- --runInBand --coverage => All files 94.63% stmts, modules/envelopes 99.02% stmts.
+Validation: cd apps/api && pnpm typecheck => success.
