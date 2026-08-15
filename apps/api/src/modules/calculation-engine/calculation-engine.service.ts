@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Allocation, BudgetMonth, Envelope, Operation, Prisma } from '@prisma/client';
 import { formatMoneyMinor, type ApiWarning, type OperationType } from '@family-budget/types';
+import { NotFoundException } from '../../common/exceptions';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /** Satisfied by both PrismaService and an interactive transaction client. */
@@ -95,6 +96,37 @@ export class CalculationEngineService {
       return this.recalculateWithin(period, db);
     }
     return this.prisma.$transaction((tx) => this.recalculateWithin(period, tx));
+  }
+
+  /**
+   * Resolve a BudgetMonth by id, then atomically recalculate all derived data
+   * from that month's period forward and increment `version` by 1 on every
+   * affected BudgetMonth (spec lines 245, 261, 505-511).
+   *
+   * The entire cascade — delete + recreate of OperationResult and
+   * EnvelopeMonthSnapshot for all affected months, and the version increment —
+   * runs inside a single Prisma `$transaction`. On any error the transaction
+   * rolls back: no partial derived data, no version change.
+   *
+   * @throws NotFoundException when no BudgetMonth exists for `monthId`.
+   */
+  async recalculateMonthAtomically(monthId: string): Promise<RecalculateFromResult> {
+    const month = await this.prisma.budgetMonth.findUnique({ where: { id: monthId } });
+    if (month === null) {
+      throw new NotFoundException(
+        'ENVELOPE_NOT_FOUND',
+        `Budget month not found: ${monthId}`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const result = await this.recalculateFrom(month.period, tx);
+      await tx.budgetMonth.updateMany({
+        where: { period: { gte: month.period } },
+        data: { version: { increment: 1 } },
+      });
+      return result;
+    });
   }
 
   private async recalculateWithin(period: string, db: DbClient): Promise<RecalculateFromResult> {

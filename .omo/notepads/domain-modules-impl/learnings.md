@@ -178,3 +178,18 @@ update(
 - `CreateEnvelopeRequestSchema, UpdateEnvelopeRequestSchema` from `@family-budget/types`
 - `ZodValidationPipe` from `../../common/pipes`
 - `CreateEnvelopeRequest, UpdateEnvelopeRequest` (inferred types) via `import type` from `./envelopes.service`
+
+## CalculationEngineService.recalculateMonthAtomically (2026-08-15, Todo 8)
+
+### Modified / created files
+- `apps/api/src/modules/calculation-engine/calculation-engine.service.ts` — added `recalculateMonthAtomically(monthId)` + NotFoundException import
+- `apps/api/src/modules/calculation-engine/calculation-engine.integration.spec.ts` — NEW, 3 integration tests against real Postgres (S1 happy, S2 rollback, S3 404)
+
+### Decisions
+- `recalculateMonthAtomically(monthId)` resolves the month by id, then wraps `recalculateFrom(month.period, tx)` + `tx.budgetMonth.updateMany({ where: { period: { gte } }, data: { version: { increment: 1 } } })` in one `$transaction`. Existing `recalculateFrom(period, db?)` is unchanged — the new method delegates to it with a tx client.
+- NotFoundException used for unknown monthId. ApiErrorCode has no MONTH_NOT_FOUND and the task forbade modifying packages/types; reused ENVELOPE_NOT_FOUND (only 404 code) with a message clarifying it is a Budget month.
+
+### Gotchas
+- **Spying on private methods with strict TS**: `jest.spyOn(service as never, 'replayMonth' as never)` compiles under ts-jest but FAILS `tsc --noEmit` (TS2345/TS2339 — `never` makes mockImplementation and property access unsatisfiable). Fix: cast through `unknown` to a typed interface: `service as unknown as { replayMonth: ReplayFn }`.
+- **Integration test isolation**: fixtures use periods 2099-01/2099-02 (never collide with real data); afterEach deletes BudgetMonth rows first (cascade handles derived rows) then Envelopes by name suffix.
+- **Rollback test mechanics**: spy on `replayMonth` lets the 1st call run real (month 1 deletes+creates), throws on the 2nd — proving the $transaction rolls back both the deletes and the version increment. Pre-seed a snapshot row to prove the delete phase is rolled back.
