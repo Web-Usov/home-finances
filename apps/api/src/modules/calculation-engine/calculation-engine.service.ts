@@ -108,25 +108,37 @@ export class CalculationEngineService {
    * runs inside a single Prisma `$transaction`. On any error the transaction
    * rolls back: no partial derived data, no version change.
    *
+   * Callers that must commit their own source-data mutation and the cascade in
+   * ONE transaction pass their interactive tx client as `db` (spec line 261);
+   * without it the method wraps everything in its own `$transaction`.
+   *
    * @throws NotFoundException when no BudgetMonth exists for `monthId`.
    */
-  async recalculateMonthAtomically(monthId: string): Promise<RecalculateFromResult> {
-    const month = await this.prisma.budgetMonth.findUnique({ where: { id: monthId } });
-    if (month === null) {
-      throw new NotFoundException(
-        'MONTH_NOT_FOUND',
-        `Budget month not found: ${monthId}`,
-      );
-    }
+  async recalculateMonthAtomically(
+    monthId: string,
+    db?: Prisma.TransactionClient,
+  ): Promise<RecalculateFromResult> {
+    const run = async (tx: DbClient): Promise<RecalculateFromResult> => {
+      const month = await tx.budgetMonth.findUnique({ where: { id: monthId } });
+      if (month === null) {
+        throw new NotFoundException(
+          'MONTH_NOT_FOUND',
+          `Budget month not found: ${monthId}`,
+        );
+      }
 
-    return this.prisma.$transaction(async (tx) => {
       const result = await this.recalculateFrom(month.period, tx);
       await tx.budgetMonth.updateMany({
         where: { period: { gte: month.period } },
         data: { version: { increment: 1 } },
       });
       return result;
-    });
+    };
+
+    if (db !== undefined) {
+      return run(db);
+    }
+    return this.prisma.$transaction(run);
   }
 
   private async recalculateWithin(period: string, db: DbClient): Promise<RecalculateFromResult> {
