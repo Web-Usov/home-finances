@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MonthsService } from './months.service';
+import type { CreateMonthRequest } from './months.service';
 
 @ApiTags('Months')
 @Controller('months')
@@ -17,7 +18,7 @@ export class MonthsController {
   @Post()
   @ApiOperation({ summary: 'Create first or next month' })
   @ApiResponse({ status: 201, description: 'Created month' })
-  create(@Body() dto: unknown) {
+  create(@Body() dto: CreateMonthRequest) {
     return this.monthsService.create(dto);
   }
 

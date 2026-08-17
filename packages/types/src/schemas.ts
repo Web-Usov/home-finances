@@ -132,7 +132,7 @@ export const AppSettingsSchema = z.object({
 
 export const CreateMonthRequestSchema = z.object({
   period: PeriodSchema,
-  income: MoneyStringSchema,
+  income: MoneyStringSchema.optional(),
 });
 
 export const UpdateIncomeRequestSchema = z.object({
