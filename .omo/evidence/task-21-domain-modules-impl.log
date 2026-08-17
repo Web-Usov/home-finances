@@ -1,0 +1,300 @@
+=== RED capture (todo 21) 2026-08-17T05:00:31+00:00 ===
+
+> @family-budget/api@0.1.0 test /root/workspace/finance/apps/api
+> jest "allocations.service.spec.ts"
+
+FAIL src/modules/allocations/allocations.service.spec.ts
+  AllocationsService
+    save
+      ✕ saves allocations converted to kopecks, recalculates atomically and returns the summary (5 ms)
+      ✕ accepts a total equal to the income exactly (1 ms)
+      ✕ rejects a total above the income with the exact spec message (ALLOCATION_EXCEEDS_INCOME) (2 ms)
+      ✕ rejects a stale version with VERSION_CONFLICT before any other check (1 ms)
+      ✕ prefers VERSION_CONFLICT over MONTH_LOCKED when both apply (1 ms)
+      ✕ rejects saving into a closed month with MONTH_LOCKED and the spec message (1 ms)
+      ✕ throws MONTH_NOT_FOUND for an unknown period before any write
+      ✕ throws ENVELOPE_NOT_FOUND for an unknown envelope id
+      ✕ rejects allocations for archived envelopes (ENVELOPE_NOT_FOUND)
+      ✕ clears the table for an empty allocation map and still recalculates (1 ms)
+      ✕ sums uncovered parts across all types per envelope in the summary (1 ms)
+    getAllocations
+      ✕ returns the current allocation rows for the month
+      ✕ throws MONTH_NOT_FOUND for an unknown period
+
+  ● AllocationsService › save › saves allocations converted to kopecks, recalculates atomically and returns the summary
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: {"where": {"monthId": "month-1"}}
+
+    Number of calls: 0
+
+      161 |       });
+      162 |
+    > 163 |       expect(mock.allocation.deleteMany).toHaveBeenCalledWith({ where: { monthId: 'month-1' } });
+          |                                          ^
+      164 |       expect(mock.allocation.createMany).toHaveBeenCalledWith({
+      165 |         data: [
+      166 |           { monthId: 'month-1', envelopeId: ENV_A, amountMinor: 5_000_000 },
+
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:163:42)
+
+  ● AllocationsService › save › accepts a total equal to the income exactly
+
+    TypeError: Cannot read properties of undefined (reading 'totalAllocatedMinor')
+
+      210 |       });
+      211 |
+    > 212 |       expect(result.data.totalAllocatedMinor).toBe(10_000_000);
+          |                          ^
+      213 |       expect(result.data.freeFundsMinor).toBe(0);
+      214 |       expect(mock.allocation.createMany).toHaveBeenCalled();
+      215 |     });
+
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:212:26)
+
+  ● AllocationsService › save › rejects a total above the income with the exact spec message (ALLOCATION_EXCEEDS_INCOME)
+
+    expect(received).rejects.toBeInstanceOf()
+
+    Matcher error: received value must be a promise or a function returning a promise
+
+    Received has type:  object
+    Received has value: {"message": "Not implemented", "period": "2026-08"}
+
+      223 |       });
+      224 |
+    > 225 |       await expect(promise).rejects.toBeInstanceOf(ValidationException);
+          |                                     ^
+      226 |       await expect(promise).rejects.toMatchObject({
+      227 |         code: 'ALLOCATION_EXCEEDS_INCOME',
+      228 |         statusCode: 422,
+
+      at Object.toBeInstanceOf (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:204:13)
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:225:37)
+
+  ● AllocationsService › save › rejects a stale version with VERSION_CONFLICT before any other check
+
+    expect(received).rejects.toBeInstanceOf()
+
+    Matcher error: received value must be a promise or a function returning a promise
+
+    Received has type:  object
+    Received has value: {"message": "Not implemented", "period": "2026-08"}
+
+      243 |       });
+      244 |
+    > 245 |       await expect(promise).rejects.toBeInstanceOf(ConflictException);
+          |                                     ^
+      246 |       await expect(promise).rejects.toMatchObject({
+      247 |         code: 'VERSION_CONFLICT',
+      248 |         statusCode: 409,
+
+      at Object.toBeInstanceOf (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:204:13)
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:245:37)
+
+  ● AllocationsService › save › prefers VERSION_CONFLICT over MONTH_LOCKED when both apply
+
+    expect(received).rejects.toMatchObject()
+
+    Matcher error: received value must be a promise or a function returning a promise
+
+    Received has type:  object
+    Received has value: {"message": "Not implemented", "period": "2026-08"}
+
+      258 |       await expect(
+      259 |         service.save('2026-08', { allocations: {}, version: 99 }),
+    > 260 |       ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+          |                 ^
+      261 |     });
+      262 |
+      263 |     it('rejects saving into a closed month with MONTH_LOCKED and the spec message', async () => {
+
+      at Object.toMatchObject (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:204:13)
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:260:17)
+
+  ● AllocationsService › save › rejects saving into a closed month with MONTH_LOCKED and the spec message
+
+    expect(received).rejects.toBeInstanceOf()
+
+    Matcher error: received value must be a promise or a function returning a promise
+
+    Received has type:  object
+    Received has value: {"message": "Not implemented", "period": "2026-08"}
+
+      269 |       });
+      270 |
+    > 271 |       await expect(promise).rejects.toBeInstanceOf(ConflictException);
+          |                                     ^
+      272 |       await expect(promise).rejects.toMatchObject({
+      273 |         code: 'MONTH_LOCKED',
+      274 |         statusCode: 409,
+
+      at Object.toBeInstanceOf (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:204:13)
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:271:37)
+
+  ● AllocationsService › save › throws MONTH_NOT_FOUND for an unknown period before any write
+
+    expect(received).rejects.toBeInstanceOf()
+
+    Matcher error: received value must be a promise or a function returning a promise
+
+    Received has type:  object
+    Received has value: {"message": "Not implemented", "period": "2026-08"}
+
+      287 |       });
+      288 |
+    > 289 |       await expect(promise).rejects.toBeInstanceOf(NotFoundException);
+          |                                     ^
+      290 |       await expect(promise).rejects.toMatchObject({
+      291 |         code: 'MONTH_NOT_FOUND',
+      292 |         statusCode: 404,
+
+      at Object.toBeInstanceOf (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:204:13)
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:289:37)
+
+  ● AllocationsService › save › throws ENVELOPE_NOT_FOUND for an unknown envelope id
+
+    expect(received).rejects.toBeInstanceOf()
+
+    Matcher error: received value must be a promise or a function returning a promise
+
+    Received has type:  object
+    Received has value: {"message": "Not implemented", "period": "2026-08"}
+
+      305 |       });
+      306 |
+    > 307 |       await expect(promise).rejects.toBeInstanceOf(NotFoundException);
+          |                                     ^
+      308 |       await expect(promise).rejects.toMatchObject({
+      309 |         code: 'ENVELOPE_NOT_FOUND',
+      310 |         statusCode: 404,
+
+      at Object.toBeInstanceOf (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:204:13)
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:307:37)
+
+  ● AllocationsService › save › rejects allocations for archived envelopes (ENVELOPE_NOT_FOUND)
+
+    expect(received).rejects.toBeInstanceOf()
+
+    Matcher error: received value must be a promise or a function returning a promise
+
+    Received has type:  object
+    Received has value: {"message": "Not implemented", "period": "2026-08"}
+
+      327 |       });
+      328 |
+    > 329 |       await expect(promise).rejects.toBeInstanceOf(NotFoundException);
+          |                                     ^
+      330 |       await expect(promise).rejects.toMatchObject({
+      331 |         code: 'ENVELOPE_NOT_FOUND',
+      332 |         statusCode: 404,
+
+      at Object.toBeInstanceOf (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:204:13)
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:329:37)
+
+  ● AllocationsService › save › clears the table for an empty allocation map and still recalculates
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: {"where": {"monthId": "month-1"}}
+
+    Number of calls: 0
+
+      344 |       const result = await service.save('2026-08', { allocations: {}, version: 3 });
+      345 |
+    > 346 |       expect(mock.allocation.deleteMany).toHaveBeenCalledWith({ where: { monthId: 'month-1' } });
+          |                                          ^
+      347 |       expect(mock.allocation.createMany).not.toHaveBeenCalled();
+      348 |       expect(mock.envelope.findMany).not.toHaveBeenCalled();
+      349 |       expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', mock);
+
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:346:42)
+
+  ● AllocationsService › save › sums uncovered parts across all types per envelope in the summary
+
+    TypeError: Cannot read properties of undefined (reading 'envelopes')
+
+      375 |       });
+      376 |
+    > 377 |       const [first, second] = result.data.envelopes;
+          |                                           ^
+      378 |       expect(first?.uncovered).toBe(75_000);
+      379 |       expect(second?.uncovered).toBe(0);
+      380 |       expect(result.data.totalUncoveredMinor).toBe(75_000);
+
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:377:43)
+
+  ● AllocationsService › getAllocations › returns the current allocation rows for the month
+
+    TypeError: service.getAllocations is not a function
+
+      395 |       mock.allocation.findMany.mockResolvedValue(rows);
+      396 |
+    > 397 |       const result = await service.getAllocations('2026-08');
+          |                                    ^
+      398 |
+      399 |       expect(mock.allocation.findMany).toHaveBeenCalledWith({ where: { monthId: 'month-1' } });
+      400 |       expect(result).toEqual({ allocations: rows });
+
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:397:36)
+
+  ● AllocationsService › getAllocations › throws MONTH_NOT_FOUND for an unknown period
+
+    TypeError: service.getAllocations is not a function
+
+      404 |       mock.budgetMonth.findUnique.mockResolvedValue(null);
+      405 |
+    > 406 |       await expect(service.getAllocations('2026-08')).rejects.toMatchObject({
+          |                            ^
+      407 |         code: 'MONTH_NOT_FOUND',
+      408 |         statusCode: 404,
+      409 |       });
+
+      at Object.<anonymous> (src/modules/allocations/allocations.service.spec.ts:406:28)
+
+Test Suites: 1 failed, 1 total
+Tests:       13 failed, 13 total
+Snapshots:   0 total
+Time:        0.915 s
+Ran all test suites matching /allocations.service.spec.ts/i.
+ ELIFECYCLE  Test failed. See above for more details.
+EXIT_CODE=1
+=== GREEN capture (todo 21) 2026-08-17T05:02:37+00:00 ===
+
+> @family-budget/api@0.1.0 test /root/workspace/finance/apps/api
+> jest "allocations.service.spec.ts"
+
+PASS src/modules/allocations/allocations.service.spec.ts
+  AllocationsService
+    save
+      ✓ saves allocations converted to kopecks, recalculates atomically and returns the summary (22 ms)
+      ✓ accepts a total equal to the income exactly (5 ms)
+      ✓ rejects a total above the income with the exact spec message (ALLOCATION_EXCEEDS_INCOME) (6 ms)
+      ✓ rejects a stale version with VERSION_CONFLICT before any other check (4 ms)
+      ✓ prefers VERSION_CONFLICT over MONTH_LOCKED when both apply (3 ms)
+      ✓ rejects saving into a closed month with MONTH_LOCKED and the spec message (3 ms)
+      ✓ throws MONTH_NOT_FOUND for an unknown period before any write (3 ms)
+      ✓ throws ENVELOPE_NOT_FOUND for an unknown envelope id (4 ms)
+      ✓ rejects allocations for archived envelopes (ENVELOPE_NOT_FOUND) (56 ms)
+      ✓ clears the table for an empty allocation map and still recalculates (9 ms)
+      ✓ sums uncovered parts across all types per envelope in the summary (3 ms)
+    getAllocations
+      ✓ returns the current allocation rows for the month (2 ms)
+      ✓ throws MONTH_NOT_FOUND for an unknown period (2 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       13 passed, 13 total
+Snapshots:   0 total
+Time:        1.717 s
+Ran all test suites matching /allocations.service.spec.ts/i.
+EXIT_CODE=0
+=== typecheck (todo 21) 2026-08-17T05:02:51+00:00 ===
+
+> @family-budget/api@0.1.0 typecheck /root/workspace/finance/apps/api
+> tsc --noEmit
+
+src/modules/allocations/allocations.controller.ts(14,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type '{ version: number; allocations: Record<string, string>; }'.
+ ELIFECYCLE  Command failed with exit code 2.
+EXIT_CODE=2
+=== note: typecheck fails on allocations.controller.ts unknown-dto — that is todo 22 scope (next todo), fixed there ===
