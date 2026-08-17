@@ -90,7 +90,9 @@ export class MonthsService {
    * - an open month exists → the new month is a 'draft' (only one draft allowed);
    * - latest month closed and no draft → the new month is 'open'.
    * The period must be the immediate next month — gaps are rejected (line 211).
-   * Income defaults to 0. Allocation copying from the previous month: todo 20.
+   * Income defaults to 0. Allocations of the previous month are copied for
+   * active envelopes only, as editable values (lines 293, 356), atomically
+   * with the month row.
    */
   async create(dto: CreateMonthRequest): Promise<{ month: MonthSummaryDto }> {
     const months = await this.prisma.budgetMonth.findMany({
@@ -118,11 +120,45 @@ export class MonthsService {
     }
 
     const incomeMinor = dto.income !== undefined ? parseMoneyMinor(dto.income) : 0;
-    const created = await this.prisma.budgetMonth.create({
-      data: { period: dto.period, status, incomeMinor },
+
+    const { created, copiedTotalMinor } = await this.prisma.$transaction(async (tx) => {
+      const month = await tx.budgetMonth.create({
+        data: { period: dto.period, status, incomeMinor },
+      });
+      const copied = latest === undefined ? 0 : await this.copyAllocations(tx, latest.id, month.id);
+      return { created: month, copiedTotalMinor: copied };
     });
 
-    return { month: toSummary(created, 0) };
+    return { month: toSummary(created, copiedTotalMinor) };
+  }
+
+  /**
+   * Copy the previous month's allocations into the new month for ACTIVE
+   * envelopes only — archived envelopes never enter new distributions
+   * (spec line 293). Returns the copied total for the summary.
+   */
+  private async copyAllocations(
+    db: DbClient,
+    fromMonthId: string,
+    toMonthId: string,
+  ): Promise<number> {
+    const previous = await db.allocation.findMany({
+      where: { monthId: fromMonthId },
+      select: { envelopeId: true, amountMinor: true, envelope: { select: { status: true } } },
+    });
+    const active = previous.filter((allocation) => allocation.envelope.status === 'active');
+    if (active.length === 0) {
+      return 0;
+    }
+
+    await db.allocation.createMany({
+      data: active.map((allocation) => ({
+        monthId: toMonthId,
+        envelopeId: allocation.envelopeId,
+        amountMinor: allocation.amountMinor,
+      })),
+    });
+    return active.reduce((sum, allocation) => sum + allocation.amountMinor, 0);
   }
 
   private async sumAllocations(db: DbClient, monthId: string): Promise<number> {

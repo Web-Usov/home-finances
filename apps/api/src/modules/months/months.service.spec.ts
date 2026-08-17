@@ -111,6 +111,7 @@ describe('MonthsService', () => {
       mock.budgetMonth.create.mockImplementation(({ data }: { data: Partial<BudgetMonth> }) =>
         Promise.resolve(makeMonth({ id: 'month-new', ...data })),
       );
+      mock.allocation.findMany.mockResolvedValue([]);
     });
 
     it('creates the very first month as open with zero income', async () => {
@@ -220,6 +221,80 @@ describe('MonthsService', () => {
         data: { period: '2027-01', status: 'draft', incomeMinor: 0 },
       });
       expect(result.month.period).toBe('2027-01');
+    });
+
+    // -----------------------------------------------------------------------
+    // allocation copying (spec line 356: plan copied as editable values;
+    // line 293: archived envelopes are excluded from new allocations)
+    // -----------------------------------------------------------------------
+
+    it('copies allocations from the previous month for active envelopes only', async () => {
+      mock.budgetMonth.findMany.mockResolvedValue([
+        makeMonth({ id: 'month-prev', period: '2026-08', status: 'open', incomeMinor: 1_000_000 }),
+      ]);
+      mock.allocation.findMany.mockResolvedValue([
+        { envelopeId: 'env-a', amountMinor: 100_000, envelope: { status: 'active' } },
+        { envelopeId: 'env-b', amountMinor: 200_000, envelope: { status: 'archived' } },
+        { envelopeId: 'env-c', amountMinor: 50_000, envelope: { status: 'active' } },
+      ]);
+
+      const result = await service.create({ period: '2026-09', income: '10000.00' });
+
+      expect(mock.allocation.findMany).toHaveBeenCalledWith({
+        where: { monthId: 'month-prev' },
+        select: { envelopeId: true, amountMinor: true, envelope: { select: { status: true } } },
+      });
+      expect(mock.allocation.createMany).toHaveBeenCalledWith({
+        data: [
+          { monthId: 'month-new', envelopeId: 'env-a', amountMinor: 100_000 },
+          { monthId: 'month-new', envelopeId: 'env-c', amountMinor: 50_000 },
+        ],
+      });
+      expect(mock.$transaction).toHaveBeenCalledTimes(1);
+      expect(result.month).toMatchObject({
+        totalAllocatedMinor: 150_000,
+        freeFundsMinor: 850_000,
+      });
+    });
+
+    it('copies nothing when there is no previous month', async () => {
+      mock.budgetMonth.findMany.mockResolvedValue([]);
+
+      await service.create({ period: '2026-08' });
+
+      expect(mock.allocation.findMany).not.toHaveBeenCalled();
+      expect(mock.allocation.createMany).not.toHaveBeenCalled();
+    });
+
+    it('skips createMany when the previous month has no active allocations', async () => {
+      mock.budgetMonth.findMany.mockResolvedValue([
+        makeMonth({ id: 'month-prev', period: '2026-08', status: 'open' }),
+      ]);
+      mock.allocation.findMany.mockResolvedValue([
+        { envelopeId: 'env-b', amountMinor: 200_000, envelope: { status: 'archived' } },
+      ]);
+
+      const result = await service.create({ period: '2026-09' });
+
+      expect(mock.allocation.createMany).not.toHaveBeenCalled();
+      expect(result.month.totalAllocatedMinor).toBe(0);
+    });
+
+    it('copies from a closed previous month into the new open month', async () => {
+      mock.budgetMonth.findMany.mockResolvedValue([
+        makeMonth({ id: 'month-prev', period: '2026-08', status: 'closed' }),
+      ]);
+      mock.allocation.findMany.mockResolvedValue([
+        { envelopeId: 'env-a', amountMinor: 300_000, envelope: { status: 'active' } },
+      ]);
+
+      const result = await service.create({ period: '2026-09' });
+
+      expect(mock.allocation.createMany).toHaveBeenCalledWith({
+        data: [{ monthId: 'month-new', envelopeId: 'env-a', amountMinor: 300_000 }],
+      });
+      expect(result.month.status).toBe('open');
+      expect(result.month.totalAllocatedMinor).toBe(300_000);
     });
   });
 });
