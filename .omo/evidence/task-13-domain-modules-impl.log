@@ -1,0 +1,52 @@
+
+=== Task 13: Сгенерировать Orval-клиент и обновить UI «Конверты» ===
+Date: 2026-08-17
+Owner: Sisyphus-Junior
+
+--- Orval client ---
+Orval-сгенерированные хуки уже закоммичены в apps/mobile/src/api/envelopes/envelopes.ts
+(использованы как есть, без регенерации — бэкенд не запускался):
+  useEnvelopesControllerListV1, useEnvelopesControllerCreateV1,
+  useEnvelopesControllerUpdateV1, useEnvelopesControllerArchiveV1
+Response bodies типизированы как void (swagger без response-схем) → re-typed через
+TData-дженерик хука (EnvelopesListResponse) и TError=AxiosError<ApiErrorResponse>.
+
+--- typecheck ---
+$ cd apps/mobile && pnpm typecheck
+> @family-budget/mobile@0.1.0 typecheck
+> tsc --noEmit
+Result: 0 errors (exit 0)
+
+--- Созданные/изменённые файлы ---
+CREATED apps/mobile/src/components/envelopes/types.ts
+  - EnvelopeWithBalance, EnvelopesListResponse, ApiErrorResponse
+  - getApiErrorMessage(error, fallback) — isAxiosError<ApiErrorResponse> type guard
+CREATED apps/mobile/src/components/envelopes/EnvelopeCreateForm.tsx
+  - RHF + Zod (name + optional initialBalance), useEnvelopesControllerCreateV1
+CREATED apps/mobile/src/components/envelopes/EnvelopeRenameForm.tsx
+  - inline RHF + Zod rename, useEnvelopesControllerUpdateV1
+CREATED apps/mobile/src/components/envelopes/EnvelopeCard.tsx
+  - balance via formatMoneyMinor, rename toggle, archive via useEnvelopesControllerArchiveV1
+MODIFIED apps/mobile/app/(tabs)/envelopes.tsx
+  - list query + loading/error/empty states + active cards + collapsible archived section
+
+--- Критерии приёмки (по одному на критерий) ---
+AC1 (Активные конверты с балансами): useEnvelopesControllerListV1<EnvelopesListResponse> рендерит active-конверты через EnvelopeCard с formatMoneyMinor(balanceMinor) ₽.
+AC2 (Создание, RHF+Zod, 409 ENVELOPE_NAME_DUPLICATE): EnvelopeCreateForm — RHF+zodResolver, name required, optional initialBalance (MoneyStringSchema), 409 → setError('root', server message) отображается красным.
+AC3 (Переименование): EnvelopeCard toggles EnvelopeRenameForm (inline), useEnvelopesControllerUpdateV1, 409 → server message.
+AC4 (Архивирование, 409 ENVELOPE_NOT_EMPTY): EnvelopeCard archive button → useEnvelopesControllerArchiveV1, onError → getApiErrorMessage отображает серверное сообщение (включая текущий остаток) под кнопкой.
+AC5 (Архивные конверты, read-only): collapsible «Архивные (N)» секция, opacity-60, только имя+баланс, без действий.
+AC6 (Loading/error для list query): query.isLoading → ActivityIndicator «Загрузка…»; query.isError → серверное сообщение + кнопка «Повторить» (query.refetch).
+AC7 (Refresh invalidation): onSuccess во всех 3 мутациях → queryClient.invalidateQueries({queryKey: getEnvelopesControllerListV1QueryKey()}) → список обновляется без ручного reload.
+
+--- Соответствие конвенциям ---
+- NativeWind className только (нет StyleSheet.create).
+- Деньги: formatMoneyMinor(kopecks) для отображения, API принимает decimal strings (нет float-математики).
+- Zod-схемы из @family-budget/types: MoneyStringSchema переиспользован для валидации initialBalance.
+- Сгенерированные API-файлы, orval.config.js, axios-instance.ts, stores, бэкенд — НЕ тронуты.
+- Без as any / ! / @ts-ignore: типизация через дженерики хуков и isAxiosError type guard.
+- Локаль: весь UI-текст на русском.
+
+--- Отклонения ---
+- CreateEnvelopeRequestSchema не использован напрямую как resolver: поле initialBalance в форме — пустая строка (не undefined), что не проходит regex MoneyStringSchema. Вместо этого form-схема разрешает пустую строку и валидирует непустые значения через MoneyStringSchema.safeParse; body собирается в onSubmit. Констрейнты (name 1-100, initialBalance money string) идентичны CreateEnvelopeRequestSchema.
+- parseMoneyMinor не использован: API принимает decimal strings напрямую, клиентской арифметики нет (только отображение через formatMoneyMinor).
