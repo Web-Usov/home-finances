@@ -1,6 +1,10 @@
 import { Controller, Put, Param, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { SaveAllocationsRequestSchema } from '@family-budget/types';
+import { ZodValidationPipe } from '../../common/pipes';
+import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { AllocationsService } from './allocations.service';
+import type { SaveAllocationsRequest } from './allocations.service';
 
 @ApiTags('Allocations')
 @Controller('months/:period/allocations')
@@ -9,8 +13,18 @@ export class AllocationsController {
 
   @Put()
   @ApiOperation({ summary: 'Save full allocation table for a month' })
+  @ApiBody({ schema: zodOpenApiSchema(SaveAllocationsRequestSchema) })
   @ApiResponse({ status: 200, description: 'Summary and warnings' })
-  save(@Param('period') period: string, @Body() dto: unknown) {
+  @ApiResponse({
+    status: 404,
+    description: 'MONTH_NOT_FOUND or ENVELOPE_NOT_FOUND (unknown or archived envelope)',
+  })
+  @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or MONTH_LOCKED' })
+  @ApiResponse({ status: 422, description: 'ALLOCATION_EXCEEDS_INCOME' })
+  save(
+    @Param('period') period: string,
+    @Body(new ZodValidationPipe(SaveAllocationsRequestSchema)) dto: SaveAllocationsRequest,
+  ) {
     return this.allocationsService.save(period, dto);
   }
 }

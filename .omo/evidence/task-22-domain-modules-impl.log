@@ -1,0 +1,15 @@
+=== typecheck (todo 22) 2026-08-17T05:04:28+00:00 ===
+
+> @family-budget/api@0.1.0 typecheck /root/workspace/finance/apps/api
+> tsc --noEmit
+
+EXIT_CODE=0
+=== unit tests still green ===
+      ✓ returns the current allocation rows for the month (1 ms)
+      ✓ throws MONTH_NOT_FOUND for an unknown period (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       13 passed, 13 total
+Snapshots:   0 total
+Time:        1.725 s, estimated 2 s
+Ran all test suites matching /allocations.service.spec.ts/i.
