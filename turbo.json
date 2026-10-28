@@ -18,7 +18,14 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "eslint.config.mjs",
+        "$TURBO_ROOT$/packages/eslint-config/**"
+      ]
+    },
+    "lint:fix": {
+      "cache": false
     },
     "typecheck": {
       "dependsOn": ["^build"]
