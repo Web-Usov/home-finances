@@ -1,5 +1,10 @@
 import type { BudgetMonth } from '@prisma/client';
-import { ConflictException, ValidationException } from '../../common/exceptions';
+import type { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
+import {
+  ConflictException,
+  NotFoundException,
+  ValidationException,
+} from '../../common/exceptions';
 import type { PrismaService } from '../../prisma/prisma.service';
 import { MonthsService } from './months.service';
 
@@ -47,17 +52,32 @@ function createMockPrisma() {
 
 type MockPrisma = ReturnType<typeof createMockPrisma>;
 
-function createService(mock: MockPrisma): MonthsService {
-  return new MonthsService(mock as unknown as PrismaService);
+function createMockEngine() {
+  return { recalculateMonthAtomically: jest.fn() };
+}
+
+type MockEngine = ReturnType<typeof createMockEngine>;
+
+function createService(mock: MockPrisma, engine: MockEngine): MonthsService {
+  return new MonthsService(
+    mock as unknown as PrismaService,
+    engine as unknown as CalculationEngineService,
+  );
 }
 
 describe('MonthsService', () => {
   let mock: MockPrisma;
+  let engine: MockEngine;
   let service: MonthsService;
 
   beforeEach(() => {
     mock = createMockPrisma();
-    service = createService(mock);
+    engine = createMockEngine();
+    engine.recalculateMonthAtomically.mockResolvedValue({
+      recalculatedFrom: '2026-08',
+      warnings: [],
+    });
+    service = createService(mock, engine);
   });
 
   // -------------------------------------------------------------------------
@@ -295,6 +315,118 @@ describe('MonthsService', () => {
       });
       expect(result.month.status).toBe('open');
       expect(result.month.totalAllocatedMinor).toBe(300_000);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // updateIncome()
+  // -------------------------------------------------------------------------
+
+  describe('updateIncome', () => {
+    function stubMonth(month: BudgetMonth): void {
+      mock.budgetMonth.findUnique.mockResolvedValue(month);
+      mock.budgetMonth.update.mockImplementation(({ data }: { data: Partial<BudgetMonth> }) =>
+        Promise.resolve(makeMonth({ ...month, ...data })),
+      );
+      mock.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 0 } });
+    }
+
+    it('updates income on an open month and returns the recalculated summary', async () => {
+      const month = makeMonth({ id: 'month-1', period: '2026-08', status: 'open', version: 3 });
+      stubMonth(month);
+      mock.budgetMonth.findUnique
+        .mockResolvedValueOnce(month) // pre-check read
+        .mockResolvedValueOnce(makeMonth({ ...month, incomeMinor: 2_000_000, version: 4 })); // post-recalc read
+      mock.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 600_000 } });
+      const warnings = [{ code: 'ARCHIVED_ENVELOPE_WITH_BALANCE', message: 'w' }];
+      engine.recalculateMonthAtomically.mockResolvedValue({
+        recalculatedFrom: '2026-08',
+        warnings,
+      });
+
+      const result = await service.updateIncome('2026-08', { income: '20000.00', version: 3 });
+
+      expect(mock.budgetMonth.update).toHaveBeenCalledWith({
+        where: { id: 'month-1' },
+        data: { incomeMinor: 2_000_000 },
+      });
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', mock);
+      expect(mock.$transaction).toHaveBeenCalledTimes(1);
+      expect(result.data).toMatchObject({
+        period: '2026-08',
+        incomeMinor: 2_000_000,
+        version: 4,
+        totalAllocatedMinor: 600_000,
+        freeFundsMinor: 1_400_000,
+      });
+      expect(result.warnings).toEqual(warnings);
+    });
+
+    it('throws MONTH_NOT_FOUND for an unknown period', async () => {
+      mock.budgetMonth.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateIncome('2026-13', { income: '100.00', version: 1 }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.updateIncome('2026-13', { income: '100.00', version: 1 }),
+      ).rejects.toMatchObject({ code: 'MONTH_NOT_FOUND', statusCode: 404 });
+      expect(mock.budgetMonth.update).not.toHaveBeenCalled();
+      expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+    });
+
+    it('throws VERSION_CONFLICT when the version does not match', async () => {
+      stubMonth(makeMonth({ status: 'open', version: 3 }));
+
+      await expect(
+        service.updateIncome('2026-08', { income: '100.00', version: 2 }),
+      ).rejects.toMatchObject({ code: 'VERSION_CONFLICT', statusCode: 409 });
+      expect(mock.budgetMonth.update).not.toHaveBeenCalled();
+      expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+    });
+
+    it('throws MONTH_LOCKED for a closed month', async () => {
+      stubMonth(makeMonth({ status: 'closed', version: 3 }));
+
+      await expect(
+        service.updateIncome('2026-08', { income: '100.00', version: 3 }),
+      ).rejects.toMatchObject({ code: 'MONTH_LOCKED', statusCode: 409 });
+      expect(mock.budgetMonth.update).not.toHaveBeenCalled();
+      expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+    });
+
+    it('checks the version before the closed-month lock', async () => {
+      stubMonth(makeMonth({ status: 'closed', version: 3 }));
+
+      await expect(
+        service.updateIncome('2026-08', { income: '100.00', version: 99 }),
+      ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    });
+
+    it('allows income changes in a draft month', async () => {
+      const month = makeMonth({ status: 'draft', version: 1 });
+      stubMonth(month);
+
+      const result = await service.updateIncome('2026-08', { income: '5000.00', version: 1 });
+
+      expect(mock.budgetMonth.update).toHaveBeenCalledWith({
+        where: { id: 'month-1' },
+        data: { incomeMinor: 500_000 },
+      });
+      expect(result.data.incomeMinor).toBe(500_000);
+    });
+
+    it('allows income changes in a reopened month', async () => {
+      const month = makeMonth({ status: 'reopened', version: 2 });
+      stubMonth(month);
+
+      await service.updateIncome('2026-08', { income: '5000.00', version: 2 });
+
+      expect(mock.budgetMonth.update).toHaveBeenCalledWith({
+        where: { id: 'month-1' },
+        data: { incomeMinor: 500_000 },
+      });
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', mock);
     });
   });
 });
