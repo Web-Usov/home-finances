@@ -5,6 +5,7 @@
  * Usage:
  *   node scripts/spec-check.mjs                    # run checks, print coverage report
  *   node scripts/spec-check.mjs --strict-coverage  # additionally fail if any AC-* is not referenced from a test file
+ *   node scripts/spec-check.mjs --verbose          # list every uncovered rule even when there are many
  *
  * What it does:
  *   1. Parses rule definitions (`**[PREFIX-nn]**`) in docs/spec/*.md; fails on duplicate IDs.
@@ -120,7 +121,8 @@ console.log(`\ncovered by tests: ${ids.length - uncovered.length}/${ids.length}`
 if (uncoveredAc.length) console.log(`AC without test reference (${uncoveredAc.length}): ${uncoveredAc.join(', ')}`);
 if (uncovered.length) {
   console.log(`warning: rules not referenced from any test file (${uncovered.length}):`);
-  console.log('  ' + uncovered.join(' '));
+  if (uncovered.length > 40 && !process.argv.includes('--verbose')) console.log('  (too many to list; use --verbose for the full list)');
+  else console.log('  ' + uncovered.join(' '));
 }
 
 if (strictCoverage && uncoveredAc.length) {
