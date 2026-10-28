@@ -16,6 +16,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:int": "turbo run test:int",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:up": "docker compose up -d postgres",
     "db:migrate": "pnpm --filter api prisma migrate dev",

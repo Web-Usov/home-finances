@@ -14,7 +14,9 @@ web-build/
 .env
 .env.local
 .env.*.local
+.env.test
 !.env.example
+!.env.test.example
 
 # IDE
 .idea/

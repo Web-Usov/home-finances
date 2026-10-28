@@ -1,23 +1,21 @@
 import { NotFoundException } from '../../common/exceptions';
 import { PrismaService } from '../../prisma/prisma.service';
+import { createTestPrisma, resetDb } from '../../../test/db';
 import { CalculationEngineService } from './calculation-engine.service';
 
 /**
  * Integration tests for CalculationEngineService.recalculateMonthAtomically
- * against a real PostgreSQL instance (docker compose `family-budget-db`).
+ * against the real test database (see docs/testing.md).
  *
- * Covers todo 8 of .omo/plans/domain-modules-impl.md:
  *   S1 — happy path: derived rows recreated, version +1 for all affected months
  *   S2 — rollback: failure inside the transaction leaves all state intact
  *   S3 — 404 domain error for an unknown month id
  *
- * Fixtures use periods 2099-01 / 2099-02 so they never collide with real data.
- * Every test cleans up its own rows (BudgetMonth first via cascade, then Envelope).
+ * Every test starts from empty tables (resetDb) in this worker's private schema.
  */
 
-const PERIOD_1 = '2099-01';
-const PERIOD_2 = '2099-02';
-const SUFFIX = 'a4f2'; // uuid-style suffix keeps names unique across re-runs
+const PERIOD_1 = '2026-01';
+const PERIOD_2 = '2026-02';
 
 describe('CalculationEngineService.recalculateMonthAtomically (integration)', () => {
   let prisma: PrismaService;
@@ -27,27 +25,24 @@ describe('CalculationEngineService.recalculateMonthAtomically (integration)', ()
   let month2Id: string;
 
   beforeAll(async () => {
-    prisma = new PrismaService();
+    prisma = createTestPrisma();
     await prisma.$connect();
     service = new CalculationEngineService(prisma);
   });
 
+  beforeEach(async () => {
+    await resetDb(prisma);
+  });
+
   afterAll(async () => {
+    await resetDb(prisma);
     await prisma.$disconnect();
   });
 
-  async function cleanup(): Promise<void> {
-    // BudgetMonth cascades to Allocation, Operation, OperationResult, EnvelopeMonthSnapshot.
-    await prisma.budgetMonth.deleteMany({ where: { period: { in: [PERIOD_1, PERIOD_2] } } });
-    await prisma.envelope.deleteMany({ where: { name: { contains: SUFFIX } } });
-  }
-
   async function seed(): Promise<void> {
-    await cleanup();
-
     const env = await prisma.envelope.create({
       data: {
-        name: `Еда-${SUFFIX}`,
+        name: 'Еда',
         createdPeriod: PERIOD_1,
         displayOrder: 0,
       },
@@ -105,10 +100,6 @@ describe('CalculationEngineService.recalculateMonthAtomically (integration)', ()
       },
     });
   }
-
-  afterEach(async () => {
-    await cleanup();
-  });
 
   // -------------------------------------------------------------------------
   // S1 — happy path
