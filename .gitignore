@@ -50,5 +50,9 @@ apps/mobile/src/api/generated/
 # Docker volumes (should not be committed)
 postgres_data/
 
-# Runtime session state (ephemeral continuation payloads)
-.omo/run-continuation/
+# Tool artifacts
+.omo/
+.turbo/
+**/.turbo/
+**/coverage/
+.codegraph
