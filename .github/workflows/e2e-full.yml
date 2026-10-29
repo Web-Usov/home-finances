@@ -1,0 +1,54 @@
+name: e2e-full
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-full-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  LEFTHOOK: '0'
+  TEST_DATABASE_URL: postgresql://budget:budget@localhost:5432/family_budget_test
+
+jobs:
+  e2e-full:
+    name: e2e-full
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: budget
+          POSTGRES_PASSWORD: budget
+          POSTGRES_DB: family_budget_test
+        options: >-
+          --health-cmd "pg_isready -U budget -d family_budget_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Install Chromium with system deps
+        run: pnpm --filter @family-budget/e2e exec playwright install --with-deps chromium
+      - name: pnpm e2e:full
+        run: pnpm e2e:full
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-full
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+          if-no-files-found: ignore

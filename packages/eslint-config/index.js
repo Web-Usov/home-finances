@@ -1,67 +1,79 @@
-const { resolve } = require("node:path");
+// Shared ESLint 9 flat-config presets.
+// Usage in a package's eslint.config.mjs:
+//   import { node } from '@family-budget/eslint-config';
+//   export default [...node, { ignores: ['dist/**'] }];
+import js from '@eslint/js';
+import globals from 'globals';
+import prettier from 'eslint-config-prettier';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import tseslint from 'typescript-eslint';
 
-const project = resolve(process.cwd(), "tsconfig.json");
+/** Files and folders that are never linted (build output and generated code). */
+export const ignores = [
+  '**/dist/**',
+  '**/build/**',
+  '**/coverage/**',
+  '**/.expo/**',
+  '**/.turbo/**',
+  '**/node_modules/**',
+  '**/web-build/**',
+  // Orval output: regenerated from swagger.json, never edited by hand.
+  '**/src/api/**',
+  // Prisma generated client.
+  '**/prisma/generated/**',
+];
 
-/** @type {import("eslint").Linter.Config} */
-module.exports = {
-  extends: [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:react/recommended",
-    "plugin:react-hooks/recommended",
-    "eslint-config-prettier",
-  ],
-  plugins: ["@typescript-eslint", "react", "react-hooks"],
-  parser: "@typescript-eslint/parser",
-  parserOptions: {
-    project,
-    ecmaVersion: 2022,
-    sourceType: "module",
-    ecmaFeatures: {
-      jsx: true,
+/** Language-agnostic TypeScript rules shared by every preset. */
+export const base = tseslint.config(
+  { ignores },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-explicit-any': 'error',
+      'no-console': 'warn',
     },
   },
-  settings: {
-    react: {
-      version: "detect",
-    },
+  {
+    // Tests and tool configs may log freely.
+    files: ['**/*.config.*', '**/*.spec.ts', '**/*.int-spec.ts', '**/*.test.{ts,tsx}', 'test/**', 'scripts/**'],
+    rules: { 'no-console': 'off' },
   },
-  env: {
-    node: true,
-    es2022: true,
+  {
+    // CommonJS tool configs (babel, metro, tailwind, orval, jest) need require/module.
+    files: ['**/*.{js,cjs}'],
+    languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
+  // Must stay last: turns off rules that conflict with Prettier.
+  prettier,
+);
+
+/** NestJS / Node packages. */
+export const node = tseslint.config(...base, {
+  languageOptions: { globals: { ...globals.node, ...globals.es2022 } },
+});
+
+/** Expo / React Native packages. */
+export const reactNative = tseslint.config(...base, {
+  files: ['**/*.{ts,tsx,js,jsx}'],
+  plugins: { react, 'react-hooks': reactHooks },
+  languageOptions: {
+    globals: { ...globals.es2022, __DEV__: 'readonly' },
+    parserOptions: { ecmaFeatures: { jsx: true } },
+  },
+  settings: { react: { version: 'detect' } },
   rules: {
-    "@typescript-eslint/no-unused-vars": [
-      "warn",
-      {
-        argsIgnorePattern: "^_",
-        varsIgnorePattern: "^_",
-      },
-    ],
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/prefer-nullish-coalescing": "warn",
-    "react/react-in-jsx-scope": "off",
-    "react/prop-types": "off",
-    "no-console": "warn",
+    ...react.configs.recommended.rules,
+    ...reactHooks.configs.recommended.rules,
+    'react/react-in-jsx-scope': 'off',
+    'react/prop-types': 'off',
   },
-  overrides: [
-    {
-      files: ["*.native.ts", "*.native.tsx"],
-      plugins: ["react-native"],
-      extends: ["plugin:react-native/all"],
-      env: {
-        "react-native/react-native": true,
-      },
-      rules: {
-        "react-native/no-unused-styles": "warn",
-        "react-native/split-platform-components": "off",
-      },
-    },
-    {
-      files: ["*.config.*", "*.test.*", "*.spec.*"],
-      rules: {
-        "no-console": "off",
-      },
-    },
-  ],
-};
+});
+
+export default { base, node, reactNative, ignores };

@@ -1,11 +1,12 @@
 /**
  * Orval configuration — generates API client from backend OpenAPI spec.
- * Run `pnpm orval` when the backend is running to regenerate.
+ * Input is the committed apps/api/openapi.json (no running server needed).
+ * Regenerate both with `pnpm api:generate` from the repo root.
  */
 module.exports = {
   familyBudget: {
     input: {
-      target: 'http://localhost:3000/api/swagger.json',
+      target: '../api/openapi.json',
     },
     output: {
       mode: 'tags-split',
@@ -18,9 +19,6 @@ module.exports = {
           name: 'customAxiosInstance',
         },
       },
-    },
-    hooks: {
-      afterAllFilesWrite: 'prettier --write',
     },
   },
 };

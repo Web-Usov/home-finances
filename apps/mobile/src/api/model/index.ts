@@ -6,5 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export * from './envelopesControllerCreateV1Body';
-export * from './envelopesControllerUpdateV1Body';
+export * from "./allocationsControllerSaveV1Body";
+export * from "./allocationsControllerSaveV1BodyAllocations";
+export * from "./envelopesControllerCreateV1Body";
+export * from "./envelopesControllerUpdateV1Body";

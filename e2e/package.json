@@ -1,0 +1,25 @@
+{
+  "name": "@family-budget/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "test:smoke": "playwright test --project=smoke",
+    "test:full": "playwright test --project=full",
+    "report": "playwright show-report playwright-report",
+    "install:browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@family-budget/eslint-config": "workspace:*",
+    "@family-budget/tsconfig": "workspace:*",
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
+    "eslint": "^9.17.0",
+    "pg": "^8.13.1",
+    "typescript": "^5.7.2"
+  }
+}

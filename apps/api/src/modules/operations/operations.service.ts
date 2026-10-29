@@ -11,12 +11,12 @@ export class OperationsService {
     return { operations: [] };
   }
 
-  create(dto: unknown) {
+  create(_dto: unknown) {
     // TODO: validate, create operation, calculate result, trigger recalculation
     return { operation: null, message: 'Not implemented' };
   }
 
-  update(id: string, dto: unknown) {
+  update(id: string, _dto: unknown) {
     // TODO: validate, update operation, recalculate results
     return { id, message: 'Not implemented' };
   }

@@ -1,7 +1,7 @@
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import request = require('supertest');
+import request from 'supertest';
 import type { BudgetMonth, Envelope } from '@prisma/client';
 import { EnvelopesModule } from './envelopes.module';
 import { PrismaModule } from '../../prisma/prisma.module';
