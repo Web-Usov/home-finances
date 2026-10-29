@@ -54,7 +54,9 @@ Rules:
 
 - Controllers contain no business logic and return plain objects.
 - A mutation writes source data and runs the cascade inside **one** `$transaction` (CALC-13, API-15); the interactive `tx`
-  client is passed to the engine as `db`.
+  client is passed to the engine as `db`. This includes creating an envelope with an initial balance: the `initial_balance`
+  operation is inserted and the month is recalculated in the same transaction, otherwise `GET /envelopes` (which reads
+  `EnvelopeMonthSnapshot.closing`) would show 0.
 - Month-scoped mutations check, in this order: existence (`MONTH_NOT_FOUND`) → `version` (`VERSION_CONFLICT`, ADR 0005)
   → month status (`MONTH_LOCKED`, MON-03, NFR-18) → domain rules. See `AllocationsService.save` for the reference flow.
 - `ZodValidationPipe` throws the domain `ValidationException` (HTTP 422, code `VALIDATION_ERROR`, message lists failing field

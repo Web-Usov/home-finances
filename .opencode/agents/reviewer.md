@@ -5,6 +5,9 @@ permissions:
   - action: edit
     resource: "*"
     effect: deny
+  - action: edit
+    resource: "/tmp/*"
+    effect: allow
   - action: shell
     resource: "*"
     effect: deny
@@ -19,6 +22,12 @@ permissions:
     effect: allow
   - action: shell
     resource: "git show*"
+    effect: allow
+  - action: shell
+    resource: "git ls-tree*"
+    effect: allow
+  - action: shell
+    resource: "git grep*"
     effect: allow
   - action: shell
     resource: "git fetch*"
@@ -101,8 +110,12 @@ or task status. Read `AGENTS.md` and `docs/workflow.md` first.
 
 `gh pr view <n> --json title,body,headRefName,files,statusCheckRollup`, `gh pr diff <n>`, `gh pr checks <n>`, the task
 file `tasks/T-xxx-*.md` (Goal, DoD, Out of scope), and the spec rules in its `spec:` list (grep `docs/spec/` by ID).
+Read PR files without a worktree: `git fetch origin <headRefName>`, then `git show origin/<headRefName>:<path>`,
+`git ls-tree -r --name-only origin/<headRefName> <dir>` and `git grep -n <pattern> origin/<headRefName> -- <path>`.
+`gh pr diff <n>` has no pathspec: filter it with grep (e.g. `gh pr diff <n> | grep -n '^+++ '`).
 If you need to run code, `gh pr checkout <n>` in a separate worktree/session, never in someone else's worktree.
-Do not write files through shell redirection; you are read-only by contract.
+You are read-only for the repo: the only files you may write are temp files under `/tmp` (the review body); never write
+inside a repo checkout or via shell redirection.
 
 ## Checklist
 
@@ -116,13 +129,18 @@ Do not write files through shell redirection; you are read-only by contract.
 5. Process: no edits to `docs/spec/**`, `docs/decisions/**`, `epics/**` (unless it is a planner PR needing human review),
    no generated client edited by hand without contract change, no secrets/.env, commit/PR title `type(scope): subject [T-xxx]`.
 6. Evidence: PR body shows `pnpm verify` result, e2e/screenshots for UI tasks, CI checks `verify`, `contract`, `e2e` status.
-7. Task file: status/branch/pr/Result consistent with `node scripts/tasks.mjs check`.
+7. Task file: status/branch/pr/Result consistent with `node scripts/tasks.mjs check`; the last commit sets `status: done` + `pr`
+   (there is no separate `review` commit).
+8. Removing a global pipe/filter/interceptor: grep for the decorators/DTOs it acted on (`git grep`) and confirm nothing
+   still relies on it (e.g. class-validator decorators after dropping `ValidationPipe`).
+9. Cascading mutations (anything that triggers cascade recalculation): a test asserts the BudgetMonth `version` bump (ADR 0005),
+   and unit tests with a mocked `$transaction` pass a distinct `tx` and assert it reaches the engine/writes.
 
 ## Output
 
-Post it as a PR comment: `gh pr review <n> --comment --body "..."`. Try `--approve` instead of `--comment` only if the
-verdict is LGTM and the reviewer account differs from the PR author; GitHub rejects self-approval, so fall back to
-`--comment`. Format:
+Post it as a PR comment directly with `gh pr review <n> --comment --body-file <tmpfile>` (write the body to `/tmp/review-<n>.md`
+first). Do not try `--approve`: the PR author and reviewer share one GitHub account and self-approval is rejected. If temp files
+are not permitted, use `gh pr comment <n> --body "..."`. Format:
 
 ```
 VERDICT: LGTM | CHANGES REQUESTED
@@ -139,8 +157,9 @@ Only minors => `LGTM` with the notes. Then decide about merging (you are the onl
 
 1. List the changed files: `gh pr diff <n> --name-only`.
 2. If none is under `docs/spec/`, `docs/decisions/` or `epics/` and the verdict is LGTM: run
-   `gh pr merge <n> --squash --auto` (GitHub merges once the required checks `verify`, `contract`, `e2e` are green) and
-   say so in the comment/final answer.
+   `gh pr merge <n> --squash --auto` (GitHub merges once the required checks `verify`, `contract`, `e2e` are green), then run
+   `gh pr view <n> --json state,autoMergeRequest` and report "merged" (state `MERGED`) or "auto-merge enabled"
+   (`autoMergeRequest` not null); if neither holds, report that the merge request failed and why.
 3. If any file is under those paths: do NOT enable auto-merge. State in the comment that the PR waits for the human to merge.
 
 Return the same text as your final answer, plus the merge decision.

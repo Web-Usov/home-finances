@@ -2,9 +2,9 @@
 
 > Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`.
 
-Всего задач: 18 — todo: 15, in_progress: 1, review: 0, blocked: 0, done: 2.
+Всего задач: 20 — todo: 17, in_progress: 1, review: 0, blocked: 0, done: 2.
 
-## E-00. Технический долг и соответствие спеке — planned (2/4)
+## E-00. Технический долг и соответствие спеке — planned (2/6)
 
 Эпик: [E-00-tech-debt.md](../epics/E-00-tech-debt.md)
 
@@ -14,6 +14,8 @@
 | [T-002](T-002-spec-rule-ids-in-code.md) | Replace "SPECIFICATION.md line NNN" comments with rule IDs | todo | docs | S | — | — |
 | [T-017](T-017-envelope-initial-balance-recalc.md) | Envelope created with an initial balance must show that balance (recalculate month) | done | api | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/4) |
 | [T-018](T-018-process-v1-retro.md) | Process v1: apply pilot retro | in_progress | infra | M | — | — |
+| [T-019](T-019-remove-class-validator-deps.md) | Remove unused class-validator and class-transformer dependencies | todo | api | S | — | — |
+| [T-020](T-020-spec-gaps-validation-error-month-not-found.md) | Spec gaps from pilot reviews (API-18 VALIDATION_ERROR, initial balance without a month) | todo | docs | S | — | — |
 
 ## E-01. Ядро API: месяцы и операции — planned (0/4)
 
