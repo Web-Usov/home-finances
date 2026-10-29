@@ -3,6 +3,9 @@
 //   node scripts/verify.mjs         full gate   (pnpm verify)
 //   node scripts/verify.mjs quick   fast subset (pnpm verify:quick, pre-commit)
 //
+// Quick mode is quiet: step output is captured and printed only for a failing step (plus the summary).
+// Set VERIFY_VERBOSE=1 to stream everything. Full mode always streams (test/build output is evidence).
+//
 // To add a step: append an entry to the right list below.
 import { spawnSync } from 'node:child_process';
 
@@ -29,16 +32,28 @@ if (!['full', 'quick'].includes(mode)) {
   process.exit(2);
 }
 const steps = mode === 'quick' ? quick : full;
+const quiet = mode === 'quick' && !process.env.VERIFY_VERBOSE;
 const results = [];
 const started = Date.now();
 
 const secs = (ms) => `${(ms / 1000).toFixed(1)}s`;
 
 for (const [i, step] of steps.entries()) {
-  console.log(`\n━━━ [${i + 1}/${steps.length}] ${step.name}  (${step.cmd}) ━━━`);
+  if (!quiet) console.log(`\n━━━ [${i + 1}/${steps.length}] ${step.name}  (${step.cmd}) ━━━`);
   const t0 = Date.now();
-  const { status } = spawnSync(step.cmd, { shell: true, stdio: 'inherit' });
+  const { status, stdout, stderr } = spawnSync(step.cmd, {
+    shell: true,
+    stdio: quiet ? 'pipe' : 'inherit',
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+    env: quiet ? { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' } : process.env,
+  });
   const ok = status === 0;
+  if (quiet && !ok) {
+    console.log(`\n━━━ [${i + 1}/${steps.length}] ${step.name}  (${step.cmd}) ━━━`);
+    process.stdout.write(stdout ?? '');
+    process.stderr.write(stderr ?? '');
+  }
   results.push({ ...step, ok, ms: Date.now() - t0 });
   if (!ok) {
     console.error(`\n✖ verify FAILED at step "${step.name}" (exit ${status}). Fix it and re-run: ${step.cmd}`);

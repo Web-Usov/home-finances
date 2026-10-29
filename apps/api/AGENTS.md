@@ -13,7 +13,7 @@ Global rules (money, periods, types, language, spec references) are in the root 
 | `prisma/` | `PrismaService` (global client) | done |
 | `health/` | `GET /api/v1/health` | done |
 | `modules/calculation-engine/` | stateless cascade recalculation (`recalculateFrom`, `recalculateMonthAtomically`) | done, unit + integration tests |
-| `modules/envelopes/` | list/create/update/archive | done |
+| `modules/envelopes/` | list/create/update/archive; create with an initial balance inserts the `initial_balance` operation and recalculates the month in the same transaction | done |
 | `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation) | done |
 | `modules/months/` | list, create (draft/auto-open, allocation copy) | partial — `updateIncome`, `close`, `reopen` still return `{ message: 'Not implemented' }` |
 | `modules/operations/` | list/create/update/delete | stubs — all `Not implemented` |
@@ -41,9 +41,11 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
 
 ## Tests
 
-- Unit: `*.service.spec.ts` / `*.spec.ts` next to the code, Prisma mocked (`$transaction` hands the same mock as `tx`).
+- Unit: `*.service.spec.ts` / `*.spec.ts` next to the code, Prisma mocked. When mocking `$transaction` pass a DISTINCT `tx` object
+  and assert `toHaveBeenCalledWith(id, tx)` on the engine (same-transaction proof); for cascades also assert the BudgetMonth
+  `version` bump (ADR 0005). Name new files by feature: `<module>.<feature>.int-spec.ts`.
 - Integration: `*.int-spec.ts` (`jest.int.config.js`), real PostgreSQL test DB `family_budget_test` with a schema per jest worker
-  (`pnpm db:up`, `apps/api/.env.test`); factories in `test/db.ts`. Details: `docs/testing.md`.
+  (`pnpm db:up`, `apps/api/.env.test`); factories in `test/db.ts`, HTTP-level app helper `createTestApp(modules)` in `test/http.ts`. Details: `docs/testing.md`.
 - Engine formulas must be covered by DB-free unit tests (`calculation-engine.service.spec.ts`).
 
 ## Commands
@@ -52,7 +54,7 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
 cd apps/api
 pnpm dev                 # nest start --watch
 pnpm build               # nest build
-pnpm typecheck
+pnpm typecheck           # after editing packages/types use the ROOT `pnpm typecheck` (turbo builds types first)
 pnpm test:unit           # jest, no DB
 pnpm test:int            # jest -c jest.int.config.js, needs test DB
 pnpm lint                # eslint (flat config)
@@ -62,6 +64,12 @@ npx prisma migrate dev   # create + apply migration
 npx prisma generate      # after schema changes
 npx prisma studio
 ```
+
+## Tooling
+
+- No prettier: do not run prettier; ESLint is the only formatter/linter (`pnpm lint`).
+- After editing `packages/types`, run the root `pnpm typecheck`, not `pnpm --filter api typecheck` (the latter uses the stale built
+  types). The turbo cache is shared across worktrees; logs may show other worktree paths (harmless).
 
 ## Anti-patterns
 

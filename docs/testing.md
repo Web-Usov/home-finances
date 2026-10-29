@@ -20,6 +20,10 @@ depends on real SQL: transactions, rollbacks, constraints, cascades, ordering.
 - `*.int-spec.ts` — API **integration** test. Uses the real test database.
 - `*.test.ts(x)` — mobile test (jest-expo), next to the component it covers.
 
+Name new test files by **feature**, not by layer: `<module>.<feature>.int-spec.ts` (e.g.
+`envelopes.initial-balance.int-spec.ts`, `allocations.version-conflict.int-spec.ts`); the same for unit files when a
+module has several (`envelopes.http.spec.ts`). Do not keep growing one catch-all `<module>.int-spec.ts`.
+
 The suffix decides which jest config picks the file up
 (`jest.config.js` → `*.spec.ts`, `jest.int.config.js` → `*.int-spec.ts`),
 so never put DB access in a `*.spec.ts` file.
@@ -106,6 +110,48 @@ Factories take sensible defaults and a partial override object. Extend
 `test/db.ts` when a new entity needs a factory instead of repeating `prisma.x.create`
 in tests. For unit tests, build entity objects with a local `makeX(overrides)` helper
 (see `months.service.spec.ts`).
+
+### HTTP-level integration (`test/http.ts`)
+
+`createTestApp(modules)` builds the real app setup (`configureApp`: prefix `/api`, URI versioning, `DomainExceptionFilter`;
+pipes are per-endpoint) with the given feature modules and the real Prisma client on the worker schema. Use it with supertest
+when the behaviour depends on HTTP + DB together (status codes, error bodies, persisted rows):
+
+```ts
+import request from 'supertest';
+import { createTestApp, TestApp } from '../../../test/http';
+import { resetDb } from '../../../test/db';
+
+let t: TestApp;
+beforeAll(async () => { t = await createTestApp([EnvelopesModule]); });
+beforeEach(() => resetDb(t.prisma));
+afterAll(async () => { await resetDb(t.prisma); await t.close(); });
+
+it('API-17: ...', async () => {
+  await request(t.app.getHttpServer()).post('/api/v1/envelopes').send({ name: '' }).expect(422);
+});
+```
+
+(see `envelopes.int-spec.ts`). The helper lives in `test/` and is imported only by `*.int-spec.ts`; HTTP tests with a mocked
+`PrismaService` stay `*.spec.ts` (`envelopes.http.spec.ts`).
+
+### Unit-test patterns for transactions and cascades
+
+- When a service uses `prisma.$transaction(async (tx) => ...)`, mock `$transaction` to hand a **distinct** `tx` object (not the
+  same mock as `prisma`), so a test can prove everything ran inside the same transaction:
+
+  ```ts
+  const tx = { operation: { create: jest.fn() } };
+  prisma.$transaction.mockImplementation((fn) => fn(tx));
+  await service.create(dto);
+  expect(tx.operation.create).toHaveBeenCalled();
+  expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith(month.id, tx);   // same-transaction usage
+  expect(prisma.operation.create).not.toHaveBeenCalled();                          // nothing outside the tx
+  ```
+
+- For **any operation that triggers cascade recalculation**, assert that the BudgetMonth `version` was bumped (ADR 0005):
+  in unit tests that the engine (which owns the increment) is called with the month id and `tx`, in integration tests that
+  `budgetMonth.version` is `previous + 1` after the call. Tasks of this kind carry a matching DoD line (`tasks/_template.md`).
 
 ## Traceability to the specification
 
@@ -200,6 +246,17 @@ every run; open a trace with `pnpm --filter @family-budget/e2e exec playwright s
 2. Tag `@smoke` only if the flow is critical to the app starting and navigating; otherwise leave untagged.
 3. Select elements by role/visible text (UI is Russian); add `testID`/`accessibilityLabel` in the app if needed.
 4. Run `pnpm e2e:smoke` (and `pnpm e2e:full` if you added untagged specs) before opening the PR.
+
+### Machine-wide lock and resources
+
+`pnpm e2e:smoke` and `pnpm e2e:full` run through `scripts/with-lock.mjs`: a lockfile `<os.tmpdir()>/family-budget-e2e.lock`
+(`{ pid, cwd, started }`) serializes e2e runs of all agents and worktrees on the machine. If another run holds it, the
+command prints who holds it every 30s and waits (up to 90 min, `WITH_LOCK_TIMEOUT_MIN`); a lock whose pid is dead is stale and
+is taken over automatically; Ctrl-C releases it. Do not delete the lockfile of a live run.
+
+An e2e run needs **~2 GB of free RAM** (API + Expo web export + Chromium; the script warns when less is free), and the first web
+export on a machine can take several minutes (Metro cold cache; later runs are faster but `--clear` is always used). Do not start
+other heavy jobs (second e2e, `smoke:compose`) while it runs; `pnpm verify` of another agent is fine.
 
 `e2e:smoke` is deliberately **not** part of `pnpm verify` (slow, builds the web bundle); CI runs it as a separate job.
 

@@ -1,7 +1,15 @@
 # Git hooks (installed by `pnpm install` via the prepare script).
+# Quiet on success: only failures and the summary are printed.
+# pre-commit checks the WORKING TREE, not the index: stage everything you commit (`git add -A`).
+output:
+  - failure
+  - summary
+
 pre-commit:
   commands:
     verify-quick:
+      # scripts/verify.mjs quick captures step output and prints it only for a failing step
+      # (VERIFY_VERBOSE=1 shows everything).
       run: pnpm verify:quick
 
 commit-msg:

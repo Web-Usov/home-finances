@@ -14,10 +14,10 @@ Argument: "$ARGUMENTS"
   `gh pr list` and `git branch -r` for tasks already in flight on the same module, and recommend ONE task with a short
   reason. Do not start it.
 - If the argument is a task id (`T-xxx`): verify it is in the ready list (otherwise explain what blocks it and stop). Then:
-  1. `git fetch origin`; derive `<slug>` from the task file name `tasks/T-xxx-<slug>.md`.
-  2. `git worktree add ../finance-wt/t-xxx-<slug> -b task/T-xxx-<slug> origin/master`.
-  3. In the new worktree: `pnpm install`, copy `apps/api/.env` and `apps/api/.env.test` from the main checkout if they exist.
-  4. `node scripts/tasks.mjs set T-xxx in_progress --branch task/T-xxx-<slug>`, `pnpm tasks:board`, commit
-     `chore(tasks): start T-xxx [T-xxx]`.
-  5. Print the full task file, the spec rule IDs it cites, and the worktree path where the work must continue
+  1. Run `pnpm task:start T-xxx` from the main checkout. It validates the task (todo, depends done, not blocked), fetches,
+     creates `../finance-wt/t-xxx-<slug>` on `task/T-xxx-<slug>` from `origin/master`, copies `apps/api/.env` and
+     `apps/api/.env.test` (from `.env.test.example` if the main checkout has none), runs `pnpm install --frozen-lockfile`,
+     sets `in_progress` + branch, regenerates the board and makes the claim commit `chore(tasks): start T-xxx [T-xxx]`.
+     If it fails, report the message and stop.
+  2. Print the full task file, the spec rule IDs it cites, and the absolute worktree path printed by the script
      (the implementer must run its tools from that directory).

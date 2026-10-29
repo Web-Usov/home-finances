@@ -19,5 +19,5 @@ Spec rules: <!-- rule IDs only, e.g. OP-05, AC-06 -->
 
 - [ ] `pnpm verify` is green
 - [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] Task file updated (status, branch, pr, Result; `node scripts/tasks.mjs check` passes, board regenerated)
+- [ ] Task file updated: DoD ticked, Result filled, and the final commit sets `status: done` + `pr: <this PR>` with the board regenerated (`pnpm tasks:check` passes)
 - [ ] No edits to `docs/spec/**`, `docs/decisions/**` or `epics/**` without human review

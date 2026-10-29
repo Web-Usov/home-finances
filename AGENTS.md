@@ -43,11 +43,12 @@ pnpm verify              # merge gate: typecheck, lint, test:unit, spec:check, t
 pnpm verify:quick        # typecheck, lint, test:unit, spec:check, tasks:check (pre-commit hook)
 pnpm build / typecheck / lint
 pnpm test:unit           # no DB;  pnpm test:int needs the test DB (docs/testing.md)
-pnpm e2e:smoke           # Playwright @smoke (CI job `e2e`);  pnpm e2e:full = all specs
+pnpm e2e:smoke           # Playwright @smoke (CI job `e2e`);  pnpm e2e:full = all specs (machine-wide lock, ~2 GB RAM)
 pnpm api:generate        # regenerate apps/api/openapi.json + Orval client;  pnpm api:contract = fail on drift
 pnpm smoke:compose       # docker compose up/restart/persistence check (touching Docker files)
 pnpm spec:check          # spec rule IDs: uniqueness, dangling references, coverage report
 pnpm tasks:check | tasks:board | tasks:next | tasks:set   # task system (scripts/tasks.mjs)
+pnpm task:start T-xxx    # claim: worktree + branch + env + install + claim commit;  pnpm task:clean T-xxx after the merge
 pnpm db:up               # start PostgreSQL (docker compose)
 pnpm db:migrate          # prisma migrate dev
 pnpm db:seed             # seed AppSettings (RUB, ru-RU)
@@ -78,9 +79,9 @@ Per-package guides: `apps/api/AGENTS.md`, `apps/mobile/AGENTS.md`, `packages/typ
 
 One task = one session = one branch (`task/T-xxx-slug`) = one git worktree = one PR. Full lifecycle: `docs/workflow.md`.
 
-1. `/next` (`pnpm tasks:next`) picks a ready task; `/next T-xxx` creates the worktree and sets `in_progress`.
+1. `/next` (`pnpm tasks:next`) picks a ready task; `/next T-xxx` (`pnpm task:start T-xxx`) creates the worktree and sets `in_progress`.
 2. Implement tests-first, cite rule IDs in test names, commit as `type(scope): subject [T-xxx]`.
-3. `/verify` (`pnpm verify`), then `/ship`: PR from the template, status `done` in the PR; `/ship` never merges.
+3. `/verify` (`pnpm verify`), then `/ship`: push, PR from the template, then one commit setting `done` + PR url; `/ship` never merges.
 4. `/review <pr|T-xxx>` runs the reviewer; verdict is a PR comment (same GitHub account, no self-approval; required approvals = 0).
    On LGTM only the reviewer enables `gh pr merge --squash --auto` (not for spec/ADR/epics PRs: the human merges).
 5. Never end a session with uncommitted changes: `/handoff` (WIP commit, push, Handoff log entry in the task file).
@@ -103,6 +104,16 @@ Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Comman
 - **English:** detailed tasks, all AGENTS.md, workflow/testing/architecture docs, agent configs, code, comments, tests,
   commit messages, PR text.
 - **UI strings stay Russian** (ru-RU).
+
+## Tooling notes
+
+- **No prettier.** Do not run prettier (or any other formatter): ESLint is the only formatter/linter (`pnpm lint`). Match the
+  surrounding style.
+- After editing `packages/types` run the root `pnpm typecheck` (turbo builds the types package first); `pnpm --filter api typecheck`
+  alone sees the stale `dist` of the types package.
+- The turbo cache is shared across worktrees: replayed logs may show paths of other worktrees; harmless.
+- Commit headers are at most 100 characters; pre-commit checks the working tree, so stage everything you commit.
+- Claim a task with `pnpm task:start T-xxx`, clean up after the merge with `pnpm task:clean T-xxx`.
 
 ## Conventions
 
