@@ -61,13 +61,28 @@ until it lands, run `typecheck`, `lint` and `test` before declaring work done.
 | Why decisions were made (Russian) | `docs/decisions/README.md` |
 | Modules, request/recalculation flow, error model | `docs/architecture.md` |
 | Testing strategy and commands | `docs/testing.md` |
-| Agent workflow (one task = one branch = one PR) | `docs/workflow.md` (coming) |
+| Agent workflow (one task = one branch = one PR) | `docs/workflow.md` |
 | Work items | `tasks/` (detailed, EN), `epics/` (RU) — being introduced |
 | DB schema | `apps/api/prisma/schema.prisma` |
 | Domain types / error codes | `packages/types/src/` |
 | Historical plans (do not follow) | `docs/archive/` |
 
 Per-package guides: `apps/api/AGENTS.md`, `apps/mobile/AGENTS.md`, `packages/types/AGENTS.md`.
+
+## Workflow
+
+One task = one session = one branch (`task/T-xxx-slug`) = one git worktree = one PR. Full lifecycle: `docs/workflow.md`.
+
+1. `/next` (`pnpm tasks:next`) picks a ready task; `/next T-xxx` creates the worktree and sets `in_progress`.
+2. Implement tests-first, cite rule IDs in test names, commit as `type(scope): subject [T-xxx]`.
+3. `/verify` (`pnpm verify`), then `/ship`: PR from the template, status `done` in the PR, `gh pr merge --squash --auto`.
+4. `/review <pr|T-xxx>` runs the read-only reviewer; verdict is posted as a PR comment (same GitHub account, no self-approval).
+5. Never end a session with uncommitted changes: `/handoff` (WIP commit, push, Handoff log entry in the task file).
+6. Spec ambiguity: set the task `blocked`, add a Q-proposal to the Handoff log. Only the planner changes `docs/spec/**`,
+   `docs/decisions/**`, `epics/**` (human review).
+
+Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Commands (`.opencode/commands/`): `/next`,
+`/verify`, `/handoff`, `/ship`, `/review`, `/status`, `/milestone`.
 
 ## Referencing the spec
 

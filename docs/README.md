@@ -6,7 +6,7 @@
 | [decisions/README.md](decisions/README.md) | RU | Architecture decision records (ADR) with index |
 | [architecture.md](architecture.md) | EN | Modules, request and recalculation flow, error model, client, data model |
 | [testing.md](testing.md) | EN | Testing strategy, commands, test database (maintained with the quality-gate work; may land in a parallel change) |
-| [workflow.md](workflow.md) | EN | How an agent takes a task to a merged PR (coming) |
+| [workflow.md](workflow.md) | EN | Task lifecycle: pick, worktree, implement, ship, review, handoff, milestones; OpenCode agents and commands |
 | [archive/](archive/) | mixed | History only: original monolithic `SPECIFICATION.md` and archived `omo` plans/evidence. Line numbers in them are obsolete. |
 
 Related: root [AGENTS.md](../AGENTS.md) (agent entry point), `tasks/` and `epics/` (work items, being introduced),
