@@ -1,6 +1,7 @@
 import type { BudgetMonth, Envelope } from '@prisma/client';
 import { ConflictException, NotFoundException } from '../../common/exceptions';
 import type { PrismaService } from '../../prisma/prisma.service';
+import type { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 import { EnvelopesService } from './envelopes.service';
 
 // ---------------------------------------------------------------------------
@@ -68,8 +69,21 @@ function createMockPrisma() {
 
 type MockPrisma = ReturnType<typeof createMockPrisma>;
 
-function createService(mock: MockPrisma): EnvelopesService {
-  return new EnvelopesService(mock as unknown as PrismaService);
+function createMockEngine() {
+  return {
+    recalculateMonthAtomically: jest
+      .fn()
+      .mockResolvedValue({ recalculatedFrom: '2026-08', warnings: [] }),
+  };
+}
+
+type MockEngine = ReturnType<typeof createMockEngine>;
+
+function createService(mock: MockPrisma, engine: MockEngine): EnvelopesService {
+  return new EnvelopesService(
+    mock as unknown as PrismaService,
+    engine as unknown as CalculationEngineService,
+  );
 }
 
 /** Default happy-path stubs for create(): one open month, no duplicates, no envelopes. */
@@ -86,11 +100,13 @@ function stubCreateDefaults(mock: MockPrisma, month: BudgetMonth = makeMonth()):
 
 describe('EnvelopesService', () => {
   let mock: MockPrisma;
+  let engine: MockEngine;
   let service: EnvelopesService;
 
   beforeEach(() => {
     mock = createMockPrisma();
-    service = createService(mock);
+    engine = createMockEngine();
+    service = createService(mock, engine);
   });
 
   // -------------------------------------------------------------------------
@@ -201,6 +217,26 @@ describe('EnvelopesService', () => {
       });
       expect(result.envelope.balanceMinor).toBe(150_050);
       expect(mock.$transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('OP-10: initial balance recalculates the month in the same transaction', async () => {
+      stubCreateDefaults(mock);
+
+      await service.create({ name: 'Еда', initialBalance: '1500.00' });
+
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledTimes(1);
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', mock);
+      const [createOrder] = mock.operation.create.mock.invocationCallOrder;
+      const [recalcOrder] = engine.recalculateMonthAtomically.mock.invocationCallOrder;
+      expect(recalcOrder).toBeGreaterThan(createOrder as number);
+    });
+
+    it('does not recalculate when no initial balance is given', async () => {
+      stubCreateDefaults(mock);
+
+      await service.create({ name: 'Еда' });
+
+      expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
     });
 
     it('uses sequenceNo 1 for the first operation of the month', async () => {

@@ -1,3 +1,4 @@
+import type { EnvelopeDto } from '../fixtures/api';
 import { expect, test } from '../fixtures/test';
 import { getE2eEnv } from '../support/env.mjs';
 
@@ -39,14 +40,22 @@ test.describe('app shell', { tag: '@smoke' }, () => {
 
     // The envelope really exists in the backend, not just in client state.
     const res = await page.request.get(`${getE2eEnv().apiUrl}/api/v1/envelopes`);
-    const body = (await res.json()) as { envelopes: { name: string }[] };
+    const body = (await res.json()) as { envelopes: { name: string; balanceMinor: number }[] };
     expect(body.envelopes.map((e) => e.name)).toContain('Продукты');
+    // ENV-03 / OP-10: the initial balance typed in the form is persisted as the balance.
+    expect(body.envelopes.find((e) => e.name === 'Продукты')?.balanceMinor).toBe(150_000);
   });
 
   test('shows an envelope created via the API', async ({ page, api }) => {
     await api.createMonth('2026-01');
-    await api.createEnvelope('Транспорт', '200.00');
+    const { envelope } = await api.createEnvelope('Транспорт', '200.00');
+    expect(envelope.balanceMinor).toBe(20_000);
     await page.goto('/envelopes');
     await expect(page.getByText('Транспорт')).toBeVisible();
+
+    // ENV-03 / OP-10 / FIN-14: the balance survives a re-read (derived data was recalculated).
+    const res = await page.request.get(`${getE2eEnv().apiUrl}/api/v1/envelopes`);
+    const body = (await res.json()) as { envelopes: EnvelopeDto[] };
+    expect(body.envelopes.find((e) => e.id === envelope.id)?.balanceMinor).toBe(20_000);
   });
 });

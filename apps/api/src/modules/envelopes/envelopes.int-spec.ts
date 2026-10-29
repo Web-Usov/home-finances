@@ -1,5 +1,6 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { createTestPrisma, resetDb } from '../../../test/db';
+import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 import { EnvelopesService } from './envelopes.service';
 
 /**
@@ -13,7 +14,7 @@ describe('EnvelopesService.create initial balance (integration)', () => {
   beforeAll(async () => {
     prisma = createTestPrisma();
     await prisma.$connect();
-    service = new EnvelopesService(prisma);
+    service = new EnvelopesService(prisma, new CalculationEngineService(prisma));
   });
 
   beforeEach(async () => {
