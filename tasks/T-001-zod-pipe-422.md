@@ -1,7 +1,7 @@
 ---
 id: T-001
 title: ZodValidationPipe returns 422 and drop legacy global ValidationPipe
-status: todo
+status: in_progress
 epic: E-00
 depends: []
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-17]
 acceptance: []
 area: api
 size: S
-branch: null
+branch: task/T-001-zod-pipe-422
 pr: null
 ---
 
