@@ -40,12 +40,33 @@ in-progress noise). `.env` files are git-ignored and never committed. Continue i
 Claims are therefore visible on `master` only after merge; the orchestrator avoids double assignment by giving each
 session an explicit task id (and by running `gh pr list` / `git branch -r` before picking).
 
+If any step fails after the worktree was created (install, env, commit), the script rolls back: it removes the worktree
+and the branch and says so, so a retry starts clean. `--keep` leaves them in place for debugging.
+
+### Filing new work: `--new`
+
+Follow-up work discovered during implementation or review is filed as its own task, not smuggled into the current PR:
+
+```bash
+pnpm task:start --new "Short imperative title" --epic E-00 --area infra --size S
+```
+
+It creates `tasks/T-NNN-slug.md` from `tasks/_template.md` (next free id: highest id on `origin/master` or in any local/remote
+task branch, plus one; the epic must exist on `origin/master`), then claims it exactly like a normal task, in a worktree of
+its own, with the task file as the first commit (`chore(tasks): add and start T-NNN [T-NNN]`). Fill in Goal / Context / DoD there.
+Alternatives: add the task as `status: todo` in the current PR (the task file is part of the diff), or, if it needs a planner
+decision, propose it in `## Result` as before. Do not start a second task inside the current session unless it blocks the
+current one.
+
 Cleanup after the PR is merged (from the main checkout):
 
 ```bash
 pnpm task:clean T-xxx            # removes worktree + local branch; refuses unless `gh pr view` says MERGED
 pnpm task:clean T-xxx --remote   # also deletes origin/task/T-xxx-slug (skip if GitHub deletes merged branches)
 ```
+
+`task:clean` also refuses to delete the local branch when it would lose work: the branch HEAD must equal the PR's
+`headRefOid` or be fully contained in `origin/master`; otherwise it lists the commits that were never pushed.
 
 Manual equivalent (if the scripts are unavailable): `git worktree add ../finance-wt/t-xxx-slug -b task/T-xxx-slug origin/master`,
 copy the env files, `pnpm install --frozen-lockfile`, `node scripts/tasks.mjs set T-xxx in_progress --branch task/T-xxx-slug`,
@@ -161,8 +182,9 @@ does not allow approving your own PR. So:
   made only by the `planner` in a dedicated docs PR that the human reviews. The planner registers the question in
   `docs/spec/99-open-questions.md` as `Q-NN`; the blocked task then lists it in `blocked_by` and is unblocked when the question
   is resolved.
-- New work discovered while implementing: propose it in `## Result` (follow-up task title + rationale); the planner
-  creates the task.
+- New work discovered while implementing or reviewing: file it with `pnpm task:start --new "<title>" --epic E-xx --area <a>
+  --size <S|M>` (section 2), or add a `todo` task file to the current PR; mention it in `## Result`. Tasks that need spec/ADR/epic
+  changes still go through the planner.
 
 ## 8. Milestones
 

@@ -33,8 +33,8 @@ so never put DB access in a `*.spec.ts` file.
 From the repo root:
 
 ```bash
-pnpm verify          # full gate: typecheck → lint → test:unit → spec:check → tasks:check → test:int → build → api:contract
-pnpm verify:quick    # typecheck → lint → test:unit → spec:check → tasks:check (this is the pre-commit hook)
+pnpm verify          # full gate: typecheck → lint → test:unit → test:scripts → spec:check → tasks:check → test:int → build → api:contract
+pnpm verify:quick    # typecheck → lint → test:unit → test:scripts → spec:check → tasks:check (this is the pre-commit hook)
 pnpm test:unit       # unit tests of all packages
 pnpm test:int        # integration tests (needs the DB container, see below)
 pnpm test            # unit + integration
@@ -49,6 +49,11 @@ pnpm --filter @family-budget/api test:cov      # unit tests with coverage
 pnpm --filter @family-budget/mobile test
 pnpm --filter @family-budget/api exec jest path/to/file.spec.ts -t "part of test name"
 ```
+
+`pnpm test:scripts` runs the tests of the repo tooling (`scripts/__tests__/*.test.mjs`, Node's built-in `node --test`, no
+dependencies) for `with-lock`, `task-start` and `task-clean`; it is a step of both `verify:quick` and `verify`. Add a
+`<script>.test.mjs` there when you change a script; keep decision logic in exported pure functions and spawn the script
+against a temp dir / throwaway git repo for the rest.
 
 `verify` runs steps one after another and stops at the first failure. The list of
 steps lives in `scripts/verify.mjs`; add new gates there.
@@ -251,8 +256,10 @@ every run; open a trace with `pnpm --filter @family-budget/e2e exec playwright s
 
 `pnpm e2e:smoke` and `pnpm e2e:full` run through `scripts/with-lock.mjs`: a lockfile `<os.tmpdir()>/family-budget-e2e.lock`
 (`{ pid, cwd, started }`) serializes e2e runs of all agents and worktrees on the machine. If another run holds it, the
-command prints who holds it every 30s and waits (up to 90 min, `WITH_LOCK_TIMEOUT_MIN`); a lock whose pid is dead is stale and
-is taken over automatically; Ctrl-C releases it. Do not delete the lockfile of a live run.
+command prints who holds it every 30s and waits (up to 90 min, `WITH_LOCK_TIMEOUT_MIN`); a lock whose pid is dead, or that is
+empty/unparsable and older than 10s, is stale and is taken over automatically (atomic rename, so concurrent waiters cannot both
+win). The command is started without a shell, in its own process group; SIGINT/SIGTERM are forwarded to that whole group and the
+lock is released only after the child has exited (exit code 128+signal). Do not delete the lockfile of a live run.
 
 An e2e run needs **~2 GB of free RAM** (API + Expo web export + Chromium; the script warns when less is free), and the first web
 export on a machine can take several minutes (Metro cold cache; later runs are faster but `--clear` is always used). Do not start

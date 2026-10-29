@@ -39,8 +39,8 @@ docker-compose.yml   PostgreSQL 16 + one-shot `migrate` + API
 ```bash
 pnpm install
 pnpm dev                 # api + mobile in parallel (turbo)
-pnpm verify              # merge gate: typecheck, lint, test:unit, spec:check, tasks:check, test:int, build, api:contract
-pnpm verify:quick        # typecheck, lint, test:unit, spec:check, tasks:check (pre-commit hook)
+pnpm verify              # merge gate: typecheck, lint, test:unit, test:scripts, spec:check, tasks:check, test:int, build, api:contract
+pnpm verify:quick        # typecheck, lint, test:unit, test:scripts, spec:check, tasks:check (pre-commit hook)
 pnpm build / typecheck / lint
 pnpm test:unit           # no DB;  pnpm test:int needs the test DB (docs/testing.md)
 pnpm e2e:smoke           # Playwright @smoke (CI job `e2e`);  pnpm e2e:full = all specs (machine-wide lock, ~2 GB RAM)
@@ -48,7 +48,9 @@ pnpm api:generate        # regenerate apps/api/openapi.json + Orval client;  pnp
 pnpm smoke:compose       # docker compose up/restart/persistence check (touching Docker files)
 pnpm spec:check          # spec rule IDs: uniqueness, dangling references, coverage report
 pnpm tasks:check | tasks:board | tasks:next | tasks:set   # task system (scripts/tasks.mjs)
+pnpm test:scripts        # node --test for scripts/__tests__ (part of verify)
 pnpm task:start T-xxx    # claim: worktree + branch + env + install + claim commit;  pnpm task:clean T-xxx after the merge
+pnpm task:start --new "<title>" --epic E-xx --area <a> --size <S|M>   # file follow-up work as a new task and claim it
 pnpm db:up               # start PostgreSQL (docker compose)
 pnpm db:migrate          # prisma migrate dev
 pnpm db:seed             # seed AppSettings (RUB, ru-RU)
