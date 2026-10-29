@@ -1,7 +1,7 @@
 ---
 id: T-021
 title: Harden process scripts (with-lock, task-start, task-clean)
-status: in_progress
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: infra
 size: S
 branch: task/T-021-harden-process-scripts
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/6
 ---
 
 # T-021. Harden process scripts (with-lock, task-start, task-clean)

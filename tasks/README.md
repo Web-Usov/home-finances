@@ -2,9 +2,9 @@
 
 > Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`.
 
-Всего задач: 21 — todo: 17, in_progress: 1, review: 0, blocked: 0, done: 3.
+Всего задач: 21 — todo: 17, in_progress: 0, review: 0, blocked: 0, done: 4.
 
-## E-00. Технический долг и соответствие спеке — planned (3/7)
+## E-00. Технический долг и соответствие спеке — planned (4/7)
 
 Эпик: [E-00-tech-debt.md](../epics/E-00-tech-debt.md)
 
@@ -16,7 +16,7 @@
 | [T-018](T-018-process-v1-retro.md) | Process v1: apply pilot retro | done | infra | M | — | [PR](https://github.com/Web-Usov/home-finances/pull/5) |
 | [T-019](T-019-remove-class-validator-deps.md) | Remove unused class-validator and class-transformer dependencies | todo | api | S | — | — |
 | [T-020](T-020-spec-gaps-validation-error-month-not-found.md) | Spec gaps from pilot reviews (API-18 VALIDATION_ERROR, initial balance without a month) | todo | docs | S | — | — |
-| [T-021](T-021-harden-process-scripts.md) | Harden process scripts (with-lock, task-start, task-clean) | in_progress | infra | S | — | — |
+| [T-021](T-021-harden-process-scripts.md) | Harden process scripts (with-lock, task-start, task-clean) | done | infra | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/6) |
 
 ## E-01. Ядро API: месяцы и операции — planned (0/4)
 
