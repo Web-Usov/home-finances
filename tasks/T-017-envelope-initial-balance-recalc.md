@@ -53,13 +53,13 @@ Rules: ENV-03 (optional initial balance as a separate adjustment), OP-10 (non-ne
 
 **Root cause: hypothesis confirmed, no other cause found.** `EnvelopesService.create` inserted the `initial_balance`
 operation but never ran the cascade, so no `OperationResult` / `EnvelopeMonthSnapshot` existed and `list()` (which reads
-`EnvelopeMonthSnapshot.closing`) returned 0. Reproduced first with `envelopes.int-spec.ts` (red commit before the fix).
+`EnvelopeMonthSnapshot.closing`) returned 0. Reproduced first with `envelopes.initial-balance.int-spec.ts` (red commit before the fix).
 The engine itself was correct (replays `initial_balance` before the allocation, keeps it out of `adjustmentApplied`).
 
 Changes:
 - `EnvelopesService` injects `CalculationEngineService` (`EnvelopesModule` imports `CalculationEngineModule`) and calls
   `recalculateMonthAtomically(month.id, tx)` after inserting the operation, in the same transaction.
-- Tests: `envelopes.int-spec.ts` (balance in `list()`, snapshot, `adjustmentApplied` = 0 / `initial` set (FIN-14),
+- Tests: `envelopes.initial-balance.int-spec.ts` (balance in `list()`, snapshot, `adjustmentApplied` = 0 / `initial` set (FIN-14),
   carry into a later month (CALC-04)); unit `OP-10: initial balance recalculates the month in the same transaction`.
 - E2E: balance assertions restored in `e2e/smoke/app.e2e.ts` (UI-created envelope and `api.createEnvelope`), `pnpm e2e:smoke` green.
 
