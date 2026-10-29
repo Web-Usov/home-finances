@@ -4,7 +4,7 @@
     "node_modules",
     "dist",
     "test",
-    "**/*.spec.ts"
+    "**/*.spec.ts", "**/*.int-spec.ts"
   ],
   "compilerOptions": {
     "rootDir": "./src"
