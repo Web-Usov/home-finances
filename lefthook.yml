@@ -1,0 +1,10 @@
+# Git hooks (installed by `pnpm install` via the prepare script).
+pre-commit:
+  commands:
+    verify-quick:
+      run: pnpm verify:quick
+
+commit-msg:
+  commands:
+    conventional-commit:
+      run: node scripts/check-commit-msg.mjs {1}

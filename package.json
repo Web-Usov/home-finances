@@ -18,14 +18,18 @@
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:int": "turbo run test:int",
+    "verify": "node scripts/verify.mjs",
+    "verify:quick": "node scripts/verify.mjs quick",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:up": "docker compose up -d postgres",
     "db:migrate": "pnpm --filter api prisma migrate dev",
     "db:seed": "pnpm --filter api prisma db seed",
     "db:studio": "pnpm --filter api prisma studio",
-    "db:reset": "pnpm --filter api prisma migrate reset --force"
+    "db:reset": "pnpm --filter api prisma migrate reset --force",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
+    "lefthook": "^1.10.0",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
   }
