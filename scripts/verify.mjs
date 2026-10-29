@@ -10,6 +10,8 @@ const quick = [
   { name: 'typecheck', cmd: 'pnpm typecheck' },
   { name: 'lint', cmd: 'pnpm lint' },
   { name: 'test:unit', cmd: 'pnpm test:unit' },
+  { name: 'spec:check', cmd: 'pnpm spec:check' },
+  { name: 'tasks:check', cmd: 'pnpm tasks:check' },
 ];
 
 const full = [
@@ -18,7 +20,7 @@ const full = [
   { name: 'build', cmd: 'pnpm build' },
   { name: 'api:contract', cmd: 'pnpm api:contract' },
   // e2e:smoke is a separate CI job (pnpm e2e:smoke), not part of verify.
-  // Further gates (tasks:check) are appended here.
+  // Further gates are appended here.
 ];
 
 const mode = process.argv[2] ?? 'full';

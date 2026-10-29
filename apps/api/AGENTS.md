@@ -8,7 +8,7 @@ Global rules (money, periods, types, language, spec references) are in the root 
 
 | Path | Responsibility | State |
 | --- | --- | --- |
-| `main.ts` | Fastify bootstrap, prefix `api`, URI versioning (default `v1`), Swagger at `/api` + `/api/swagger.json`, `DomainExceptionFilter`, open CORS | done |
+| `main.ts` | Fastify bootstrap, prefix `api`, URI versioning (default `v1`), Swagger UI at `/api`, JSON at `/api/swagger.json` (`src/openapi.ts` dumps `openapi.json` without a DB), `DomainExceptionFilter`, open CORS | done |
 | `common/` | `ZodValidationPipe`, domain exceptions (422/409/404), `DomainExceptionFilter`, `zodOpenApiSchema` | done |
 | `prisma/` | `PrismaService` (global client) | done |
 | `health/` | `GET /api/v1/health` | done |
@@ -35,13 +35,15 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
 - User-facing error messages are Russian and must match the spec `MSG-*` texts where one exists.
 - Prisma: UUID primary keys (`@id @default(uuid()) @db.Uuid`), money columns `Int` mapped to `*_minor`. Change the schema only
   together with a migration (`pnpm db:migrate`).
+- After controller/DTO changes run `pnpm api:generate` and commit `apps/api/openapi.json` and the regenerated client.
 - Request schemas in Swagger come from `zodOpenApiSchema(schema)` — never hand-written.
 - Cite spec rules by ID in comments (`// OP-08`), not by line number.
 
 ## Tests
 
 - Unit: `*.service.spec.ts` / `*.spec.ts` next to the code, Prisma mocked (`$transaction` hands the same mock as `tx`).
-- Integration: `*.integration.spec.ts`, real PostgreSQL (`pnpm db:up` first). Test-DB isolation is being reworked; see `docs/testing.md`.
+- Integration: `*.int-spec.ts` (`jest.int.config.js`), real PostgreSQL test DB `family_budget_test` with a schema per jest worker
+  (`pnpm db:up`, `apps/api/.env.test`); factories in `test/db.ts`. Details: `docs/testing.md`.
 - Engine formulas must be covered by DB-free unit tests (`calculation-engine.service.spec.ts`).
 
 ## Commands
@@ -51,7 +53,10 @@ cd apps/api
 pnpm dev                 # nest start --watch
 pnpm build               # nest build
 pnpm typecheck
-pnpm test                # jest
+pnpm test:unit           # jest, no DB
+pnpm test:int            # jest -c jest.int.config.js, needs test DB
+pnpm lint                # eslint (flat config)
+pnpm openapi             # write openapi.json (use root `pnpm api:generate`)
 pnpm start:prod          # node dist/main
 npx prisma migrate dev   # create + apply migration
 npx prisma generate      # after schema changes

@@ -16,7 +16,7 @@ src/
   providers/                 QueryProvider (staleTime 5 min, no refetch on focus), Providers wrapper
   stores/                    Zustand: monthStore (current period), envelopeStore (selected id), uiStore (sidebar, active tab)
   types/env.d.ts             process.env typings
-orval.config.js              client generation from http://localhost:3000/api/swagger.json
+orval.config.js              client generation from ../api/openapi.json (committed, no server needed)
 tailwind.config.js, global.css, metro.config.js, nativewind-env.d.ts   NativeWind setup
 ```
 
@@ -28,8 +28,8 @@ Check `tasks/` before building a screen.
 - Styling: `className` only; theme colors (`primary-*`, `success`, `warning`, `danger`, `info`) live in `tailwind.config.js`.
 - Server state: generated React Query hooks from `src/api/**`. Local UI state only: Zustand. Do not mirror server data in stores.
 - Forms: React Hook Form + `@hookform/resolvers/zod` with schemas from `@family-budget/types`; never redefine schemas locally.
-- API base URL: `process.env.EXPO_PUBLIC_API_URL` (default `http://localhost:3000/api`); never hardcode.
-- Never edit `src/api/**` (except `axios-instance.ts`) by hand — regenerate with `pnpm orval` while the API runs.
+- API base URL: `process.env.EXPO_PUBLIC_API_URL` = API **origin** without `/api` (default `http://localhost:3000`; generated paths already start with `/api/v1`); never hardcode.
+- Never edit `src/api/**` (except `axios-instance.ts`) by hand — run `pnpm api:generate` from the repo root after API changes (`pnpm api:contract` fails on drift).
 - Money: display with `formatMoneyMinor` and ru-RU formatting; never show negative balances (NFR-24); send amounts as
   decimal strings. Never compute balances client-side — the server returns derived values.
 - Mutations that depend on a month send the month `version`; on 409 `VERSION_CONFLICT` refetch and ask the user to retry.
@@ -38,7 +38,9 @@ Check `tasks/` before building a screen.
 
 ## Tests
 
-No test runner is set up yet (being introduced: jest-expo + React Native Testing Library). Until then rely on `pnpm typecheck`.
+jest-expo + React Native Testing Library; component tests are `src/**/*.test.tsx` next to the component (example: `EnvelopeCard.test.tsx`),
+helpers in `test/` (`renderWithProviders`). Mock the network at `src/api/axios-instance`. UI tasks also add Playwright specs
+under `e2e/` and run `pnpm e2e:smoke`. Details: `docs/testing.md`.
 
 ## Commands
 
@@ -48,7 +50,8 @@ pnpm dev                 # expo start
 pnpm dev:web             # expo start --web
 pnpm build:web           # expo export --platform web
 pnpm typecheck
-pnpm orval               # regenerate API client (API must be running on :3000)
+pnpm test                # jest-expo
+pnpm orval               # Orval only, from apps/api/openapi.json (prefer root `pnpm api:generate`)
 ```
 
 ## Anti-patterns

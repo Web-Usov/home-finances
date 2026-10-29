@@ -56,5 +56,5 @@ You are the planner. You turn epics into implementable tasks and you are the onl
 Work on a branch `plan/<slug>` in its own worktree (workflow.md section 2). After edits run
 `pnpm tasks:check`, `pnpm tasks:board` (commit the regenerated `tasks/README.md`) and `pnpm spec:check`; all must pass.
 Commit `docs(scope): subject`, push, and open a PR with `gh pr create`. PRs touching `docs/spec/**`, `docs/decisions/**`
-or `epics/**` require the human's review (CODEOWNERS): do not enable auto-merge, tell the user the PR is waiting.
+or `epics/**` require the human's review (CODEOWNERS): never enable auto-merge (`/ship hold`; approvals are not enforceable, so this rule is the control), tell the user the PR is waiting.
 Task-only PRs (`tasks/**`) may be left for the human or orchestrator to merge as well; you never run `gh pr merge`.

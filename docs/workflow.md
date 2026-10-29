@@ -135,8 +135,12 @@ does not allow approving your own PR. So:
   `CHANGES REQUESTED` the reviewer (or the orchestrator) runs `gh pr merge <n> --disable-auto`; the implementer fixes the findings with
   new commits, runs `pnpm verify`, pushes, and `/review` runs again. There is a race if CI finishes before the review
   does; for risky changes the orchestrator holds back auto-merge until the verdict is in (`/ship hold`).
-- PRs touching `docs/spec/**`, `docs/decisions/**` or `epics/**` require the human's approval (CODEOWNERS @Web-Usov).
-  Those PRs are never auto-merged by agents: the human merges them.
+- **Branch protection reality:** required approving reviews = 0, because agents and the owner share the GitHub account
+  `Web-Usov` and self-approval is impossible. CODEOWNERS (`docs/spec/**`, `docs/decisions/**`, `epics/**`) is therefore
+  advisory only. Human review of those paths is enforced by process: a PR whose diff touches them MUST NOT get
+  auto-merge. The implementer/planner opens it with `/ship hold` (or `gh pr create` without `gh pr merge --auto`) and
+  the human merges. Check with `git diff origin/master --name-only | grep -E '^(docs/spec|docs/decisions|epics)/'`.
+  Required status checks stay `verify`, `contract`, `e2e`.
 
 ## 7. Blocked, ambiguity and spec changes
 

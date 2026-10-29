@@ -65,6 +65,7 @@ Read `AGENTS.md` (hard invariants) and `docs/workflow.md` (full lifecycle) befor
   set the task `blocked`, put a `Q-proposal` (question, options, recommendation) into the Handoff log, run
   `/handoff`, and tell the user. The planner handles spec changes.
 - Do not hand-edit generated code (`apps/mobile/src/api`); use `pnpm api:generate`.
+- Never enable auto-merge on a PR whose diff touches `docs/spec/**`, `docs/decisions/**` or `epics/**` (human review).
 - Never force-push, never push to `master`, never merge manually. The only allowed merge command is
   `gh pr merge --squash --auto` (enables auto-merge after CI) and `gh pr merge --disable-auto`.
 - Use `apps/*/AGENTS.md` for package-specific guidance. Tasks and docs you write are English.

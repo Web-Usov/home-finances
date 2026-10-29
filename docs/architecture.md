@@ -120,8 +120,9 @@ Derived tables may be wiped and rebuilt from source tables at any time.
 
 - **Routing:** Expo Router, file-based. `app/_layout.tsx` wraps everything in `Providers`; `app/index.tsx` redirects to
   `/(tabs)/month`; `app/(tabs)/` holds the four tabs (month, history, analytics, envelopes).
-- **API access:** Orval generates React Query hooks and model types from `/api/swagger.json` into `src/api/` (ADR 0012);
-  requests go through `customAxiosInstance` with base URL `EXPO_PUBLIC_API_URL` (default `http://localhost:3000/api`).
+- **API access:** Orval generates React Query hooks and model types from the committed `apps/api/openapi.json` into `src/api/` (ADR 0012;
+  `pnpm api:generate`, drift checked by `pnpm api:contract`); requests go through `customAxiosInstance` with base URL
+  `EXPO_PUBLIC_API_URL` = API origin without `/api` (default `http://localhost:3000`).
 - **Server state:** TanStack Query (`QueryProvider`: 5 min `staleTime`, no refetch on window focus).
 - **Local UI state:** Zustand stores — `monthStore` (current period), `envelopeStore` (selected envelope), `uiStore`
   (sidebar, active tab).
@@ -137,4 +138,4 @@ Derived tables may be wiped and rebuilt from source tables at any time.
 | Contract | Zod in `packages/types` → Swagger → Orval client (ADR 0003, 0012) |
 | Consistency | one transaction per mutation incl. cascade; optimistic `version` (ADR 0004, 0005) |
 | Auth | none in MVP (ADR 0002) |
-| Deployment | `docker-compose.yml`: PostgreSQL 16 (volume `postgres_data`) + API image |
+| Deployment | `docker-compose.yml`: PostgreSQL 16 (volume `postgres_data`), one-shot `migrate` service (`prisma migrate deploy`), API image (host `postgres`, healthcheck `/api/v1/health`); verified by `pnpm smoke:compose` |

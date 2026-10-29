@@ -28,9 +28,10 @@ packages/types/      Zod schemas, TS entities, ApiErrorCode, money helpers (sing
 packages/tsconfig/   shared tsconfig presets
 packages/eslint-config/  shared lint config
 docs/                spec, decisions (ADR), architecture, archive
-scripts/             repo tooling (spec-check.mjs)
-tasks/, epics/       work items (task system, being introduced)
-docker-compose.yml   PostgreSQL 16 + API
+e2e/                 Playwright workspace (@family-budget/e2e)
+scripts/             repo tooling (verify, api-contract, spec-check, tasks, smoke-compose)
+tasks/, epics/       work items: detailed tasks (EN), epics (RU); tasks/README.md is the generated board
+docker-compose.yml   PostgreSQL 16 + one-shot `migrate` + API
 ```
 
 ## Commands
@@ -38,20 +39,24 @@ docker-compose.yml   PostgreSQL 16 + API
 ```bash
 pnpm install
 pnpm dev                 # api + mobile in parallel (turbo)
-pnpm build
-pnpm typecheck
-pnpm lint
-pnpm test
+pnpm verify              # merge gate: typecheck, lint, test:unit, spec:check, tasks:check, test:int, build, api:contract
+pnpm verify:quick        # typecheck, lint, test:unit, spec:check, tasks:check (pre-commit hook)
+pnpm build / typecheck / lint
+pnpm test:unit           # no DB;  pnpm test:int needs the test DB (docs/testing.md)
+pnpm e2e:smoke           # Playwright @smoke (CI job `e2e`);  pnpm e2e:full = all specs
+pnpm api:generate        # regenerate apps/api/openapi.json + Orval client;  pnpm api:contract = fail on drift
+pnpm smoke:compose       # docker compose up/restart/persistence check (touching Docker files)
+pnpm spec:check          # spec rule IDs: uniqueness, dangling references, coverage report
+pnpm tasks:check | tasks:board | tasks:next | tasks:set   # task system (scripts/tasks.mjs)
 pnpm db:up               # start PostgreSQL (docker compose)
 pnpm db:migrate          # prisma migrate dev
 pnpm db:seed             # seed AppSettings (RUB, ru-RU)
 pnpm db:studio
 pnpm db:reset            # destructive: prisma migrate reset --force
-node scripts/spec-check.mjs   # spec rule IDs: uniqueness, dangling references, test coverage report
 ```
 
-`pnpm verify` is the merge gate (typecheck, lint, tests, build, API contract, tasks check). It is being introduced;
-until it lands, run `typecheck`, `lint` and `test` before declaring work done.
+`pnpm verify` is the merge gate and what CI job `verify` runs (jobs `contract` and `e2e` are the other required checks).
+Run it before declaring work done. Test details: `docs/testing.md`.
 
 ## Where to find things
 
@@ -62,7 +67,7 @@ until it lands, run `typecheck`, `lint` and `test` before declaring work done.
 | Modules, request/recalculation flow, error model | `docs/architecture.md` |
 | Testing strategy and commands | `docs/testing.md` |
 | Agent workflow (one task = one branch = one PR) | `docs/workflow.md` |
-| Work items | `tasks/` (detailed, EN), `epics/` (RU) — being introduced |
+| Work items | `tasks/` (detailed, EN), `epics/` (RU); board in `tasks/README.md` |
 | DB schema | `apps/api/prisma/schema.prisma` |
 | Domain types / error codes | `packages/types/src/` |
 | Historical plans (do not follow) | `docs/archive/` |
@@ -75,8 +80,9 @@ One task = one session = one branch (`task/T-xxx-slug`) = one git worktree = one
 
 1. `/next` (`pnpm tasks:next`) picks a ready task; `/next T-xxx` creates the worktree and sets `in_progress`.
 2. Implement tests-first, cite rule IDs in test names, commit as `type(scope): subject [T-xxx]`.
-3. `/verify` (`pnpm verify`), then `/ship`: PR from the template, status `done` in the PR, `gh pr merge --squash --auto`.
-4. `/review <pr|T-xxx>` runs the read-only reviewer; verdict is posted as a PR comment (same GitHub account, no self-approval).
+3. `/verify` (`pnpm verify`), then `/ship`: PR from the template, status `done` in the PR, `gh pr merge --squash --auto`
+   (no auto-merge when the diff touches `docs/spec/**`, `docs/decisions/**` or `epics/**`: `/ship hold`, the human merges).
+4. `/review <pr|T-xxx>` runs the read-only reviewer; verdict is posted as a PR comment (same GitHub account, no self-approval; required approvals = 0).
 5. Never end a session with uncommitted changes: `/handoff` (WIP commit, push, Handoff log entry in the task file).
 6. Spec ambiguity: set the task `blocked`, add a Q-proposal to the Handoff log. Only the planner changes `docs/spec/**`,
    `docs/decisions/**`, `epics/**` (human review).
@@ -101,9 +107,11 @@ Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Comman
 ## Conventions
 
 - Commits: conventional style, `type(scope): message`, English.
-- API routes are prefixed `/api/v1` (URI versioning); Swagger JSON at `/api/swagger.json`; health at `/api/v1/health`.
+- API routes are prefixed `/api/v1` (URI versioning); Swagger UI at `/api`, JSON at `/api/swagger.json`; health at `/api/v1/health`.
 - Errors: throw domain exceptions (`ValidationException` 422, `ConflictException` 409, `NotFoundException` 404) with an
   `ApiErrorCode`; the global filter renders `{ error, message }`.
 - Database ids are UUID v4; month `version` is the optimistic-lock counter (ADR 0005).
-- Do not touch generated code in `apps/mobile/src/api` by hand — regenerate with `pnpm --filter @family-budget/mobile orval`
-  (needs the API running).
+- Do not touch generated code in `apps/mobile/src/api` by hand. After changing controllers/DTOs run `pnpm api:generate`
+  (writes the committed `apps/api/openapi.json`, then Orval; no running server needed); `pnpm api:contract` fails on drift.
+- `EXPO_PUBLIC_API_URL` is the API **origin** (`http://localhost:3000`), without `/api`; generated paths already start with `/api/v1`.
+- Integration tests use the separate DB `family_budget_test` (`apps/api/.env.test`), never the dev DB.
