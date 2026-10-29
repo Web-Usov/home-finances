@@ -16,7 +16,8 @@
  * `check` verifies: required fields and enums, unique ids, file name matches id, epic exists,
  * depends exist and are acyclic, blocked_by ids exist in docs/spec/99-open-questions.md,
  * spec/acceptance ids are defined in docs/spec (via scripts/spec-check.mjs `loadSpecIds`),
- * status done => pr set, status in_progress|review => branch set.
+ * status done => pr set, no unchecked `- [ ]` in "Definition of Done", non-empty "Result" (HTML comments ignored),
+ * status in_progress|review => branch set. `review` is a valid but optional status (the ship flow goes straight to done).
  * `check --gh` additionally warns when a task is done but its PR is not merged (needs `gh`; skipped silently otherwise).
  */
 import fs from 'node:fs';
@@ -53,8 +54,7 @@ function stripComment(line) {
   return i === -1 ? line : line.slice(0, i);
 }
 
-function readFrontmatter(file) {
-  const text = fs.readFileSync(file, 'utf8');
+export function parseFrontmatter(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!m) return { data: null, text };
   const data = {};
@@ -67,6 +67,16 @@ function readFrontmatter(file) {
   return { data, text };
 }
 
+function readFrontmatter(file) {
+  return parseFrontmatter(fs.readFileSync(file, 'utf8'));
+}
+
+/** Body of a `## <heading>` section with HTML comments removed (until the next `## ` or EOF). */
+function sectionBody(text, heading) {
+  const m = text.match(new RegExp(`^## ${heading}[^\\S\\r\\n]*\\r?\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm'));
+  return m ? m[1].replace(/<!--[\s\S]*?-->/g, '') : null;
+}
+
 function loadDir(dir, idRe, filter) {
   if (!fs.existsSync(dir)) return [];
   return fs
@@ -75,8 +85,8 @@ function loadDir(dir, idRe, filter) {
     .sort()
     .map((f) => {
       const file = path.join(dir, f);
-      const { data } = readFrontmatter(file);
-      return { file, name: f, rel: path.relative(root, file).split(path.sep).join('/'), data };
+      const { data, text } = readFrontmatter(file);
+      return { file, name: f, rel: path.relative(root, file).split(path.sep).join('/'), data, text };
     });
 }
 
@@ -141,6 +151,12 @@ function check({ gh }) {
       else if (!specIds.has(a)) err(t.rel, `unknown acceptance ${a}`);
     }
     if (d.status === 'done' && !d.pr) err(t.rel, 'status done requires pr');
+    if (d.status === 'done') {
+      const dod = sectionBody(t.text, 'Definition of Done');
+      const open = (dod ?? '').split(/\r?\n/).filter((l) => /^\s*- \[ \]/.test(l));
+      if (open.length) err(t.rel, `status done but ${open.length} unchecked Definition of Done item(s): ${open.map((l) => l.trim().slice(0, 50)).join(' | ')}`);
+      if (!(sectionBody(t.text, 'Result') ?? '').trim()) err(t.rel, 'status done requires a non-empty "## Result" section');
+    }
     if ((d.status === 'in_progress' || d.status === 'review') && !d.branch) err(t.rel, `status ${d.status} requires branch`);
     if (!('branch' in d)) err(t.rel, 'missing branch (use null)');
     if (!('pr' in d)) err(t.rel, 'missing pr (use null)');
@@ -293,11 +309,13 @@ function fail(msg) {
 
 // ---------- main ----------
 
-const [cmd, ...args] = process.argv.slice(2);
-switch (cmd) {
-  case 'check': check({ gh: args.includes('--gh') }); break;
-  case 'board': board({ checkOnly: args.includes('--check') }); break;
-  case 'next': next(); break;
-  case 'set': set(args); break;
-  default: fail('usage: node scripts/tasks.mjs <check [--gh]|board [--check]|next|set <T-id> <status> [--branch x] [--pr url]>');
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const [cmd, ...args] = process.argv.slice(2);
+  switch (cmd) {
+    case 'check': check({ gh: args.includes('--gh') }); break;
+    case 'board': board({ checkOnly: args.includes('--check') }); break;
+    case 'next': next(); break;
+    case 'set': set(args); break;
+    default: fail('usage: node scripts/tasks.mjs <check [--gh]|board [--check]|next|set <T-id> <status> [--branch x] [--pr url]>');
+  }
 }

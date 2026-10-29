@@ -19,8 +19,8 @@ pr: null              # PR URL once opened
 Format rules (checked by `node scripts/tasks.mjs check`):
 - File name: `T-NNN-slug.md`, id equals the file prefix, ids are numeric and sequential.
 - Frontmatter is flat: scalars, inline lists `[a, b]`, `null`. Keep one key per line.
-- status `in_progress`/`review` requires `branch`; `done` requires `pr`.
-- Change status with `node scripts/tasks.mjs set T-000 in_progress --branch task/T-000-slug`.
+- status `in_progress`/`review` requires `branch`; `done` requires `pr`, no unchecked `- [ ]` in Definition of Done and a non-empty Result (HTML comments ignored). `review` is optional.
+- `pnpm task:start T-000` claims the task (worktree, branch, in_progress); change status otherwise with `node scripts/tasks.mjs set T-000 <status>`.
 - A task is a vertical slice (API + tests, or one UI screen + tests + e2e) that fits one agent session.
 -->
 
@@ -42,6 +42,7 @@ Every item must be verifiable by a command or a named test.
 - [ ] `pnpm verify` is green
 - [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
 - [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
+- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
 - [ ] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
