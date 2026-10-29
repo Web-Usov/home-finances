@@ -16,7 +16,9 @@ const full = [
   ...quick,
   { name: 'test:int', cmd: 'pnpm test:int' },
   { name: 'build', cmd: 'pnpm build' },
-  // Further gates (api:contract, e2e:smoke, tasks:check) are appended here.
+  { name: 'api:contract', cmd: 'pnpm api:contract' },
+  // e2e:smoke is a separate CI job (pnpm e2e:smoke), not part of verify.
+  // Further gates (tasks:check) are appended here.
 ];
 
 const mode = process.argv[2] ?? 'full';

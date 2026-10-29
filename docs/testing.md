@@ -29,7 +29,7 @@ so never put DB access in a `*.spec.ts` file.
 From the repo root:
 
 ```bash
-pnpm verify          # full gate: typecheck → lint → test:unit → test:int → build
+pnpm verify          # full gate: typecheck → lint → test:unit → test:int → build → api:contract
 pnpm verify:quick    # typecheck → lint → test:unit (this is the pre-commit hook)
 pnpm test:unit       # unit tests of all packages
 pnpm test:int        # integration tests (needs the DB container, see below)
@@ -137,5 +137,90 @@ ID use a plain behaviour description.
 
 ## E2E (Playwright)
 
-_To be filled in together with the `e2e/` workspace (boot of API on the test DB and
-Expo web, `e2e:smoke` / `e2e:full`, traces and screenshots on failure)._
+Package `e2e/` (`@family-budget/e2e`), Chromium only. Specs are `e2e/**/*.e2e.ts`.
+
+```bash
+pnpm e2e:smoke   # tests tagged @smoke — required for every UI task and runs in CI job `e2e`
+pnpm e2e:full    # all specs — runs on master (workflow `e2e-full`) and before milestones
+pnpm --filter @family-budget/e2e report   # open the last HTML report
+```
+
+First run on a machine: `pnpm --filter @family-budget/e2e install:browsers`
+(`playwright install chromium`; on a bare Linux box use
+`pnpm --filter @family-budget/e2e exec playwright install --with-deps chromium`).
+Needs the test database from the section above (`family_budget_test`).
+
+### What runs
+
+`playwright.config.ts` starts two `webServer`s on free ports (so parallel runs and
+agents do not collide):
+
+1. **API** (`support/start-api.mjs`): the built `apps/api/dist` against a dedicated schema
+   `e2e_<random>` of the test DB — `DROP SCHEMA` → `prisma migrate deploy` → `node dist/main`.
+   The DB name must end with `_test` (same safety check as the integration tests); URL comes from
+   `TEST_DATABASE_URL` or `apps/api/.env.test`. The schema is dropped at the end of the run.
+   The root `e2e:*` scripts build the API first.
+2. **Web** (`support/start-web.mjs`): `expo export --platform web --clear` with
+   `EXPO_PUBLIC_API_URL` pointing to that API, served as a static SPA. `--clear` is needed:
+   Metro caches the inlined env value. The first export takes a few minutes.
+
+`EXPO_PUBLIC_API_URL` is the API **origin** without `/api` (generated client paths already start
+with `/api/v1`).
+
+### Projects and tags
+
+| Project | Selects | Screenshots | Script |
+|---------|---------|-------------|--------|
+| `smoke` | tests tagged `@smoke` | always (`screenshot: 'on'`) | `e2e:smoke` |
+| `full`  | every spec | on failure | `e2e:full` |
+
+Tag a test or a `describe` with `{ tag: '@smoke' }`. Keep smoke small (minutes, not tens of
+minutes): app boots, navigation, one real create-through-UI flow. Everything else goes untagged
+and is covered by `e2e:full`. The viewport is 390×844 because the bottom tab bar is hidden from
+768px up.
+
+### Fixtures
+
+`import { test, expect } from '../fixtures/test'` instead of `@playwright/test`. The auto-used
+`api` fixture (`fixtures/api.ts`) **resets the DB before every test** (truncates all tables of the
+e2e schema) and offers `api.createMonth(period, income?)` and `api.createEnvelope(name, initialBalance?)`
+over HTTP. Add helpers there for new entities. Arrange state through `api`, act and assert through
+the UI; check the backend directly when the test must prove persistence. Tests run with one worker
+because they share one schema.
+
+### Artifacts
+
+Reports land in `e2e/playwright-report/` (HTML, with screenshots for smoke) and
+`e2e/test-results/` (traces, kept on failure). CI uploads `playwright-report` as an artifact on
+every run; open a trace with `pnpm --filter @family-budget/e2e exec playwright show-trace <trace.zip>`.
+
+### Adding e2e specs to a UI task
+
+1. Add `e2e/<area>/<name>.e2e.ts` covering the new screen/flow (acceptance criteria of the task).
+2. Tag `@smoke` only if the flow is critical to the app starting and navigating; otherwise leave untagged.
+3. Select elements by role/visible text (UI is Russian); add `testID`/`accessibilityLabel` in the app if needed.
+4. Run `pnpm e2e:smoke` (and `pnpm e2e:full` if you added untagged specs) before opening the PR.
+
+`e2e:smoke` is deliberately **not** part of `pnpm verify` (slow, builds the web bundle); CI runs it as a separate job.
+
+## API contract
+
+`apps/api/openapi.json` is generated **without a running server** (`pnpm api:generate` boots the
+Nest app without connecting to the DB and writes the document) and is the input of Orval, which
+generates `apps/mobile/src/api/**`. Both are committed.
+
+```bash
+pnpm api:generate   # regenerate openapi.json and the mobile client — run after changing controllers/DTOs
+pnpm api:contract   # regenerate and fail if the working tree differs (part of `pnpm verify` and CI job `contract`)
+```
+
+Never edit `apps/mobile/src/api/**` by hand.
+
+## Compose smoke
+
+`pnpm smoke:compose` (`scripts/smoke-compose.sh`) builds the production API image and checks the
+real deployment path: `docker compose up --build` under an isolated project name and ports
+(`docker-compose.smoke.yml` override, no clash with the dev `family-budget-db` on 5432), waits for
+healthy, creates data over HTTP, restarts api + postgres, checks the data persisted and tears
+everything down (including the volume). Takes a few minutes; not part of `verify`. Run it when you
+touch `Dockerfile`, `docker-compose*.yml` or the API start-up.
