@@ -100,8 +100,10 @@ gh pr create --title "type(scope): subject [T-xxx]" --body-file <body built from
 node scripts/tasks.mjs set T-xxx done --pr <PR URL>      # see "Done status" below
 pnpm tasks:board && pnpm tasks:check
 git commit -am "docs(tasks): mark T-xxx done [T-xxx]" && git push
-gh pr merge --squash --auto
 ```
+
+`/ship` stops here and never merges or enables auto-merge. Next step: `/review <pr>` (section 6); the reviewer enables
+auto-merge after `VERDICT: LGTM`.
 
 PR title format equals the commit format, because the squash commit takes the PR title.
 
@@ -111,7 +113,7 @@ Branch protection forbids a post-merge commit on `master`, so `done` cannot be s
 
 - The implementer sets `review` + `branch` while working.
 - After `gh pr create` the PR URL exists; the **last commit of the PR** sets `status: done` and `pr: <url>`
-  (`node scripts/tasks.mjs set`), regenerates the board, and only then auto-merge is enabled.
+  (`node scripts/tasks.mjs set`), regenerates the board, and only then the PR goes to review. Auto-merge is enabled by the reviewer after LGTM.
 - Squash-merge therefore lands the code and the `done` status atomically. `pnpm tasks:check --gh` (run by the
   orchestrator on `master` periodically) warns if a task is `done` but its PR is not merged — that flags PRs closed
   without merge; the fix is a new task-status PR.
@@ -131,15 +133,15 @@ does not allow approving your own PR. So:
   account differs; an error is expected otherwise).
 - Branch protection must NOT require an approving review for agent PRs (it can't be satisfied); the CI checks are the
   hard gate, the reviewer verdict is a process gate enforced by the orchestrator/human.
-- Auto-merge is enabled at the end of `/ship` and waits for CI. Run `/review` while CI runs. On
-  `CHANGES REQUESTED` the reviewer (or the orchestrator) runs `gh pr merge <n> --disable-auto`; the implementer fixes the findings with
-  new commits, runs `pnpm verify`, pushes, and `/review` runs again. There is a race if CI finishes before the review
-  does; for risky changes the orchestrator holds back auto-merge until the verdict is in (`/ship hold`).
+- **The review gates the merge.** `/ship` never enables auto-merge, so a PR cannot land before the verdict. After `/ship`
+  run `/review <pr>`. On `VERDICT: LGTM`, if the diff touches none of `docs/spec/**`, `docs/decisions/**`, `epics/**`,
+  the reviewer runs `gh pr merge <n> --squash --auto` (GitHub merges as soon as `verify`, `contract`, `e2e` are green).
+  On `CHANGES REQUESTED` the reviewer only posts the comment (as a safety step it may run `gh pr merge <n> --disable-auto`);
+  the implementer fixes the findings with new commits, runs `pnpm verify`, pushes, and `/review` runs again.
 - **Branch protection reality:** required approving reviews = 0, because agents and the owner share the GitHub account
   `Web-Usov` and self-approval is impossible. CODEOWNERS (`docs/spec/**`, `docs/decisions/**`, `epics/**`) is therefore
   advisory only. Human review of those paths is enforced by process: a PR whose diff touches them MUST NOT get
-  auto-merge. The implementer/planner opens it with `/ship hold` (or `gh pr create` without `gh pr merge --auto`) and
-  the human merges. Check with `git diff origin/master --name-only | grep -E '^(docs/spec|docs/decisions|epics)/'`.
+  auto-merge: the reviewer posts LGTM, states that the PR waits for the human, and the human merges. Check with `git diff origin/master --name-only | grep -E '^(docs/spec|docs/decisions|epics)/'`.
   Required status checks stay `verify`, `contract`, `e2e`.
 
 ## 7. Blocked, ambiguity and spec changes
@@ -185,7 +187,7 @@ planner PR; only the human sets `accepted` (`accepted: YYYY-MM-DD`). Findings fr
 | Overview | `/status`, `/milestone E-xx` |
 
 Agent permissions (enforced by `.opencode/agents/*.md`): the implementer may edit everything except
-`docs/spec/**`, `docs/decisions/**`, `epics/**`; force pushes are denied; `gh pr merge` is allowed only as
-`--squash --auto`. The reviewer cannot edit files. The planner edits only docs/tasks/epics and never merges. The QA agent edits only `e2e/**`.
+`docs/spec/**`, `docs/decisions/**`, `epics/**`; force pushes are denied; every `gh pr merge` is denied. The reviewer cannot edit files and is the only agent allowed
+`gh pr merge <n> --squash --auto` / `--disable-auto`. The planner edits only docs/tasks/epics and never merges. The QA agent edits only `e2e/**` and never merges.
 Shell permissions are best-effort pattern matches, not a security sandbox: agents must follow these rules even where a
 command would technically be allowed.

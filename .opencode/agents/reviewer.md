@@ -48,7 +48,10 @@ permissions:
     resource: "gh pr comment*"
     effect: allow
   - action: shell
-    resource: "gh pr merge --disable-auto*"
+    resource: "gh pr merge * --squash --auto"
+    effect: allow
+  - action: shell
+    resource: "gh pr merge * --disable-auto"
     effect: allow
   - action: shell
     resource: "gh run list*"
@@ -129,5 +132,15 @@ Findings:
 Checks: scope ok/fail, DoD ok/fail, tests ok/fail, invariants ok/fail, process ok/fail, evidence ok/fail
 ```
 
-Blockers/majors => `CHANGES REQUESTED`; also run `gh pr merge <n> --disable-auto` so auto-merge does not land it.
-Only minors => `LGTM` with the notes. Return the same text as your final answer.
+Blockers/majors => `CHANGES REQUESTED`: post the comment; do not enable auto-merge. As a safety step run
+`gh pr merge <n> --disable-auto` in case auto-merge was turned on by someone else.
+
+Only minors => `LGTM` with the notes. Then decide about merging (you are the only agent allowed to):
+
+1. List the changed files: `gh pr diff <n> --name-only`.
+2. If none is under `docs/spec/`, `docs/decisions/` or `epics/` and the verdict is LGTM: run
+   `gh pr merge <n> --squash --auto` (GitHub merges once the required checks `verify`, `contract`, `e2e` are green) and
+   say so in the comment/final answer.
+3. If any file is under those paths: do NOT enable auto-merge. State in the comment that the PR waits for the human to merge.
+
+Return the same text as your final answer, plus the merge decision.

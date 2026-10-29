@@ -80,9 +80,9 @@ One task = one session = one branch (`task/T-xxx-slug`) = one git worktree = one
 
 1. `/next` (`pnpm tasks:next`) picks a ready task; `/next T-xxx` creates the worktree and sets `in_progress`.
 2. Implement tests-first, cite rule IDs in test names, commit as `type(scope): subject [T-xxx]`.
-3. `/verify` (`pnpm verify`), then `/ship`: PR from the template, status `done` in the PR, `gh pr merge --squash --auto`
-   (no auto-merge when the diff touches `docs/spec/**`, `docs/decisions/**` or `epics/**`: `/ship hold`, the human merges).
-4. `/review <pr|T-xxx>` runs the read-only reviewer; verdict is posted as a PR comment (same GitHub account, no self-approval; required approvals = 0).
+3. `/verify` (`pnpm verify`), then `/ship`: PR from the template, status `done` in the PR; `/ship` never merges.
+4. `/review <pr|T-xxx>` runs the reviewer; verdict is a PR comment (same GitHub account, no self-approval; required approvals = 0).
+   On LGTM only the reviewer enables `gh pr merge --squash --auto` (not for spec/ADR/epics PRs: the human merges).
 5. Never end a session with uncommitted changes: `/handoff` (WIP commit, push, Handoff log entry in the task file).
 6. Spec ambiguity: set the task `blocked`, add a Q-proposal to the Handoff log. Only the planner changes `docs/spec/**`,
    `docs/decisions/**`, `epics/**` (human review).
