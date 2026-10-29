@@ -1,7 +1,7 @@
 ---
 id: T-001
 title: ZodValidationPipe returns 422 and drop legacy global ValidationPipe
-status: in_progress
+status: review
 epic: E-00
 depends: []
 blocked_by: []
@@ -29,13 +29,13 @@ Validation errors from `ZodValidationPipe` are HTTP 422 per API-17, in the same 
 
 ## Definition of Done
 
-- [ ] `ZodValidationPipe` throws the domain `ValidationException` (422) with a message listing field paths; response shape is `{ error, message }`
-- [ ] `app.useGlobalPipes(new ValidationPipe(...))` and the `class-validator`/`class-transformer` imports are removed from `main.ts` (`grep -n ValidationPipe apps/api/src/main.ts` finds nothing)
-- [ ] Unit test `it('API-17: invalid body yields 422 ValidationException')` for the pipe
-- [ ] Integration test `it('API-17: POST /envelopes with empty name returns 422')`
-- [ ] `docs/architecture.md` section 3 "Gap" bullets about 400/global pipe are removed or updated
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `ZodValidationPipe` throws the domain `ValidationException` (422) with a message listing field paths; response shape is `{ error, message }`
+- [x] `app.useGlobalPipes(new ValidationPipe(...))` and the `class-validator`/`class-transformer` imports are removed from `main.ts` (`grep -n ValidationPipe apps/api/src/main.ts` finds nothing)
+- [x] Unit test `it('API-17: invalid body yields 422 ValidationException')` for the pipe
+- [x] Integration test `it('API-17: POST /envelopes with empty name returns 422')`
+- [x] `docs/architecture.md` section 3 "Gap" bullets about 400/global pipe are removed or updated
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -48,4 +48,10 @@ Validation errors from `ZodValidationPipe` are HTTP 422 per API-17, in the same 
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+- `ZodValidationPipe` now throws `ValidationException('VALIDATION_ERROR', "<path>: <msg>; ...")` -> 422 `{ error, message }`.
+  Added `VALIDATION_ERROR` to `ApiErrorCode` (`packages/types`); it was not listed in API-18, so the planner may want to add it to the spec.
+- Deviation: the legacy global `ValidationPipe` lived in `apps/api/src/app.setup.ts` (`configureApp`), not `main.ts`; removed there
+  (`grep -rn ValidationPipe apps/api/src` finds only `ZodValidationPipe`). `envelopes.http.spec.ts` now uses `configureApp` instead of its own copy of the setup.
+- Tests: `zod-validation.pipe.spec.ts` (unit), `envelopes.int-spec.ts` (real test DB, `configureApp`). No existing test asserted 400.
+- `docs/architecture.md` section 3: 400 gap removed, global-pipe gap updated.
+- Follow-ups: remove `class-validator`/`class-transformer` from package.json (explicitly out of scope).
