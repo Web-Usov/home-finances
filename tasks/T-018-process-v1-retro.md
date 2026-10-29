@@ -1,7 +1,7 @@
 ---
 id: T-018
 title: "Process v1: apply pilot retro"
-status: in_progress
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: infra
 size: M
 branch: task/T-018-process-v1-retro
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/5
 ---
 
 # T-018. Process v1: apply pilot retro
