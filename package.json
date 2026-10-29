@@ -16,14 +16,25 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:int": "turbo run test:int",
+    "api:generate": "turbo run build --filter=@family-budget/types && pnpm --filter @family-budget/api openapi && pnpm --filter @family-budget/mobile orval",
+    "api:contract": "node scripts/api-contract.mjs",
+    "e2e:smoke": "turbo run build --filter=@family-budget/api && pnpm --filter @family-budget/e2e test:smoke",
+    "e2e:full": "turbo run build --filter=@family-budget/api && pnpm --filter @family-budget/e2e test:full",
+    "smoke:compose": "bash scripts/smoke-compose.sh",
+    "verify": "node scripts/verify.mjs",
+    "verify:quick": "node scripts/verify.mjs quick",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:up": "docker compose up -d postgres",
     "db:migrate": "pnpm --filter api prisma migrate dev",
     "db:seed": "pnpm --filter api prisma db seed",
     "db:studio": "pnpm --filter api prisma studio",
-    "db:reset": "pnpm --filter api prisma migrate reset --force"
+    "db:reset": "pnpm --filter api prisma migrate reset --force",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
+    "lefthook": "^1.10.0",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
   }

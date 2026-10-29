@@ -15,6 +15,10 @@ import type {
   UseMutationResult
 } from '@tanstack/react-query';
 
+import type {
+  AllocationsControllerSaveV1Body
+} from '.././model';
+
 import { customAxiosInstance } from '.././axios-instance';
 
 
@@ -25,20 +29,23 @@ import { customAxiosInstance } from '.././axios-instance';
  */
 export const allocationsControllerSaveV1 = (
     period: string,
+    allocationsControllerSaveV1Body: AllocationsControllerSaveV1Body,
  ) => {
       
       
       return customAxiosInstance<void>(
-      {url: `/api/v1/months/${period}/allocations`, method: 'PUT'
+      {url: `/api/v1/months/${period}/allocations`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: allocationsControllerSaveV1Body
     },
       );
     }
   
 
 
-export const getAllocationsControllerSaveV1MutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, TError,{period: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, TError,{period: string}, TContext> => {
+export const getAllocationsControllerSaveV1MutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, TError,{period: string;data: AllocationsControllerSaveV1Body}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, TError,{period: string;data: AllocationsControllerSaveV1Body}, TContext> => {
 
 const mutationKey = ['allocationsControllerSaveV1'];
 const {mutation: mutationOptions} = options ?
@@ -50,10 +57,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, {period: string}> = (props) => {
-          const {period} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, {period: string;data: AllocationsControllerSaveV1Body}> = (props) => {
+          const {period,data} = props ?? {};
 
-          return  allocationsControllerSaveV1(period,)
+          return  allocationsControllerSaveV1(period,data,)
         }
 
         
@@ -62,18 +69,18 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type AllocationsControllerSaveV1MutationResult = NonNullable<Awaited<ReturnType<typeof allocationsControllerSaveV1>>>
-    
-    export type AllocationsControllerSaveV1MutationError = unknown
+    export type AllocationsControllerSaveV1MutationBody = AllocationsControllerSaveV1Body
+    export type AllocationsControllerSaveV1MutationError = void
 
     /**
  * @summary Save full allocation table for a month
  */
-export const useAllocationsControllerSaveV1 = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, TError,{period: string}, TContext>, }
+export const useAllocationsControllerSaveV1 = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, TError,{period: string;data: AllocationsControllerSaveV1Body}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof allocationsControllerSaveV1>>,
         TError,
-        {period: string},
+        {period: string;data: AllocationsControllerSaveV1Body},
         TContext
       > => {
 

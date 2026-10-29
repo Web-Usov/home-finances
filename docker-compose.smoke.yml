@@ -1,0 +1,15 @@
+# Override used by scripts/smoke-compose.sh together with docker-compose.yml and an
+# isolated project name: other ports, no fixed container names, so it cannot clash
+# with the running dev stack (family-budget-db on 5432).
+services:
+  postgres:
+    container_name: !reset null
+    ports: !override
+      - "${SMOKE_DB_PORT:-55432}:5432"
+  migrate:
+    container_name: !reset null
+  api:
+    container_name: !reset null
+    restart: "no"
+    ports: !override
+      - "${SMOKE_API_PORT:-33000}:3000"

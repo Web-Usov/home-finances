@@ -6,6 +6,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
@@ -13,6 +15,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@family-budget/eslint-config": "workspace:*",
+    "eslint": "^9.17.0",
     "typescript": "^5.7.2",
     "@family-budget/tsconfig": "workspace:*"
   }

@@ -1,0 +1,431 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "HealthController_health_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Health check",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/v1/months": {
+      "get": {
+        "operationId": "MonthsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of budget months"
+          }
+        },
+        "summary": "List months and statuses",
+        "tags": [
+          "Months"
+        ]
+      },
+      "post": {
+        "operationId": "MonthsController_create_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Created month"
+          }
+        },
+        "summary": "Create first or next month",
+        "tags": [
+          "Months"
+        ]
+      }
+    },
+    "/api/v1/months/{period}": {
+      "patch": {
+        "operationId": "MonthsController_updateIncome_v1",
+        "parameters": [
+          {
+            "name": "period",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated month summary"
+          }
+        },
+        "summary": "Change income for a month",
+        "tags": [
+          "Months"
+        ]
+      }
+    },
+    "/api/v1/months/{period}/close": {
+      "post": {
+        "operationId": "MonthsController_close_v1",
+        "parameters": [
+          {
+            "name": "period",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New statuses of current and draft months"
+          }
+        },
+        "summary": "Close an open month",
+        "tags": [
+          "Months"
+        ]
+      }
+    },
+    "/api/v1/months/{period}/reopen": {
+      "post": {
+        "operationId": "MonthsController_reopen_v1",
+        "parameters": [
+          {
+            "name": "period",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recalculation range and status"
+          }
+        },
+        "summary": "Reopen a closed month",
+        "tags": [
+          "Months"
+        ]
+      }
+    },
+    "/api/v1/envelopes": {
+      "get": {
+        "operationId": "EnvelopesController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of envelopes with balances"
+          }
+        },
+        "summary": "Get list of envelopes",
+        "tags": [
+          "Envelopes"
+        ]
+      },
+      "post": {
+        "operationId": "EnvelopesController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "initialBalance": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created envelope with calculated balance"
+          },
+          "409": {
+            "description": "ENVELOPE_NAME_DUPLICATE or MONTH_LOCKED"
+          }
+        },
+        "summary": "Create a new envelope",
+        "tags": [
+          "Envelopes"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}": {
+      "patch": {
+        "operationId": "EnvelopesController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "displayOrder": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated envelope"
+          },
+          "404": {
+            "description": "ENVELOPE_NOT_FOUND"
+          },
+          "409": {
+            "description": "ENVELOPE_NAME_DUPLICATE"
+          }
+        },
+        "summary": "Rename or change display order",
+        "tags": [
+          "Envelopes"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}/archive": {
+      "post": {
+        "operationId": "EnvelopesController_archive_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived status or ENVELOPE_NOT_EMPTY error"
+          }
+        },
+        "summary": "Archive envelope with zero balance",
+        "tags": [
+          "Envelopes"
+        ]
+      }
+    },
+    "/api/v1/months/{period}/allocations": {
+      "put": {
+        "operationId": "AllocationsController_save_v1",
+        "parameters": [
+          {
+            "name": "period",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "allocations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "propertyNames": {
+                      "format": "uuid"
+                    }
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "allocations",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Summary and warnings"
+          },
+          "404": {
+            "description": "MONTH_NOT_FOUND or ENVELOPE_NOT_FOUND (unknown or archived envelope)"
+          },
+          "409": {
+            "description": "VERSION_CONFLICT or MONTH_LOCKED"
+          },
+          "422": {
+            "description": "ALLOCATION_EXCEEDS_INCOME"
+          }
+        },
+        "summary": "Save full allocation table for a month",
+        "tags": [
+          "Allocations"
+        ]
+      }
+    },
+    "/api/v1/operations": {
+      "get": {
+        "operationId": "OperationsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of operations with results"
+          }
+        },
+        "summary": "Get operation history",
+        "tags": [
+          "Operations"
+        ]
+      },
+      "post": {
+        "operationId": "OperationsController_create_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Operation, result and new summary"
+          }
+        },
+        "summary": "Create an operation",
+        "tags": [
+          "Operations"
+        ]
+      }
+    },
+    "/api/v1/operations/{id}": {
+      "patch": {
+        "operationId": "OperationsController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cascade recalculated results"
+          }
+        },
+        "summary": "Edit an operation",
+        "tags": [
+          "Operations"
+        ]
+      },
+      "delete": {
+        "operationId": "OperationsController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cascade recalculated results"
+          }
+        },
+        "summary": "Delete an operation",
+        "tags": [
+          "Operations"
+        ]
+      }
+    },
+    "/api/v1/dashboard/monthly": {
+      "get": {
+        "operationId": "ReportingController_monthlyDashboard_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Summary, envelopes, warnings"
+          }
+        },
+        "summary": "Monthly dashboard",
+        "tags": [
+          "Reporting"
+        ]
+      }
+    },
+    "/api/v1/analytics/yearly": {
+      "get": {
+        "operationId": "ReportingController_yearlyAnalytics_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Three required reports"
+          }
+        },
+        "summary": "Yearly analytics",
+        "tags": [
+          "Reporting"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Family Budget API",
+    "description": "API for family budget application — months, envelopes, allocations, operations",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {}
+  }
+}

@@ -7,8 +7,12 @@
     "dev": "expo start",
     "dev:web": "expo start --web",
     "build:web": "expo export --platform web",
-    "lint": "eslint . --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:unit": "jest",
+    "test:cov": "jest --coverage",
     "clean": "rm -rf .expo dist web-build",
     "orval": "orval --config orval.config.js"
   },
@@ -38,11 +42,17 @@
   "devDependencies": {
     "@family-budget/eslint-config": "workspace:*",
     "@family-budget/tsconfig": "workspace:*",
+    "@testing-library/react-native": "^12.9.0",
+    "@types/jest": "^29.5.14",
     "@types/react": "^18.3.18",
     "@types/react-native": "^0.72.8",
+    "@types/react-test-renderer": "^18.3.0",
     "babel-preset-expo": "~11.0.14",
     "eslint": "^9.17.0",
+    "jest": "^29.7.0",
+    "jest-expo": "~51.0.4",
     "orval": "^7.4.1",
+    "react-test-renderer": "18.2.0",
     "typescript": "^5.7.2"
   }
 }

@@ -1,9 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
+import { configureApp, createOpenApiDocument } from './app.setup';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -11,22 +10,7 @@ async function bootstrap() {
     new FastifyAdapter({ logger: true }),
   );
 
-  app.setGlobalPrefix('api');
-
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-  });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
-  app.useGlobalFilters(new DomainExceptionFilter());
+  configureApp(app);
 
   app.enableCors({
     origin: '*',
@@ -35,12 +19,7 @@ async function bootstrap() {
   });
 
   // Swagger / OpenAPI
-  const config = new DocumentBuilder()
-    .setTitle('Family Budget API')
-    .setDescription('API for family budget application — months, envelopes, allocations, operations')
-    .setVersion('1.0')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = createOpenApiDocument(app);
   SwaggerModule.setup('api', app, document, {
     jsonDocumentUrl: 'api/swagger.json',
   });
