@@ -1,7 +1,7 @@
 ---
 id: T-001
 title: ZodValidationPipe returns 422 and drop legacy global ValidationPipe
-status: review
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: task/T-001-zod-pipe-422
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/3
 ---
 
 # T-001. ZodValidationPipe returns 422 and drop legacy global ValidationPipe
