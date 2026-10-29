@@ -1,7 +1,7 @@
 ---
 id: T-017
 title: Envelope created with an initial balance must show that balance (recalculate month)
-status: todo
+status: in_progress
 epic: E-00
 depends: []
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [ENV-03, OP-10, FIN-14, CALC-04]
 acceptance: [AC-01, AC-11]
 area: api
 size: S
-branch: null
+branch: task/T-017-envelope-initial-balance-recalc
 pr: null
 ---
 
