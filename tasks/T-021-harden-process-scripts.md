@@ -47,4 +47,17 @@ Fix the reviewer findings of PR #5 (T-018) in the process scripts, cover them wi
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Fixes the PR #5 reviewer findings; 21 `node --test` tests (`pnpm test:scripts`, now a step of `verify:quick` and `verify`).
+
+- `with-lock`: stale takeover by atomic rename of the stale file (single winner, content re-verified, live lock restored if
+  grabbed by mistake), create only via `wx`; empty/unparsable lock older than 10s is stale; command spawned without a shell in
+  its own process group; SIGINT/SIGTERM/SIGHUP forwarded to the group, lock released after the child exits, exit 128+signal;
+  missing command exits 127. `package.json` scripts (`e2e:smoke`/`e2e:full`) need no change.
+- `task-clean`: `decideClean` refuses unless the PR is MERGED and local HEAD == `headRefOid` or the branch is in origin/master;
+  otherwise lists the unpushed commits.
+- `task-start`: rollback of worktree + branch on failure (`--keep` to retain); new `--new "<title>" --epic --area --size`
+  (next free id from origin/master files and task branches, file from the template, claimed in one commit).
+- Docs: `docs/workflow.md` (rollback, `--new`, clean safety, follow-up rule), `docs/testing.md`, `AGENTS.md`.
+- Known limit: if a waiter renames a freshly created live lock by mistake and a third process creates the lock in the
+  microseconds before it is restored, the restore is skipped (two holders possible); needs three-way timing on a lock that was just
+  taken over.
