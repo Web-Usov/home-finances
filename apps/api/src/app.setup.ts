@@ -1,8 +1,8 @@
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import { INestApplication, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
 
-/** Global prefix, versioning, pipes and filters shared by main.ts and tooling. */
+/** Global prefix, versioning, filters shared by main.ts and tooling. */
 export function configureApp(app: INestApplication): void {
   app.setGlobalPrefix('api');
 
@@ -10,14 +10,6 @@ export function configureApp(app: INestApplication): void {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
 
   app.useGlobalFilters(new DomainExceptionFilter());
 }
