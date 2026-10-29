@@ -1,0 +1,4 @@
+# Human-owned artifacts: changes require review from the owner.
+/docs/spec/ @Web-Usov
+/docs/decisions/ @Web-Usov
+/epics/ @Web-Usov
