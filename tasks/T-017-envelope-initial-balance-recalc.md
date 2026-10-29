@@ -1,7 +1,7 @@
 ---
 id: T-017
 title: Envelope created with an initial balance must show that balance (recalculate month)
-status: todo
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [ENV-03, OP-10, FIN-14, CALC-04]
 acceptance: [AC-01, AC-11]
 area: api
 size: S
-branch: null
-pr: null
+branch: task/T-017-envelope-initial-balance-recalc
+pr: https://github.com/Web-Usov/home-finances/pull/4
 ---
 
 # T-017. Envelope created with an initial balance must show that balance (recalculate month)
@@ -33,12 +33,12 @@ Rules: ENV-03 (optional initial balance as a separate adjustment), OP-10 (non-ne
 
 ## Definition of Done
 
-- [ ] Integration test `ENV-03 / OP-10 / FIN-14: envelope created with initial balance shows it in GET /envelopes` (`*.int-spec.ts`, real DB) fails before the fix and passes after
-- [ ] Unit test `OP-10: initial balance recalculates the month in the same transaction` (engine called with the transaction client)
-- [ ] Initial balance is not counted in the monthly "adjustments" indicator (FIN-14) — asserted in a test
-- [ ] E2E helper `api.createEnvelope(name, initialBalance)` in `e2e/` is covered by a spec asserting the balance via API (`pnpm e2e:smoke` or `e2e:full`)
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Integration test `ENV-03 / OP-10 / FIN-14: envelope created with initial balance shows it in GET /envelopes` (`*.int-spec.ts`, real DB) fails before the fix and passes after
+- [x] Unit test `OP-10: initial balance recalculates the month in the same transaction` (engine called with the transaction client)
+- [x] Initial balance is not counted in the monthly "adjustments" indicator (FIN-14) — asserted in a test
+- [x] E2E helper `api.createEnvelope(name, initialBalance)` in `e2e/` is covered by a spec asserting the balance via API (`pnpm e2e:smoke` or `e2e:full`)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -51,4 +51,20 @@ Rules: ENV-03 (optional initial balance as a separate adjustment), OP-10 (non-ne
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+**Root cause: hypothesis confirmed, no other cause found.** `EnvelopesService.create` inserted the `initial_balance`
+operation but never ran the cascade, so no `OperationResult` / `EnvelopeMonthSnapshot` existed and `list()` (which reads
+`EnvelopeMonthSnapshot.closing`) returned 0. Reproduced first with `envelopes.initial-balance.int-spec.ts` (red commit before the fix).
+The engine itself was correct (replays `initial_balance` before the allocation, keeps it out of `adjustmentApplied`).
+
+Changes:
+- `EnvelopesService` injects `CalculationEngineService` (`EnvelopesModule` imports `CalculationEngineModule`) and calls
+  `recalculateMonthAtomically(month.id, tx)` after inserting the operation, in the same transaction.
+- Tests: `envelopes.initial-balance.int-spec.ts` (balance in `list()`, snapshot, `adjustmentApplied` = 0 / `initial` set (FIN-14),
+  carry into a later month (CALC-04)); unit `OP-10: initial balance recalculates the month in the same transaction`.
+- E2E: balance assertions restored in `e2e/smoke/app.e2e.ts` (UI-created envelope and `api.createEnvelope`), `pnpm e2e:smoke` green.
+
+Secondary check: with no month, an initial balance throws `MONTH_LOCKED` ("Нет открытого месяца..."). Spec ENV-03/OP-10/FIN-14
+do not name an error code for this case; left unchanged. Follow-up proposal for the planner: decide whether this should be
+`MONTH_NOT_FOUND` instead (a missing month is not a lock).
+
+Deviations: none. PR: see `pr:` in the front matter.

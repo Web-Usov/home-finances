@@ -9,6 +9,7 @@ import {
 import { z } from 'zod';
 import { ConflictException, NotFoundException } from '../../common/exceptions';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 
 export type CreateEnvelopeRequest = z.infer<typeof CreateEnvelopeRequestSchema>;
 export type UpdateEnvelopeRequest = z.infer<typeof UpdateEnvelopeRequestSchema>;
@@ -38,7 +39,10 @@ function currentCalendarPeriod(now: Date = new Date()): string {
  */
 @Injectable()
 export class EnvelopesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly engine: CalculationEngineService,
+  ) {}
 
   /**
    * All envelopes (active and archived) ordered for display, each with its current
@@ -65,7 +69,8 @@ export class EnvelopesService {
   /**
    * Create an envelope. When `initialBalance` is provided, a matching
    * `initial_balance` operation is appended to the current working month
-   * (open/reopened/draft) atomically with the envelope (spec lines 271, 277).
+   * (open/reopened/draft) atomically with the envelope (spec lines 271, 277), and the
+   * month is recalculated in the same transaction (ENV-03, OP-10, FIN-14, CALC-04).
    */
   async create(dto: CreateEnvelopeRequest): Promise<{ envelope: EnvelopeWithBalance }> {
     const month = await this.findCurrentMonth(this.prisma);
@@ -116,6 +121,9 @@ export class EnvelopesService {
             isInitial: true,
           },
         });
+        // CALC-04 / FIN-14: the balance only exists once the month is replayed
+        // (OperationResult + EnvelopeMonthSnapshot); same transaction as the insert.
+        await this.engine.recalculateMonthAtomically(month.id, tx);
       }
 
       return created;
