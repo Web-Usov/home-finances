@@ -18,6 +18,7 @@
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:int": "turbo run test:int",
+    "test:scripts": "node --test scripts/__tests__/*.test.mjs",
     "api:generate": "turbo run build --filter=@family-budget/types && pnpm --filter @family-budget/api openapi && pnpm --filter @family-budget/mobile orval",
     "api:contract": "node scripts/api-contract.mjs",
     "e2e:smoke": "node scripts/with-lock.mjs e2e -- pnpm e2e:smoke:run",
