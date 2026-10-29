@@ -49,25 +49,34 @@ function walk(dir, out = []) {
 }
 
 // 1. definitions
-const specDir = path.join(root, 'docs/spec');
-const specFiles = fs.existsSync(specDir)
-  ? fs.readdirSync(specDir).filter((f) => f.endsWith('.md') && f !== 'README.md').sort()
-  : [];
-const defs = new Map(); // id -> [file:line]
-const defRe = /\*\*\[([A-Z]+-\d{2,3})\]\*\*|~~\[([A-Z]+-\d{2,3})\]~~/g;
-for (const f of specFiles) {
-  fs.readFileSync(path.join(specDir, f), 'utf8')
-    .split('\n')
-    .forEach((line, i) => {
-      for (const m of line.matchAll(defRe)) {
-        const id = m[1] ?? m[2];
-        if (!defs.has(id)) defs.set(id, []);
-        defs.get(id).push(`docs/spec/${f}:${i + 1}`);
-      }
-    });
+/** Parse rule definitions from docs/spec/*.md. Exported for scripts/tasks.mjs. */
+export function loadSpecIds() {
+  const specDir = path.join(root, 'docs/spec');
+  const specFiles = fs.existsSync(specDir)
+    ? fs.readdirSync(specDir).filter((f) => f.endsWith('.md') && f !== 'README.md').sort()
+    : [];
+  const defs = new Map(); // id -> [file:line]
+  const defRe = /\*\*\[([A-Z]+-\d{2,3})\]\*\*|~~\[([A-Z]+-\d{2,3})\]~~/g;
+  for (const f of specFiles) {
+    fs.readFileSync(path.join(specDir, f), 'utf8')
+      .split('\n')
+      .forEach((line, i) => {
+        for (const m of line.matchAll(defRe)) {
+          const id = m[1] ?? m[2];
+          if (!defs.has(id)) defs.set(id, []);
+          defs.get(id).push(`docs/spec/${f}:${i + 1}`);
+        }
+      });
+  }
+  const prefixes = [...new Set([...defs.keys()].map((id) => id.split('-')[0]))];
+  return { defs, specFiles, prefixes, ids: new Set(defs.keys()) };
 }
-const prefixes = [...new Set([...defs.keys()].map((id) => id.split('-')[0]))];
 
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) main();
+
+function main() {
+const { defs, specFiles, prefixes } = loadSpecIds();
 const errors = [];
 for (const [id, where] of defs) {
   if (where.length > 1) errors.push(`duplicate definition of ${id}: ${where.join(', ')}`);
@@ -135,3 +144,4 @@ if (errors.length) {
   process.exit(1);
 }
 console.log('\nspec-check OK');
+}
