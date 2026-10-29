@@ -20,10 +20,21 @@ const header = readFileSync(file, 'utf8')
 
 if (header === undefined || AUTO.test(header)) process.exit(0);
 
+const MAX = 100;
 const subject = header.replace(TASK_SUFFIX, '');
-if (!PATTERN.test(subject) || header.length > 100) {
+const reasons = [];
+if (header.length > MAX) reasons.push(`header is ${header.length} chars, max ${MAX}`);
+if (!PATTERN.test(subject)) {
+  const typeMatch = subject.match(/^([a-z]+)/);
+  if (!/^[a-z]+(\([^)]*\))?!?:/.test(subject)) reasons.push('header does not match "type(scope): subject" (missing "type:" prefix or ": " separator)');
+  else if (!typeMatch || !TYPES.includes(typeMatch[1])) reasons.push(`unknown type "${typeMatch?.[1]}" (allowed: ${TYPES.join(', ')})`);
+  else if (!/^[a-z]+(\([a-z0-9._/-]+\))?!?:/.test(subject)) reasons.push('scope must be lowercase letters, digits, . _ / - inside parentheses');
+  else reasons.push('subject is empty or ":" is not followed by a space and text');
+}
+if (reasons.length) {
   console.error(`✖ Invalid commit message: "${header}"
-  Expected: type(scope)?: subject [T-123]?   (max 100 chars)
+  Reason:   ${reasons.join('; ')}
+  Expected: type(scope)?: subject [T-123]?   (header max ${MAX} chars)
   Types:    ${TYPES.join(', ')}
   Example:  feat(months): update income with recalculation [T-001]`);
   process.exit(1);
