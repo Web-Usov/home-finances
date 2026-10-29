@@ -1,7 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
-import type { Config } from 'jest';
 import { getTestDatabaseUrl, schemaName, withSchema } from './test-env';
 
 const prismaCli = require.resolve('prisma/build/index.js');
@@ -19,7 +18,7 @@ function migrate(url: string): void {
  * applies all migrations to each. TEST_RUN_ID is inherited by the workers.
  * A unique runId keeps parallel runs / agents from touching each other's data.
  */
-export default function globalSetup(globalConfig: Config.GlobalConfig): void {
+export default function globalSetup(globalConfig: { maxWorkers: number }): void {
   const base = getTestDatabaseUrl();
   const runId = randomBytes(4).toString('hex');
   process.env.TEST_RUN_ID = runId;
