@@ -2,15 +2,15 @@
 
 > Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`.
 
-Всего задач: 17 — todo: 16, in_progress: 0, review: 1, blocked: 0, done: 0.
+Всего задач: 17 — todo: 15, in_progress: 0, review: 1, blocked: 0, done: 1.
 
-## E-00. Технический долг и соответствие спеке — planned (0/3)
+## E-00. Технический долг и соответствие спеке — planned (1/3)
 
 Эпик: [E-00-tech-debt.md](../epics/E-00-tech-debt.md)
 
 | ID | Title | Status | Area | Size | Depends | PR |
 | --- | --- | --- | --- | --- | --- | --- |
-| [T-001](T-001-zod-pipe-422.md) | ZodValidationPipe returns 422 and drop legacy global ValidationPipe | todo | api | S | — | — |
+| [T-001](T-001-zod-pipe-422.md) | ZodValidationPipe returns 422 and drop legacy global ValidationPipe | done | api | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/3) |
 | [T-002](T-002-spec-rule-ids-in-code.md) | Replace "SPECIFICATION.md line NNN" comments with rule IDs | todo | docs | S | — | — |
 | [T-017](T-017-envelope-initial-balance-recalc.md) | Envelope created with an initial balance must show that balance (recalculate month) | review | api | S | — | — |
 

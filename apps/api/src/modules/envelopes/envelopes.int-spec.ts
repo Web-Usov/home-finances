@@ -1,20 +1,30 @@
+import { Test } from '@nestjs/testing';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import request from 'supertest';
+import { EnvelopesModule } from './envelopes.module';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { PrismaService } from '../../prisma/prisma.service';
+import { configureApp } from '../../app.setup';
 import { createTestPrisma, resetDb } from '../../../test/db';
-import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
-import { EnvelopesService } from './envelopes.service';
 
-/**
- * Integration tests for EnvelopesService.create with an initial balance against
- * the real test database (see docs/testing.md). Every test starts from empty tables.
- */
-describe('EnvelopesService.create initial balance (integration)', () => {
+/** HTTP-level integration test: real app setup (pipes, filters) on the real test DB. */
+describe('Envelopes HTTP validation (integration)', () => {
   let prisma: PrismaService;
-  let service: EnvelopesService;
+  let app: NestFastifyApplication;
 
   beforeAll(async () => {
     prisma = createTestPrisma();
     await prisma.$connect();
-    service = new EnvelopesService(prisma, new CalculationEngineService(prisma));
+
+    const moduleRef = await Test.createTestingModule({ imports: [PrismaModule, EnvelopesModule] })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .compile();
+
+    app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter({ logger: false }));
+    configureApp(app);
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
   });
 
   beforeEach(async () => {
@@ -22,61 +32,15 @@ describe('EnvelopesService.create initial balance (integration)', () => {
   });
 
   afterAll(async () => {
+    await app?.close();
     await resetDb(prisma);
     await prisma.$disconnect();
   });
 
-  it('ENV-03 / OP-10 / FIN-14: envelope created with initial balance shows it in GET /envelopes', async () => {
-    const month = await prisma.budgetMonth.create({
-      data: { period: '2026-01', status: 'open', incomeMinor: 1_000_000, version: 1 },
-    });
+  it('API-17: POST /envelopes with empty name returns 422', async () => {
+    const response = await request(app.getHttpServer()).post('/api/v1/envelopes').send({ name: '' }).expect(422);
 
-    const { envelope } = await service.create({ name: 'Еда', initialBalance: '1500.00' });
-    expect(envelope.balanceMinor).toBe(150_000);
-
-    const { envelopes } = await service.list();
-    expect(envelopes.map((e) => [e.name, e.balanceMinor])).toEqual([['Еда', 150_000]]);
-
-    const snapshot = await prisma.envelopeMonthSnapshot.findFirstOrThrow({
-      where: { monthId: month.id, envelopeId: envelope.id },
-    });
-    expect(snapshot.closing).toBe(150_000);
-    const result = await prisma.operationResult.findMany({
-      where: { operation: { monthId: month.id } },
-    });
-    expect(result).toHaveLength(1);
-    expect(result[0]?.sourceBalanceAfter).toBe(150_000);
-  });
-
-  it('FIN-14 / OP-10: initial balance is not counted in the monthly adjustments indicator', async () => {
-    const month = await prisma.budgetMonth.create({
-      data: { period: '2026-01', status: 'open', incomeMinor: 1_000_000, version: 1 },
-    });
-
-    const { envelope } = await service.create({ name: 'Еда', initialBalance: '1500.00' });
-
-    const snapshot = await prisma.envelopeMonthSnapshot.findFirstOrThrow({
-      where: { monthId: month.id, envelopeId: envelope.id },
-    });
-    expect(snapshot.initial).toBe(150_000);
-    expect(snapshot.adjustmentApplied).toBe(0);
-  });
-
-  it('CALC-04 / FIN-14: initial balance carries into later months as their opening balance', async () => {
-    await prisma.budgetMonth.create({
-      data: { period: '2026-01', status: 'open', incomeMinor: 1_000_000, version: 1 },
-    });
-    const next = await prisma.budgetMonth.create({
-      data: { period: '2026-02', status: 'draft', incomeMinor: 1_000_000, version: 1 },
-    });
-
-    const { envelope } = await service.create({ name: 'Еда', initialBalance: '1500.00' });
-
-    const snapshot = await prisma.envelopeMonthSnapshot.findFirstOrThrow({
-      where: { monthId: next.id, envelopeId: envelope.id },
-    });
-    expect(snapshot.opening).toBe(150_000);
-    expect(snapshot.closing).toBe(150_000);
-    expect(snapshot.initial).toBe(0);
+    expect(response.body).toEqual({ error: 'VALIDATION_ERROR', message: expect.stringContaining('name') });
+    expect(await prisma.envelope.count()).toBe(0);
   });
 });

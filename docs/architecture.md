@@ -57,10 +57,10 @@ Rules:
   client is passed to the engine as `db`.
 - Month-scoped mutations check, in this order: existence (`MONTH_NOT_FOUND`) → `version` (`VERSION_CONFLICT`, ADR 0005)
   → month status (`MONTH_LOCKED`, MON-03, NFR-18) → domain rules. See `AllocationsService.save` for the reference flow.
-- Gap: `ZodValidationPipe` raises Nest `BadRequestException` (HTTP 400, `{ message, errors }`); the spec (API-17) says
-  validation errors are 422. Domain `ValidationException` already returns 422.
+- `ZodValidationPipe` throws the domain `ValidationException` (HTTP 422, code `VALIDATION_ERROR`, message lists failing field
+  paths; API-17), rendered by `DomainExceptionFilter` as `{ error, message }`.
 - Gap: only `EnvelopesController` and `AllocationsController` use `ZodValidationPipe`; other controllers still accept
-  `unknown`/plain types and a leftover global class-validator `ValidationPipe` is registered in `main.ts` (ADR 0003).
+  `unknown`/plain types (ADR 0003); each feature task adds the pipe to its endpoints.
 
 ## 4. Recalculation flow
 
