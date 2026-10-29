@@ -18,6 +18,8 @@
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:int": "turbo run test:int",
+    "api:generate": "pnpm --filter @family-budget/api openapi && pnpm --filter @family-budget/mobile orval",
+    "api:contract": "node scripts/api-contract.mjs",
     "verify": "node scripts/verify.mjs",
     "verify:quick": "node scripts/verify.mjs quick",
     "clean": "turbo run clean && rm -rf node_modules",
