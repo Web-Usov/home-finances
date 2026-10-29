@@ -29,8 +29,8 @@ so never put DB access in a `*.spec.ts` file.
 From the repo root:
 
 ```bash
-pnpm verify          # full gate: typecheck → lint → test:unit → test:int → build → api:contract
-pnpm verify:quick    # typecheck → lint → test:unit (this is the pre-commit hook)
+pnpm verify          # full gate: typecheck → lint → test:unit → spec:check → tasks:check → test:int → build → api:contract
+pnpm verify:quick    # typecheck → lint → test:unit → spec:check → tasks:check (this is the pre-commit hook)
 pnpm test:unit       # unit tests of all packages
 pnpm test:int        # integration tests (needs the DB container, see below)
 pnpm test            # unit + integration
@@ -117,8 +117,8 @@ it('OP-04 / AC-08: expense above the balance is covered partially', ...);
 describe('CALC-02', () => { ... });
 ```
 
-IDs come from `docs/spec/*.md` (`**[OP-04]**`, `AC-08`). `scripts/spec-check.mjs` (planned with the spec split) checks that
-referenced IDs exist and reports spec rules that no test covers. Without a spec
+IDs come from `docs/spec/*.md` (`**[OP-04]**`, `AC-08`). `pnpm spec:check` (`scripts/spec-check.mjs`, part of `verify`) fails on duplicate or dangling IDs and
+reports spec rules and AC that no test covers (warnings; `--verbose` lists them). Without a spec
 ID use a plain behaviour description.
 
 ## Mobile tests

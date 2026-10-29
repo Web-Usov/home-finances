@@ -1,54 +1,40 @@
-# packages/types — Общие доменные типы
+# packages/types — shared domain types
 
-**Стек:** TypeScript + Zod
+`@family-budget/types`: Zod schemas, TS entities, `ApiErrorCode` and money helpers. Single source of truth for the domain
+model; used by both `apps/api` and `apps/mobile`. Global rules are in the root `AGENTS.md`.
 
-## Обзор
-
-Единый источник истины для доменной модели семейного бюджета.
-Все сущности, enum'ы, DTO и валидационные схемы выведены из SPECIFICATION.md.
-Также включает утилиты конвертации денег (десятичные рубли ↔ целые копейки).
-
-## Структура
+## Layout
 
 ```
-types/
-├── src/
-│   ├── entities.ts         # TypeScript-интерфейсы: BudgetMonth, Envelope, Operation и др.
-│   ├── schemas.ts          # Zod-схемы + DTO запросов + money-хелперы
-│   └── index.ts            # Реэкспорт всего
-├── package.json            # Зависит только от `zod`
-└── tsconfig.json           # Расширяет `@family-budget/tsconfig/node.json`
+src/
+  entities.ts   TS interfaces (BudgetMonth, Envelope, Operation, ...) and the ApiErrorCode union
+  schemas.ts    Zod schemas, request DTO schemas, PeriodSchema, parseMoneyMinor / formatMoneyMinor, validators
+  index.ts      re-exports
 ```
 
-## Где искать
+## Where to look
 
-| Задача | Файл | Примечания |
-|--------|------|-----------|
-| Добавить новую сущность | `src/entities.ts` | Добавить интерфейс + соответствующую Zod-схему в `schemas.ts` |
-| Добавить валидацию API-запроса | `src/schemas.ts` | Паттерн именования: `Create*RequestSchema`, `Update*RequestSchema` |
-| Конвертировать формат денег | `src/schemas.ts` | `parseMoneyMinor("15000.00")` → 1500000 (копейки) |
-| Форматировать деньги для отображения | `src/schemas.ts` | `formatMoneyMinor(1500000)` → `"15000.00"` |
-| Добавить код ошибки | `src/entities.ts` | Добавить в union-тип `ApiErrorCode` |
+| Task | Where |
+| --- | --- |
+| Add an entity | interface in `entities.ts` + Zod schema in `schemas.ts` |
+| Add API request validation | `schemas.ts`, naming `Create*RequestSchema` / `Update*RequestSchema` |
+| Convert money | `parseMoneyMinor("15000.00")` → `1500000`; `formatMoneyMinor(1500000)` → `"15000.00"` |
+| Add an error code | extend the `ApiErrorCode` union in `entities.ts` |
 
-## Конвенции
+## Conventions
 
-- **Именование:** Интерфейсы — PascalCase (например, `BudgetMonth`). Zod-схемы — PascalCase + суффикс `Schema` (например, `BudgetMonthSchema`).
-- **Денежные поля:** Именуются `*Minor` в коде, мапятся на `*_minor` в Prisma. Всегда `number` (Int в БД).
-- **Периоды:** Строка `YYYY-MM`, валидируется `PeriodSchema` regex `/^\d{4}-\d{2}$/`.
-- **Enum'ы:** TS union-типы + Zod `.enum()` (не строковые константы).
-- **Даты:** Zod использует `z.coerce.date()` для гибкого парсинга; интерфейсы используют `Date`.
-- **Комментарии:** Заголовок каждого файла сущностей ссылается на раздел и строки SPECIFICATION.md.
+- Interfaces PascalCase; schemas PascalCase + `Schema` suffix; enums as TS unions + Zod `.enum()`.
+- Money fields are named `*Minor` and are always integer `number`. Periods are `YYYY-MM` validated by `PeriodSchema`.
+- File headers and comments cite spec rules by ID (e.g. `DATA-08`), never by line number.
 
-## Анти-паттерны
+## Anti-patterns
 
-- **Никогда не использовать `float` для денег** — только целые копейки. `parseMoneyMinor` и `formatMoneyMinor` — единственные точки конвертации.
-- **Никогда не добавлять бизнес-логику сюда** — этот пакет только типы + валидация + хелперы. Никаких расчётов, API-вызовов, UI.
-- **Никогда не импортировать из пакетов приложений** — types не должен зависеть от `apps/api` или `apps/mobile`.
+- Float money; business logic or I/O in this package; importing from `apps/*`.
 
-## Команды
+## Commands
 
 ```bash
 cd packages/types
-pnpm build              # tsc — вывод в dist/
-pnpm typecheck          # tsc --noEmit
+pnpm build       # tsc → dist/
+pnpm typecheck
 ```

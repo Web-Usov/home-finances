@@ -1,74 +1,71 @@
-# apps/api — База знаний бэкенда
+# apps/api — backend guide
 
-**Стек:** NestJS 10 + Fastify + Prisma + PostgreSQL + Swagger/OpenAPI
+NestJS 10 + Fastify + Prisma 6 + PostgreSQL. Swagger/OpenAPI generated from controllers and Zod schemas.
+Global rules (money, periods, types, language, spec references) are in the root `AGENTS.md`; architecture details in
+`docs/architecture.md`.
 
-## Обзор
+## Module map (`src/`)
 
-REST API для домена семейного бюджета. 6 модулей, 14 эндпоинтов, все — заглушки со ссылками на SPECIFICATION.md.
-Расчётный движок — единственный stateless-сервис; все остальные будут делегировать Prisma + движок.
+| Path | Responsibility | State |
+| --- | --- | --- |
+| `main.ts` | Fastify bootstrap, prefix `api`, URI versioning (default `v1`), Swagger UI at `/api`, JSON at `/api/swagger.json` (`src/openapi.ts` dumps `openapi.json` without a DB), `DomainExceptionFilter`, open CORS | done |
+| `common/` | `ZodValidationPipe`, domain exceptions (422/409/404), `DomainExceptionFilter`, `zodOpenApiSchema` | done |
+| `prisma/` | `PrismaService` (global client) | done |
+| `health/` | `GET /api/v1/health` | done |
+| `modules/calculation-engine/` | stateless cascade recalculation (`recalculateFrom`, `recalculateMonthAtomically`) | done, unit + integration tests |
+| `modules/envelopes/` | list/create/update/archive | done |
+| `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation) | done |
+| `modules/months/` | list, create (draft/auto-open, allocation copy) | partial — `updateIncome`, `close`, `reopen` still return `{ message: 'Not implemented' }` |
+| `modules/operations/` | list/create/update/delete | stubs — all `Not implemented` |
+| `modules/reporting/` | dashboard + yearly analytics | stubs — return empty shapes |
+| `prisma/schema.prisma`, `prisma/seed.ts`, `prisma/migrations/` | 7 entities (BudgetMonth, Envelope, Allocation, Operation, OperationResult, EnvelopeMonthSnapshot, AppSettings), idempotent seed | done |
 
-## Структура
+Tasks track the remaining work; check `tasks/` before assuming a stub is free to implement.
 
-```
-api/
-├── src/
-│   ├── main.ts                 # Бутстрап Fastify, Swagger, CORS, URI-версионирование
-│   ├── app.module.ts           # Соединяет Health + 6 доменных модулей
-│   ├── health/
-│   │   └── health.controller.ts    # GET /api/v1/health
-│   └── modules/
-│       ├── months/             # Жизненный цикл месяца, доход, закрытие, повторное открытие
-│       ├── envelopes/          # CRUD + архивирование
-│       ├── allocations/        # PUT /api/months/:period/allocations
-│       ├── operations/         # CRUD для списаний/переводов/корректировок
-│       ├── calculation-engine/ # Каскадный пересчёт (stateless, общий)
-│       └── reporting/          # Дашборд + годовая аналитика
-├── prisma/
-│   ├── schema.prisma           # 7 сущностей, enum'ы, связи, UUID, Int-копейки
-│   ├── seed.ts               # Идемпотентный сид AppSettings (RUB, ru-RU)
-│   └── migrations/
-├── package.json                # @nestjs/platform-fastify, @fastify/static@7, prisma
-└── Dockerfile                  # Многоступенчатый: builder → production
-```
+## Local conventions
 
-## Где искать
+- Controllers are thin: `@ApiTags`/`@ApiOperation`/`@ApiResponse`, validate the body with
+  `@Body(new ZodValidationPipe(Schema))`, delegate to the service, return plain objects. No business logic, no `unknown` DTOs.
+- Services own business rules. Mutations: `prisma.$transaction(async (tx) => { write source data; engine.recalculateMonthAtomically(monthId, tx) })`.
+  Mutations return the affected month summary plus `warnings`.
+- Pass the interactive `tx` into the engine; never call it after the transaction has committed.
+- Errors: throw `ValidationException` (422), `ConflictException` (409) or `NotFoundException` (404) with a code from
+  `ApiErrorCode` in `@family-budget/types`. Add new codes there, not locally.
+- Order of checks for month-scoped mutations (as in allocations): existence → `version` (`VERSION_CONFLICT`) → month status (`MONTH_LOCKED`) → business rules.
+- User-facing error messages are Russian and must match the spec `MSG-*` texts where one exists.
+- Prisma: UUID primary keys (`@id @default(uuid()) @db.Uuid`), money columns `Int` mapped to `*_minor`. Change the schema only
+  together with a migration (`pnpm db:migrate`).
+- After controller/DTO changes run `pnpm api:generate` and commit `apps/api/openapi.json` and the regenerated client.
+- Request schemas in Swagger come from `zodOpenApiSchema(schema)` — never hand-written.
+- Cite spec rules by ID in comments (`// OP-08`), not by line number.
 
-| Задача | Файл | Примечания |
-|--------|------|-----------|
-| Добавить новый API-эндпоинт | `src/modules/<домен>/<домен>.controller.ts` | Следовать существующему паттерну: `@Controller`, `@ApiTags`, `@ApiOperation` |
-| Изменить схему базы данных | `prisma/schema.prisma` | Затем запустить `npx prisma migrate dev` |
-| Реализовать пересчёт | `src/modules/calculation-engine/calculation-engine.service.ts` | Должен быть детерминированным, протестированным, независимым от HTTP-слоя |
-| Добавить сид-данные | `prisma/seed.ts` | Использовать `upsert` с фиксированным UUID для идемпотентности |
-| Валидировать DTO запросов | Контроллеры используют `@Body() dto: unknown` — заменить на Zod-схемы из `@family-budget/types` |
+## Tests
 
-## Конвенции
+- Unit: `*.service.spec.ts` / `*.spec.ts` next to the code, Prisma mocked (`$transaction` hands the same mock as `tx`).
+- Integration: `*.int-spec.ts` (`jest.int.config.js`), real PostgreSQL test DB `family_budget_test` with a schema per jest worker
+  (`pnpm db:up`, `apps/api/.env.test`); factories in `test/db.ts`. Details: `docs/testing.md`.
+- Engine formulas must be covered by DB-free unit tests (`calculation-engine.service.spec.ts`).
 
-- **Контроллеры:** Все методы декорированы `@ApiOperation` + `@ApiResponse`. Возвращают plain-объекты (не классы).
-- **Сервисы:** Пока заглушки, возвращающие `{ message: 'Not implemented' }`. У каждого есть TODO-комментарий со ссылкой на строки SPECIFICATION.md.
-- **Prisma:** UUID первичные ключи (`@id @default(uuid()) @db.Uuid`). Денежные поля как `Int` (`@map("*_minor")`).
-- **Версионирование:** Все маршруты под `/api/v1/...` через NestJS `VersioningType.URI`.
-- **Коды ошибок:** Определены в `packages/types/src/entities.ts`: `ALLOCATION_EXCEEDS_INCOME`, `MONTH_LOCKED`, `TRANSFER_EXCEEDS_BALANCE`, `ENVELOPE_NOT_EMPTY`, `VERSION_CONFLICT`.
-
-## Анти-паттерны
-
-- **Не реализовывать float-арифметику для денег** — использовать `parseMoneyMinor` / `formatMoneyMinor` из `@family-budget/types`.
-- **Не пропускать миграции Prisma** — всегда генерировать и применять перед изменением кода, зависящего от схемы.
-- **Не помещать HTTP-логику в CalculationEngineService** — движок должен быть чистыми функциями + запросами Prisma только.
-- **Не добавлять auth middleware** — в MVP нет авторизации (спека, строка 417).
-
-## Команды
+## Commands
 
 ```bash
 cd apps/api
-pnpm build              # nest build
-pnpm dev                # nest start --watch
-pnpm typecheck          # tsc --noEmit
-pnpm test               # jest
-pnpm start:prod         # node dist/main
-
-# Prisma
-npx prisma migrate dev  # Создать + применить миграцию
-npx prisma db seed      # Запустить seed.ts
-npx prisma studio       # Web UI для БД
-npx prisma generate     # Перегенерировать клиент после изменения схемы
+pnpm dev                 # nest start --watch
+pnpm build               # nest build
+pnpm typecheck
+pnpm test:unit           # jest, no DB
+pnpm test:int            # jest -c jest.int.config.js, needs test DB
+pnpm lint                # eslint (flat config)
+pnpm openapi             # write openapi.json (use root `pnpm api:generate`)
+pnpm start:prod          # node dist/main
+npx prisma migrate dev   # create + apply migration
+npx prisma generate      # after schema changes
+npx prisma studio
 ```
+
+## Anti-patterns
+
+- Float math on money; business logic in controllers; HTTP concerns in the engine.
+- Adding auth middleware (ADR 0002); using class-validator DTOs (ADR 0003).
+- Editing derived tables (`OperationResult`, `EnvelopeMonthSnapshot`) outside the engine.
+- Skipping Prisma migrations when the schema changes.
