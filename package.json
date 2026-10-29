@@ -20,6 +20,8 @@
     "test:int": "turbo run test:int",
     "api:generate": "pnpm --filter @family-budget/api openapi && pnpm --filter @family-budget/mobile orval",
     "api:contract": "node scripts/api-contract.mjs",
+    "e2e:smoke": "pnpm --filter @family-budget/api build && pnpm --filter @family-budget/e2e test:smoke",
+    "e2e:full": "pnpm --filter @family-budget/api build && pnpm --filter @family-budget/e2e test:full",
     "verify": "node scripts/verify.mjs",
     "verify:quick": "node scripts/verify.mjs quick",
     "clean": "turbo run clean && rm -rf node_modules",
