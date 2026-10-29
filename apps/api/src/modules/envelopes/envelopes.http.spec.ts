@@ -1,4 +1,3 @@
-import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
@@ -6,7 +5,7 @@ import type { BudgetMonth, Envelope } from '@prisma/client';
 import { EnvelopesModule } from './envelopes.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { PrismaService } from '../../prisma/prisma.service';
-import { DomainExceptionFilter } from '../../common/filters/domain-exception.filter';
+import { configureApp } from '../../app.setup';
 
 function makeEnvelope(overrides: Partial<Envelope> = {}): Envelope {
   return {
@@ -98,19 +97,7 @@ describe('Envelopes HTTP integration', () => {
       .compile();
 
     app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter({ logger: false }));
-    app.setGlobalPrefix('api');
-    app.enableVersioning({
-      type: VersioningType.URI,
-      defaultVersion: '1',
-    });
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    app.useGlobalFilters(new DomainExceptionFilter());
+    configureApp(app);
 
     await app.init();
     await app.getHttpAdapter().getInstance().ready();

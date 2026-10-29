@@ -1,6 +1,6 @@
-import { BadRequestException } from '@nestjs/common';
 import { PipeTransform, ArgumentMetadata } from '@nestjs/common';
 import { ZodError, ZodSchema } from 'zod';
+import { ValidationException } from '../exceptions';
 
 /**
  * NestJS pipe that validates incoming request data against a Zod schema.
@@ -20,7 +20,7 @@ export class ZodValidationPipe implements PipeTransform<unknown, unknown> {
 
   /**
    * Transform and validate a value against the Zod schema.
-   * Throws BadRequestException with detailed error messages on validation failure.
+   * Throws ValidationException (HTTP 422, API-17) listing the failing field paths on validation failure.
    */
   transform(value: unknown, _metadata: ArgumentMetadata): unknown {
     const result = this.schema.safeParse(value);
@@ -32,16 +32,13 @@ export class ZodValidationPipe implements PipeTransform<unknown, unknown> {
     return result.data;
   }
 
-  private createException(error: ZodError): BadRequestException {
+  private createException(error: ZodError): ValidationException {
     const messages = error.issues.map((issue) => {
       const path = issue.path.length > 0 ? issue.path.join('.') + ': ' : '';
       return `${path}${issue.message}`;
     });
 
-    return new BadRequestException({
-      message: 'Validation failed',
-      errors: messages,
-    });
+    return new ValidationException('VALIDATION_ERROR', messages.join('; '));
   }
 
   /**
