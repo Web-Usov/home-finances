@@ -57,9 +57,43 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "income": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "income",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Updated month summary"
+            "description": "Updated month summary and warnings"
+          },
+          "404": {
+            "description": "MONTH_NOT_FOUND"
+          },
+          "409": {
+            "description": "VERSION_CONFLICT or MONTH_LOCKED"
+          },
+          "422": {
+            "description": "ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR"
           }
         },
         "summary": "Change income for a month",
