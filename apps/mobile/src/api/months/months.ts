@@ -24,6 +24,10 @@ import type {
   UseQueryResult
 } from '@tanstack/react-query';
 
+import type {
+  MonthsControllerUpdateIncomeV1Body
+} from '.././model';
+
 import { customAxiosInstance } from '.././axios-instance';
 
 
@@ -188,20 +192,23 @@ export const useMonthsControllerCreateV1 = <TError = unknown,
  */
 export const monthsControllerUpdateIncomeV1 = (
     period: string,
+    monthsControllerUpdateIncomeV1Body: MonthsControllerUpdateIncomeV1Body,
  ) => {
       
       
       return customAxiosInstance<void>(
-      {url: `/api/v1/months/${period}`, method: 'PATCH'
+      {url: `/api/v1/months/${period}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: monthsControllerUpdateIncomeV1Body
     },
       );
     }
   
 
 
-export const getMonthsControllerUpdateIncomeV1MutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>, TError,{period: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>, TError,{period: string}, TContext> => {
+export const getMonthsControllerUpdateIncomeV1MutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>, TError,{period: string;data: MonthsControllerUpdateIncomeV1Body}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>, TError,{period: string;data: MonthsControllerUpdateIncomeV1Body}, TContext> => {
 
 const mutationKey = ['monthsControllerUpdateIncomeV1'];
 const {mutation: mutationOptions} = options ?
@@ -213,10 +220,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>, {period: string}> = (props) => {
-          const {period} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>, {period: string;data: MonthsControllerUpdateIncomeV1Body}> = (props) => {
+          const {period,data} = props ?? {};
 
-          return  monthsControllerUpdateIncomeV1(period,)
+          return  monthsControllerUpdateIncomeV1(period,data,)
         }
 
         
@@ -225,18 +232,18 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type MonthsControllerUpdateIncomeV1MutationResult = NonNullable<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>>
-    
-    export type MonthsControllerUpdateIncomeV1MutationError = unknown
+    export type MonthsControllerUpdateIncomeV1MutationBody = MonthsControllerUpdateIncomeV1Body
+    export type MonthsControllerUpdateIncomeV1MutationError = void
 
     /**
  * @summary Change income for a month
  */
-export const useMonthsControllerUpdateIncomeV1 = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>, TError,{period: string}, TContext>, }
+export const useMonthsControllerUpdateIncomeV1 = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>, TError,{period: string;data: MonthsControllerUpdateIncomeV1Body}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof monthsControllerUpdateIncomeV1>>,
         TError,
-        {period: string},
+        {period: string;data: MonthsControllerUpdateIncomeV1Body},
         TContext
       > => {
 

@@ -1,7 +1,7 @@
 ---
 id: T-003
 title: Months: update income with cascade recalculation
-status: todo
+status: done
 epic: E-01
 depends: [T-001]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [API-03, FIN-02, FIN-06, MON-03, NFR-18, API-15, API-16, DATA-12, MSG-01, 
 acceptance: [AC-02, AC-03, AC-14]
 area: api
 size: M
-branch: null
-pr: null
+branch: task/T-003-months-income-update
+pr: https://github.com/Web-Usov/home-finances/pull/7
 ---
 
 # T-003. Months: update income with cascade recalculation
@@ -29,14 +29,14 @@ pr: null
 
 ## Definition of Done
 
-- [ ] Controller body validated by `ZodValidationPipe(UpdateIncomeRequestSchema)` (no `unknown` DTO)
-- [ ] `it('FIN-02 / AC-03: income below allocated sum is rejected with ALLOCATION_EXCEEDS_INCOME')`
-- [ ] `it('MON-03 / AC-14: income update in a closed month returns MONTH_LOCKED')`
-- [ ] `it('AC-02: free funds = income - allocations after income update')`
-- [ ] `it('DATA-12: stale version returns VERSION_CONFLICT')`
-- [ ] Integration test: income change recalculates later months in one transaction (response has summary + warnings, API-16)
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Controller body validated by `ZodValidationPipe(UpdateIncomeRequestSchema)` (no `unknown` DTO)
+- [x] `it('FIN-02 / AC-03: income below allocated sum is rejected with ALLOCATION_EXCEEDS_INCOME')`
+- [x] `it('MON-03 / AC-14: income update in a closed month returns MONTH_LOCKED')`
+- [x] `it('AC-02: free funds = income - allocations after income update')`
+- [x] `it('DATA-12: stale version returns VERSION_CONFLICT')`
+- [x] Integration test: income change recalculates later months in one transaction (response has summary + warnings, API-16)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -50,4 +50,12 @@ pr: null
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+`PATCH /api/v1/months/:period` is implemented (`MonthsService.updateIncome`), started from `wip/operations-income` (months
+files only; operations/allocations WIP left for T-004).
+
+- Check order: existence -> version -> closed lock -> `income >= Σ allocations` (read inside the transaction) -> write + engine
+  in one `$transaction` (distinct `tx` passed to `recalculateMonthAtomically`; the engine bumps `version` on this and later months).
+- Fixed WIP: closed-month message now equals MSG-06 verbatim; added the missing FIN-02 / MSG-01 check; `ZodValidationPipe` + `@ApiBody` in the controller.
+- Tests: `months.service.spec.ts` (updateIncome block) and `months.income-update.int-spec.ts` (HTTP + DB).
+- Response is `MutationResponse<MonthSummaryDto>` (the months-module summary: id, period, status, income, version, totals);
+  not the full envelope-level `MonthSummary` that allocations return. Follow-up for the planner: API-03 says "updated summary" without naming the shape.
