@@ -1,7 +1,7 @@
 ---
 id: T-003
 title: Months: update income with cascade recalculation
-status: in_progress
+status: done
 epic: E-01
 depends: [T-001]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-02, AC-03, AC-14]
 area: api
 size: M
 branch: task/T-003-months-income-update
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/7
 ---
 
 # T-003. Months: update income with cascade recalculation
