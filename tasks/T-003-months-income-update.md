@@ -1,7 +1,7 @@
 ---
 id: T-003
 title: Months: update income with cascade recalculation
-status: todo
+status: in_progress
 epic: E-01
 depends: [T-001]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-03, FIN-02, FIN-06, MON-03, NFR-18, API-15, API-16, DATA-12, MSG-01, 
 acceptance: [AC-02, AC-03, AC-14]
 area: api
 size: M
-branch: null
+branch: task/T-003-months-income-update
 pr: null
 ---
 
