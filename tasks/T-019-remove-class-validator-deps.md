@@ -1,7 +1,7 @@
 ---
 id: T-019
 title: Remove unused class-validator and class-transformer dependencies
-status: in_progress
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: task/T-019-remove-class-validator-deps
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/8
 ---
 
 # T-019. Remove unused class-validator and class-transformer dependencies
