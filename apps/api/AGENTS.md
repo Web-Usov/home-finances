@@ -15,7 +15,7 @@ Global rules (money, periods, types, language, spec references) are in the root 
 | `modules/calculation-engine/` | stateless cascade recalculation (`recalculateFrom`, `recalculateMonthAtomically`) | done, unit + integration tests |
 | `modules/envelopes/` | list/create/update/archive; create with an initial balance inserts the `initial_balance` operation and recalculates the month in the same transaction | done |
 | `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation) | done |
-| `modules/months/` | list, create (draft/auto-open, allocation copy) | partial — `updateIncome`, `close`, `reopen` still return `{ message: 'Not implemented' }` |
+| `modules/months/` | list, create (draft/auto-open, allocation copy), `updateIncome` (PATCH, cascade) | partial — `close`, `reopen` still return `{ message: 'Not implemented' }` |
 | `modules/operations/` | list/create/update/delete | stubs — all `Not implemented` |
 | `modules/reporting/` | dashboard + yearly analytics | stubs — return empty shapes |
 | `prisma/schema.prisma`, `prisma/seed.ts`, `prisma/migrations/` | 7 entities (BudgetMonth, Envelope, Allocation, Operation, OperationResult, EnvelopeMonthSnapshot, AppSettings), idempotent seed | done |

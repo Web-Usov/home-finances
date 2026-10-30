@@ -18,13 +18,13 @@
 | [T-020](T-020-spec-gaps-validation-error-month-not-found.md) | Spec gaps from pilot reviews (API-18 VALIDATION_ERROR, initial balance without a month) | todo | docs | S | — | — |
 | [T-021](T-021-harden-process-scripts.md) | Harden process scripts (with-lock, task-start, task-clean) | done | infra | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/6) |
 
-## E-01. Ядро API: месяцы и операции — planned (0/4)
+## E-01. Ядро API: месяцы и операции — planned (1/4)
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
 
 | ID | Title | Status | Area | Size | Depends | PR |
 | --- | --- | --- | --- | --- | --- | --- |
-| [T-003](T-003-months-income-update.md) | Months: update income with cascade recalculation | todo | api | M | T-001 | — |
+| [T-003](T-003-months-income-update.md) | Months: update income with cascade recalculation | done | api | M | T-001 | [PR](https://github.com/Web-Usov/home-finances/pull/7) |
 | [T-004](T-004-operations-list-create.md) | Operations: history list and create (expense, transfer, adjustment) | todo | api | M | T-003 | — |
 | [T-005](T-005-operations-update-delete.md) | Operations: update and delete with stable sequence and recalculation | todo | api | M | T-004 | — |
 | [T-006](T-006-month-close-reopen.md) | Months: close, reopen and draft promotion | todo | api | M | T-003 | — |

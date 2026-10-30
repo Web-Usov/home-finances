@@ -1,7 +1,10 @@
 import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { UpdateIncomeRequestSchema } from '@family-budget/types';
+import { ZodValidationPipe } from '../../common/pipes';
+import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { MonthsService } from './months.service';
-import type { CreateMonthRequest } from './months.service';
+import type { CreateMonthRequest, UpdateIncomeRequest } from './months.service';
 
 @ApiTags('Months')
 @Controller('months')
@@ -24,8 +27,15 @@ export class MonthsController {
 
   @Patch(':period')
   @ApiOperation({ summary: 'Change income for a month' })
-  @ApiResponse({ status: 200, description: 'Updated month summary' })
-  updateIncome(@Param('period') period: string, @Body() dto: unknown) {
+  @ApiBody({ schema: zodOpenApiSchema(UpdateIncomeRequestSchema) })
+  @ApiResponse({ status: 200, description: 'Updated month summary and warnings' })
+  @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or MONTH_LOCKED' })
+  @ApiResponse({ status: 422, description: 'ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR' })
+  updateIncome(
+    @Param('period') period: string,
+    @Body(new ZodValidationPipe(UpdateIncomeRequestSchema)) dto: UpdateIncomeRequest,
+  ) {
     return this.monthsService.updateIncome(period, dto);
   }
 
