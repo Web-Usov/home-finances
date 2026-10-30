@@ -1,7 +1,7 @@
 ---
 id: T-019
 title: Remove unused class-validator and class-transformer dependencies
-status: todo
+status: in_progress
 epic: E-00
 depends: []
 blocked_by: []
@@ -9,7 +9,7 @@ spec: []
 acceptance: []
 area: api
 size: S
-branch: null
+branch: task/T-019-remove-class-validator-deps
 pr: null
 ---
 
