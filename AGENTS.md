@@ -115,6 +115,7 @@ Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Comman
 - After editing `packages/types` run the root `pnpm typecheck` (turbo builds the types package first); `pnpm --filter api typecheck`
   alone sees the stale `dist` of the types package.
 - The turbo cache is shared across worktrees: replayed logs may show paths of other worktrees; harmless.
+- Ports 3100 (preview API) and 8100 (preview web) are reserved for the preview (`docs/preview.md`): never bind, reuse or kill them from tests, dev servers or agents.
 - Commit headers are at most 100 characters; pre-commit checks the working tree, so stage everything you commit.
 - Claim a task with `pnpm task:start T-xxx`, clean up after the merge with `pnpm task:clean T-xxx`.
 
