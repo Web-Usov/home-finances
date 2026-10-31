@@ -1,7 +1,7 @@
 ---
 id: T-023
 title: Envelope with an initial balance and no month returns MONTH_NOT_FOUND
-status: todo
+status: done
 epic: E-00
 depends: [T-020]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [ENV-03, ENV-14, OP-10, API-18, API-19]
 acceptance: [AC-01]
 area: api
 size: S
-branch: null
-pr: null
+branch: task/T-023-initial-balance-month-not-found
+pr: https://github.com/Web-Usov/home-finances/pull/26
 ---
 
 # T-023. Envelope with an initial balance and no month returns MONTH_NOT_FOUND
@@ -27,12 +27,12 @@ pr: null
 
 ## Definition of Done
 
-- [ ] `it('ENV-14 / API-19: initial balance without any month answers 404 MONTH_NOT_FOUND')` (int-spec, real DB) passes
-- [ ] `it('ENV-14: envelope without initial balance is created when no month exists')` passes
-- [ ] `it('ENV-05 / MON-03: initial balance in a closed month still answers 409 MONTH_LOCKED')` passes
-- [ ] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('ENV-14 / API-19: initial balance without any month answers 404 MONTH_NOT_FOUND')` (int-spec, real DB) passes
+- [x] `it('ENV-14: envelope without initial balance is created when no month exists')` passes
+- [x] `it('ENV-05 / MON-03: initial balance in a closed month still answers 409 MONTH_LOCKED')` passes
+- [x] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -44,4 +44,6 @@ pr: null
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+- `EnvelopesService.create`: initial balance > 0 with no month now throws 404 `MONTH_NOT_FOUND` (ENV-14, API-19); `MONTH_LOCKED` stays for a closed month. Controller `@ApiResponse` 404 added; `openapi.json` regenerated (mobile client unchanged).
+- PR #25 follow-up in the same module: `rethrowDuplicateName` maps only a P2002 whose `meta.target` is the envelope `name` unique index to `ENVELOPE_NAME_DUPLICATE`, other P2002 are rethrown; a displayOrder-only update no longer yields an empty name in the message (falls back to the current name).
+- Mobile: Envelopes create form shows the API message via `getApiErrorMessage`, so the Russian text of the 404 is displayed as is; no code change.
