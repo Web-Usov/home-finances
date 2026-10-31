@@ -1,7 +1,7 @@
 ---
 id: T-004
 title: Operations: history list and create (expense, transfer, adjustment)
-status: todo
+status: in_progress
 epic: E-01
 depends: [T-003]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-10, API-14, API-16, OP-01, OP-02, OP-03, OP-04, OP-05, OP-07, OP-09, 
 acceptance: [AC-05, AC-06, AC-07, AC-09, AC-10, AC-11]
 area: api
 size: M
-branch: null
+branch: task/T-004-operations-list-create
 pr: null
 ---
 
