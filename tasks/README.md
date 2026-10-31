@@ -34,6 +34,8 @@
 
 - [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
 
+- [T-032](T-032-months-recalculate-on-month-creation.md) Months: recalculate on month creation and draft promotion — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/16)
+
 ## E-02. Отчётность API — planned
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)

@@ -141,7 +141,12 @@ export class MonthsService {
         data: { period: dto.period, status, incomeMinor },
       });
       const copied = latest === undefined ? 0 : await this.copyAllocations(tx, latest.id, month.id);
-      return { created: month, copiedTotalMinor: copied };
+      // FIN-04 / DATA-06: build the new month's snapshots (carried opening, copied
+      // allocations as replenished) in the same transaction (ADR 0004). The engine
+      // bumps `version` of the new month (1 -> 2, ADR 0005); nothing else can hold
+      // a version of it yet, so the bump is harmless and the summary is re-read.
+      await this.engine.recalculateMonthAtomically(month.id, tx);
+      return { created: await this.refreshMonth(tx, month.id), copiedTotalMinor: copied };
     });
 
     return { month: toSummary(created, copiedTotalMinor) };
@@ -220,7 +225,8 @@ export class MonthsService {
    * block (MON-10). Closing an `open` month promotes the existing draft to `open`
    * (MON-08, AC-17); closing a `reopened` month does not (MON-15). A draft cannot be
    * closed (MON-01, AC-16). Source data only changes status, so no recalculation is
-   * needed; the changed months get a version bump (ADR 0005).
+   * needed (snapshots do not depend on status and the draft was already recalculated when it
+   * was created or edited, T-032); the changed months get a version bump (ADR 0005).
    */
   async close(
     period: string,
