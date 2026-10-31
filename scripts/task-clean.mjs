@@ -8,7 +8,7 @@
  * the local branch loses nothing: its HEAD must equal the PR's `headRefOid`, or the branch must be fully contained in
  * origin/master. Otherwise it lists the commits that exist only locally (see `decideClean`).
  * The branch is taken from the `branch:` field of the task file on origin/master (a renumbered task keeps its old branch
- * name), falling back to the `task/T-xxx-*` pattern.
+ * name), falling back to the `task/T-xxx-*` pattern only when `branch:` is null/absent.
  * `--remote` also deletes `origin/<branch>` (skip it when GitHub deletes merged branches itself).
  */
 import fs from 'node:fs';
@@ -37,15 +37,18 @@ export function decideClean({ pr, branch, localHead, inMaster, unpushed = [] }) 
 }
 
 /**
- * Which local branch belongs to the task: the `branch:` frontmatter field when that branch exists locally, else the
- * unique `task/<id>-*` branch. Returns { branch } or { error }.
+ * Which local branch belongs to the task: the `branch:` frontmatter field when it is set (it must exist locally, no
+ * fallback: a renumbered task could otherwise pick another task's leftover branch), else the unique `task/<id>-*`
+ * branch. Returns { branch } or { error }.
  */
 export function resolveBranch({ id, branchField, localBranches }) {
-  if (branchField && branchField !== 'null' && localBranches.includes(branchField)) return { branch: branchField };
+  if (branchField && branchField !== 'null') {
+    if (localBranches.includes(branchField)) return { branch: branchField };
+    return { error: `task file of ${id} says branch ${branchField}, but it does not exist locally; nothing to clean (or create it/fix \`branch:\`)` };
+  }
   const byId = localBranches.filter((b) => b.startsWith(`task/${id}-`));
   if (byId.length === 1) return { branch: byId[0] };
-  const hint = branchField && branchField !== 'null' ? ` (task file says ${branchField}, not found locally)` : '';
-  return { error: `expected exactly one local branch for ${id}, found ${byId.length} matching task/${id}-*${hint}` };
+  return { error: `expected exactly one local branch for ${id}, found ${byId.length} matching task/${id}-*` };
 }
 
 const sh = (cmd, args, cwd) => execFileSync(cmd, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();

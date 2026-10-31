@@ -46,7 +46,13 @@ test('resolveBranch prefers the task file branch field (renumbered task keeps it
 
 test('resolveBranch falls back to the task/T-xxx-* pattern and reports ambiguity or absence', () => {
   assert.deepEqual(resolveBranch({ id: 'T-033', branchField: null, localBranches: ['task/T-033-a'] }), { branch: 'task/T-033-a' });
-  assert.deepEqual(resolveBranch({ id: 'T-033', branchField: 'task/T-033-gone', localBranches: ['task/T-033-a'] }), { branch: 'task/T-033-a' });
-  assert.match(resolveBranch({ id: 'T-032', branchField: 'task/T-023-x', localBranches: ['master'] }).error, /found 0.*task file says task\/T-023-x/);
+  assert.match(resolveBranch({ id: 'T-033', branchField: null, localBranches: ['master'] }).error, /found 0/);
   assert.match(resolveBranch({ id: 'T-033', branchField: null, localBranches: ['task/T-033-a', 'task/T-033-b'] }).error, /found 2/);
+});
+
+test('resolveBranch errors when branch: is set but missing locally (no fallback to task/T-xxx-*)', () => {
+  const r = resolveBranch({ id: 'T-033', branchField: 'task/T-033-gone', localBranches: ['task/T-033-a'] });
+  assert.equal(r.branch, undefined);
+  assert.match(r.error, /task\/T-033-gone.*does not exist locally/);
+  assert.match(resolveBranch({ id: 'T-032', branchField: 'task/T-023-x', localBranches: ['master'] }).error, /task\/T-023-x/);
 });

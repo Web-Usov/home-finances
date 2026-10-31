@@ -170,10 +170,12 @@ does not allow approving your own PR. So:
   the reviewer runs `gh pr merge <n> --squash --auto` (GitHub merges as soon as `verify`, `contract`, `e2e` are green) and
   then reports "merged" or "auto-merge enabled" based on `gh pr view <n> --json state,autoMergeRequest`.
   Branch protection is strict (the branch must be up to date with master): if `gh pr view <n> --json mergeStateStatus` is
-  `BEHIND`, the reviewer first runs `gh pr update-branch <n>` (GitHub merges master in and re-runs CI), then enables
-  auto-merge. It sends the PR back to the author only when the update conflicts or master changed generated files / the
-  board that the PR also touches; the author then merges `origin/master` locally, runs `pnpm tasks:board`, `pnpm verify`
-  and pushes.
+  `BEHIND`, the reviewer first runs `gh pr update-branch <n>` (merge only; `--rebase` is denied; this is the reviewer's one
+  permitted branch modification). GitHub merges master in and re-runs CI on the new head. If GitHub reports a conflict, the
+  reviewer sends the PR back to the author, who merges `origin/master` locally, runs `pnpm tasks:board`, `pnpm verify` and
+  pushes. Otherwise the reviewer enables auto-merge without comparing files: `verify` (`tasks:check`, board `--check`) and
+  `contract` (`api:contract`) detect stale generated files on the updated head; if they fail, auto-merge does not happen and
+  the PR goes back to the author.
   On `CHANGES REQUESTED` the reviewer only posts the comment (as a safety step it may run `gh pr merge <n> --disable-auto`);
   the implementer fixes the findings with new commits, runs `pnpm verify`, pushes, and `/review` runs again.
 - **Branch protection reality:** required approving reviews = 0, because agents and the owner share the GitHub account

@@ -19,35 +19,35 @@ pr: null              # PR URL once opened
 Format rules (checked by `node scripts/tasks.mjs check`):
 - File name: `T-NNN-slug.md`, id equals the file prefix, ids are numeric and sequential.
 - Frontmatter is flat: scalars, inline lists `[a, b]`, `null`. Keep one key per line.
-- status `in_progress`/`review` requires `branch`; `done` requires `pr`, no unchecked `- [ ]` in Definition of Done and a non-empty Result (HTML comments ignored). `review` is optional.
+- status `in_progress`/`review` requires `branch`; `done` requires `pr`, no unchecked `- [x]` in Definition of Done and a non-empty Result (HTML comments ignored). `review` is optional.
 - `pnpm task:start T-000` claims the task (worktree, branch, in_progress); change status otherwise with `node scripts/tasks.mjs set T-000 <status>`.
 - A task is a vertical slice (API + tests, or one UI screen + tests + e2e) that fits one agent session.
 -->
 
 ## Goal
 
-One or two sentences: the observable outcome.
+Fix the minor findings of the PR #18 review: the reviewer's `gh pr update-branch` step is explicitly allowed, merge-only, and no
+longer sends nearly every PR back to the author; `tasks:check` and `task:clean` give safer messages/behavior.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- `.opencode/agents/reviewer.md`, `.opencode/commands/review.md`, `docs/workflow.md` section 6.
+- `scripts/tasks.mjs` (id collision rule), `scripts/task-clean.mjs` (`resolveBranch`), `scripts/__tests__/`.
+- Review comment on PR #18, findings 1-5.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] reviewer.md states `gh pr update-branch <n>` as the only allowed branch modification
+- [x] permissions: allow `gh pr update-branch ?*`, then deny `gh pr update-branch *--rebase*` (last match wins)
+- [x] reviewer.md, review.md, workflow.md agree: update-branch conflict => back to the author, otherwise rely on CI + auto-merge
+- [x] `tasks:check` collision message suggests `git merge origin/master` first (test asserts it)
+- [x] `resolveBranch` errors when `branch:` is set but missing locally; falls back only when null/absent (test)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- `apps/**`, `scripts/task-start.mjs`.
 
 ## Handoff log
 
@@ -55,4 +55,11 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Fixes findings 1-5 of the PR #18 review (finding 6 needed no change).
+
+- reviewer.md: explicit exception for `gh pr update-branch <n>`; permissions `allow gh pr update-branch ?*` then `deny
+  gh pr update-branch *--rebase*` (V2 permissions: last match wins; patterns support only `*` and `?`, so `[0-9]*` would be
+  literal and `?*` is used). Conflict => back to the author; otherwise CI on the updated head + auto-merge.
+- review.md, workflow.md section 6 aligned; the "master changed generated files" condition is dropped.
+- `tasks:check` collision message suggests `git merge origin/master` first (test asserts it).
+- `resolveBranch`: `branch:` set but missing locally is an error, fallback only for null/absent (tests).
