@@ -1,7 +1,7 @@
 ---
 id: T-013
 title: Mobile: yearly analytics screen
-status: todo
+status: in_progress
 epic: E-05
 depends: [T-008, T-012]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [UI-04, REP-01, REP-02, REP-03, REP-05, REP-06, REP-07, REP-08, REP-09, RE
 acceptance: [AC-20]
 area: mobile
 size: M
-branch: null
+branch: task/T-013-analytics-screen
 pr: null
 ---
 
