@@ -1,7 +1,7 @@
 ---
 id: T-010
 title: Mobile: allocation editor with live totals and overflow block
-status: in_progress
+status: done
 epic: E-03
 depends: [T-009]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-02, AC-03, AC-04]
 area: mobile
 size: M
 branch: task/T-010-allocation-editor
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/24
 ---
 
 # T-010. Mobile: allocation editor with live totals and overflow block
