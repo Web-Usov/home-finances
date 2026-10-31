@@ -1,7 +1,7 @@
 ---
 id: T-030
 title: Keep propertyNames uuid for the allocations map in openapi.json
-status: todo
+status: in_progress
 epic: E-00
 depends: []
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-04]
 acceptance: []
 area: api
 size: S
-branch: null
+branch: task/T-030-openapi-allocations-uuid-keys
 pr: null
 ---
 
