@@ -1,16 +1,21 @@
 [Unit]
 Description=Family Budget preview web (Expo export + /api proxy, port 8100)
 After=network.target
+# Restart=always also revives a clean exit (SIGTERM from a stray kill counts as success for systemd).
+StartLimitIntervalSec=300
+StartLimitBurst=20
 
 [Service]
 Type=simple
 EnvironmentFile=@PREVIEW_HOME@/preview.env
 # Run from the slot that is active at start; releases are resolved per request through `current`.
 ExecStart=@NODE@ @PREVIEW_HOME@/current/scripts/preview/serve-web.mjs
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=3
 MemoryMax=256M
 Nice=5
+# Small preview services are the last OOM victims; the build (update unit) is the first.
+OOMScoreAdjust=-200
 # Hardening. Runs as root because the preview lives under /root/workspace (mode 700), so ProtectHome and a dedicated
 # user are not possible without moving it; the filesystem is read-only instead.
 NoNewPrivileges=yes

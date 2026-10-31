@@ -3,7 +3,7 @@
 #   scripts/preview/install-systemd.sh [--no-deploy]
 # - creates $PREVIEW_HOME (default /root/workspace/finance-preview) and preview.env if missing
 # - renders scripts/preview/systemd/*.service|timer into /etc/systemd/system, reloads systemd
-# - runs the first deploy (unless --no-deploy or a release already exists), then enables web, api and the 2-minute update timer
+# - runs the first deploy (unless --no-deploy or a release already exists), then enables web, api, the 2-minute update timer and the 1-minute health watchdog timer
 # Env: PREVIEW_HOME, PREVIEW_REF (written into a NEW preview.env only; used to deploy a branch before it is merged)
 set -euo pipefail
 
@@ -41,5 +41,5 @@ if [ "${1:-}" != "--no-deploy" ] && [ ! -L "$PREVIEW_HOME/current" ]; then
 fi
 
 systemctl enable --now family-budget-preview-web.service family-budget-preview-api.service
-systemctl enable --now family-budget-preview-update.timer
-systemctl --no-pager --lines=0 status family-budget-preview-web.service family-budget-preview-api.service family-budget-preview-update.timer || true
+systemctl enable --now family-budget-preview-update.timer family-budget-preview-watchdog.timer
+systemctl --no-pager --lines=0 status family-budget-preview-web.service family-budget-preview-api.service family-budget-preview-update.timer family-budget-preview-watchdog.timer || true

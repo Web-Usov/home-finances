@@ -10,6 +10,8 @@ ExecStart=@PREVIEW_HOME@/current/scripts/preview/update.sh
 # A build can wait for the machine-wide heavy-job lock (e2e runs), so no short timeout.
 TimeoutStartSec=3h
 Nice=19
+# First OOM victim: heavy build processes inherit this, the preview services run at -200.
+OOMScoreAdjust=500
 IOSchedulingClass=idle
 # Only NoNewPrivileges: the updater needs the shared /tmp (machine-wide e2e lock), docker, systemctl, ssh keys and the
 # pnpm store, so a stricter sandbox would break it.
