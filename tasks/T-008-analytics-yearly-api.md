@@ -1,7 +1,7 @@
 ---
 id: T-008
 title: Reporting: yearly analytics endpoint (three reports)
-status: in_progress
+status: done
 epic: E-02
 depends: [T-004]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-20]
 area: api
 size: M
 branch: task/T-008-analytics-yearly-api
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/17
 ---
 
 # T-008. Reporting: yearly analytics endpoint (three reports)
