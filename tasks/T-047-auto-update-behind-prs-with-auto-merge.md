@@ -26,24 +26,22 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+Open PRs with auto-merge enabled that fall BEHIND master (strict branch protection) are updated automatically by a host timer, so they do not stall.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- `docs/workflow.md` section 6 (reviewer update-branch), `docs/preview.md` and `scripts/preview/*` (systemd style).
+- A GitHub Action with `GITHUB_TOKEN` cannot do it: its pushes do not trigger CI. The host uses the owner's `gh` auth (root).
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `scripts/ops/auto-update-prs.sh` updates BEHIND + auto-merge + non-draft PRs via update-branch (merge only), logs DIRTY, ignores the rest
+- [x] `scripts/__tests__/auto-update-prs.test.mjs` (fake `gh`) passes
+- [x] systemd service + timer (2 min) under `scripts/ops/systemd/`, installer `scripts/ops/install-systemd.sh`
+- [x] `docs/workflow.md` and `docs/ops.md` updated
+- [x] Installed on the host, run once, timer active
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -55,4 +53,5 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Added `scripts/ops/` (script, units, installer), tests, `docs/ops.md`, workflow note. Installed on the host from the main checkout
+after the merge (`scripts/ops/install-systemd.sh`); units reference the checkout they are installed from.
