@@ -1,7 +1,7 @@
 ---
 id: T-030
 title: Keep propertyNames uuid for the allocations map in openapi.json
-status: in_progress
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: task/T-030-openapi-allocations-uuid-keys
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/29
 ---
 
 # T-030. Keep propertyNames uuid for the allocations map in openapi.json
