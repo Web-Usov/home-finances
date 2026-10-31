@@ -24,7 +24,11 @@ main() {
   MIRROR="$PREVIEW_HOME/mirror.git"
   mkdir -p "$STATE" "$PREVIEW_HOME/slots"
   : "${DATABASE_URL:?DATABASE_URL must be set in $PREVIEW_HOME/preview.env}"
-  case "$DATABASE_URL" in *"/$DB_NAME"*) ;; *) echo "refusing: DATABASE_URL does not point at $DB_NAME" >&2; exit 2 ;; esac
+  # Exact database name (path of the URL up to `?`), never a prefix/suffix match such as `family_budget_preview_test`.
+  local url_db=${DATABASE_URL%%\?*}
+  url_db=${url_db##*/}
+  [ "$url_db" = "$DB_NAME" ] || { echo "refusing: DATABASE_URL database is '$url_db', expected '$DB_NAME'" >&2; exit 2; }
+  [ "$DB_NAME" = family_budget_preview ] || { echo "refusing: PREVIEW_DB_NAME must be family_budget_preview" >&2; exit 2; }
 
   local force=0 locked_target=""
   case "${1:-}" in
@@ -63,8 +67,13 @@ main() {
   echo "deploying $target (was ${deployed:-none}) from $PREVIEW_REF"
   # Heavy build: wait for the machine-wide lock shared with e2e runs, at idle CPU/IO priority.
   git -C "$MIRROR" show "$target:scripts/with-lock.mjs" > "$STATE/with-lock.mjs"
+  rm -f "$STATE/build-started"
   if nice -n 19 ionice -c3 node "$STATE/with-lock.mjs" e2e -- nice -n 19 ionice -c3 "$0" --build "$target"; then
     rm -f "$STATE/failed-sha"
+  elif [ ! -f "$STATE/build-started" ]; then
+    # The build never began: the lock wait timed out (or with-lock failed). Not the sha's fault, so retry on the next tick.
+    echo "could not get the e2e lock for $target; will retry on the next run" >&2
+    return 1
   else
     echo "$target" > "$STATE/failed-sha"
     echo "FAILED deploying $target; previous release ($deployed) keeps running" >&2
@@ -94,6 +103,7 @@ build_and_deploy() {
   TARGET=$1
   CURRENT_STEP=start
   trap fail ERR
+  : > "$STATE/build-started" # tells the caller that the lock was acquired and the build began
   export LEFTHOOK=0 CI=1 NODE_ENV=development # devDependencies are needed to build; NODE_ENV=production is only for runtime
 
   local active="" slot previous_link="" dir
@@ -154,17 +164,18 @@ build_and_deploy() {
   trap - ERR
   ln -sfn "$dir" "$PREVIEW_HOME/current.tmp"
   mv -T "$PREVIEW_HOME/current.tmp" "$PREVIEW_HOME/current"
-  systemctl restart family-budget-preview-api.service
-  systemctl start family-budget-preview-web.service
-  if ! wait_health "$API_PORT" 40; then
-    echo "new release did not become healthy; rolling back" >&2
+  if systemctl restart family-budget-preview-api.service && wait_health "$API_PORT" 40; then
+    systemctl start family-budget-preview-web.service || true
+  else
+    echo "new release did not start healthy; rolling back" >&2
+    CURRENT_STEP="restart/health check after swap"
+    printf '{"sha":"%s","step":"%s","at":"%s"}\n' "$TARGET" "$CURRENT_STEP" "$(date -Is)" > "$STATE/last-failure"
     if [ -n "$previous_link" ]; then
       ln -sfn "$previous_link" "$PREVIEW_HOME/current.tmp"
       mv -T "$PREVIEW_HOME/current.tmp" "$PREVIEW_HOME/current"
-      systemctl restart family-budget-preview-api.service
+      systemctl restart family-budget-preview-api.service || true
+      wait_health "$API_PORT" 40 || echo "WARNING: previous release is not healthy after rollback either" >&2
     fi
-    CURRENT_STEP="health check after swap"
-    printf '{"sha":"%s","step":"%s","at":"%s"}\n' "$TARGET" "$CURRENT_STEP" "$(date -Is)" > "$STATE/last-failure"
     exit 1
   fi
   echo "$TARGET" > "$STATE/deployed-sha"

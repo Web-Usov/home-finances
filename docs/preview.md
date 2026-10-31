@@ -42,7 +42,9 @@ Each slot holds its own `node_modules`, `apps/api/dist` and `.preview/web` (Expo
    write `version.json`, start the new API on a spare port (3199) and require a healthy `/api/v1/health`.
 4. Swap `current` atomically, restart `family-budget-preview-api`, wait for health. If the new API is unhealthy the symlink is
    restored and the previous release restarted.
-5. Any failure before the swap leaves the running release untouched; the sha goes to `state/failed-sha` (no retry loop every
+   If the restart or health check after the swap fails, the symlink is restored, the old API restarted and checked.
+5. If the `e2e` lock cannot be acquired within `WITH_LOCK_TIMEOUT_MIN` (90) the sha is **not** marked failed; the next tick retries.
+   Any build failure before the swap leaves the running release untouched; the sha goes to `state/failed-sha` (no retry loop every
    2 minutes) and the step is written to `state/last-failure`. Fix master (a new sha is tried automatically) or force a retry
    with `update.sh --force`.
 
@@ -89,6 +91,16 @@ Only ever touch `family_budget_preview`; never the dev DB `family_budget` or `*_
 - Remove completely: stop as above, delete `/etc/systemd/system/family-budget-preview-*`, `systemctl daemon-reload`,
   `rm -rf /root/workspace/finance-preview`, optionally `DROP DATABASE family_budget_preview`.
 - Deploy another ref (for testing): set `PREVIEW_REF=origin/<branch>` in `preview.env` (default `origin/master`).
+
+## Network exposure and hardening
+
+- The web server binds `WEB_HOST` (default `0.0.0.0`, port `WEB_PORT`=8100). To restrict it, set e.g. `WEB_HOST=192.168.1.114`
+  (one interface) or `WEB_HOST=127.0.0.1` (host only) in `/root/workspace/finance-preview/preview.env` and run
+  `systemctl restart family-budget-preview-web`. There is no auth in the MVP (ADR 0002), so anyone who can reach the port can edit the data.
+- API and web units run as root with `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem=strict` (only `state/` writable) and kernel/cgroup
+  protections. `ProtectHome` and a dedicated user are not used because the preview lives under `/root/workspace` (mode 700); moving it
+  to e.g. `/srv/finance-preview` (set `PREVIEW_HOME`, re-run the installer) would allow that. The update unit only has
+  `NoNewPrivileges` (it needs the shared `/tmp` lock, docker, ssh keys, the pnpm store).
 
 ## Resources
 

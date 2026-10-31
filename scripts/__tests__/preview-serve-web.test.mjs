@@ -97,3 +97,47 @@ test('path traversal never leaves the web root', async () => {
   const res = await get('/..%2f..%2fversion.json');
   assert.equal(res.body, '<html>app</html>');
 });
+
+test('a malformed percent-encoded URL gets 400 and the server keeps answering', async () => {
+  const bad = await new Promise((resolve, reject) => {
+    // fetch() would normalise the URL, so send the raw request line.
+    const sock = net.connect(webPort, '127.0.0.1', () => sock.write('GET /%E0%A4%A HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n'));
+    let data = '';
+    sock.on('data', (d) => (data += d));
+    sock.on('end', () => resolve(data));
+    sock.on('error', reject);
+  });
+  assert.match(bad, /^HTTP\/1\.1 400/);
+  assert.equal((await get('/')).status, 200);
+});
+
+test('a client sending garbage does not take the server down', async () => {
+  await new Promise((resolve) => {
+    const sock = net.connect(webPort, '127.0.0.1', () => sock.write('NOT HTTP AT ALL\r\n\r\n'));
+    sock.on('close', resolve);
+    sock.on('error', resolve);
+  });
+  assert.equal((await get('/')).status, 200);
+});
+
+test('HEAD answers with headers and no body', async () => {
+  const res = await fetch(`http://127.0.0.1:${webPort}/`, { method: 'HEAD' });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-length'), String('<html>app</html>'.length));
+  assert.equal(await res.text(), '');
+  const ver = await fetch(`http://127.0.0.1:${webPort}/version.json`, { method: 'HEAD' });
+  assert.equal(await ver.text(), '');
+});
+
+test('a release that lost its files answers 404/503 instead of crashing', async () => {
+  const gone = path.join(home, 'slots', 'a', '.preview', 'web', 'index.html');
+  const saved = fs.readFileSync(gone);
+  fs.rmSync(gone);
+  try {
+    assert.equal((await get('/some/route')).status, 404);
+    assert.equal((await get('/')).status, 404);
+  } finally {
+    fs.writeFileSync(gone, saved);
+  }
+  assert.equal((await get('/')).status, 200);
+});

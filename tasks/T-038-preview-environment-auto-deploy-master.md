@@ -47,7 +47,10 @@ A persistent preview of the app on the dev host for the owner, auto-updated afte
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Authentication or TLS for the preview (no auth in the MVP, ADR 0002); restricting the bind address is a config choice (`WEB_HOST`).
+- Any UI change (the version is only exposed at `/version.json`).
+- Production deployment, CI/CD in GitHub Actions, a dedicated unprivileged user or moving the preview out of `/root/workspace`.
+- Backwards-compatibility checks for migrations on rollback.
 
 ## Handoff log
 
