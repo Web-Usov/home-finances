@@ -6,7 +6,7 @@
  *
  * Run from the main checkout. Refuses unless `gh pr view` reports the PR of the branch as MERGED, and unless deleting
  * the local branch loses nothing: its HEAD must equal the PR's `headRefOid`, or the branch must be fully contained in
- * origin/master. Otherwise it lists the commits that exist only locally (see `decideClean`).
+ * origin/master or in the PR head. Otherwise it lists the commits that exist only locally (see `decideClean`).
  * The branch is taken from the `branch:` field of the task file on origin/master (a renumbered task keeps its old branch
  * name), falling back to the `task/T-xxx-*` pattern only when `branch:` is null/absent.
  * `--remote` also deletes `origin/<branch>` (skip it when GitHub deletes merged branches itself).
@@ -20,12 +20,13 @@ import { parseFrontmatter } from './tasks.mjs';
 /**
  * Pure decision: may the local branch be deleted?
  * pr: { state, url, headRefOid } from gh; localHead: SHA of the local branch; inMaster: branch is an ancestor of
- * origin/master; unpushed: `git log --oneline` lines of commits not in the PR head.
+ * origin/master; inPrHead: branch is an ancestor of the PR head (server-side update-branch adds merge commits the local
+ * branch lacks); unpushed: `git log --oneline` lines of commits not in the PR head.
  */
-export function decideClean({ pr, branch, localHead, inMaster, unpushed = [] }) {
+export function decideClean({ pr, branch, localHead, inMaster, inPrHead = false, unpushed = [] }) {
   if (pr.state !== 'MERGED') return { ok: false, reason: `PR ${pr.url} is ${pr.state}, not MERGED; refusing to clean` };
   if (localHead === pr.headRefOid) return { ok: true };
-  if (inMaster) return { ok: true };
+  if (inMaster || inPrHead) return { ok: true };
   const list = unpushed.length ? `\n  ${unpushed.join('\n  ')}` : ' (could not be listed)';
   return {
     ok: false,
@@ -94,10 +95,12 @@ function main() {
     }
   };
   const inMaster = git(['merge-base', '--is-ancestor', branch, 'origin/master']).ok;
+  if (pr.headRefOid && !git(['cat-file', '-e', `${pr.headRefOid}^{commit}`]).ok) git(['fetch', 'origin', pr.headRefOid]);
   const prHeadKnown = pr.headRefOid && git(['cat-file', '-e', `${pr.headRefOid}^{commit}`]).ok;
+  const inPrHead = prHeadKnown && git(['merge-base', '--is-ancestor', branch, pr.headRefOid]).ok;
   const base = prHeadKnown ? pr.headRefOid : 'origin/master';
   const unpushed = git(['log', '--oneline', `${base}..${branch}`]).out.split('\n').filter(Boolean);
-  const verdict = decideClean({ pr, branch, localHead, inMaster, unpushed });
+  const verdict = decideClean({ pr, branch, localHead, inMaster, inPrHead, unpushed });
   if (!verdict.ok) die(`${verdict.reason} [${id}]`);
 
   const wtPath = sh('git', ['worktree', 'list', '--porcelain'], mainDir)

@@ -67,7 +67,7 @@ pnpm task:clean T-xxx --remote   # also deletes origin/task/T-xxx-slug (skip if 
 ```
 
 `task:clean` also refuses to delete the local branch when it would lose work: the branch HEAD must equal the PR's
-`headRefOid` or be fully contained in `origin/master`; otherwise it lists the commits that were never pushed.
+`headRefOid`, or be an ancestor of that head (the reviewer's server-side update-branch adds a merge commit the local branch lacks) or fully contained in `origin/master`; otherwise it lists the commits that were never pushed.
 
 Manual equivalent (if the scripts are unavailable): `git worktree add ../finance-wt/t-xxx-slug -b task/T-xxx-slug origin/master`,
 copy the env files, `pnpm install --frozen-lockfile`, `node scripts/tasks.mjs set T-xxx in_progress --branch task/T-xxx-slug`,

@@ -39,6 +39,12 @@ test('refuses (with a note) even when the unpushed commits cannot be listed', ()
   assert.match(r.reason, /could not be listed/);
 });
 
+test('allows deleting a branch that is an ancestor of the PR head (server-side update-branch merge commit)', () => {
+  const pr = { ...merged, headRefOid: 'b'.repeat(40) };
+  assert.equal(decideClean({ ...base, pr, inMaster: false, inPrHead: true }).ok, true);
+  assert.equal(decideClean({ ...base, pr, inMaster: false, inPrHead: false }).ok, false);
+});
+
 test('resolveBranch prefers the task file branch field (renumbered task keeps its old branch name)', () => {
   const localBranches = ['master', 'task/T-023-months-recalc', 'task/T-033-other'];
   assert.deepEqual(resolveBranch({ id: 'T-032', branchField: 'task/T-023-months-recalc', localBranches }), { branch: 'task/T-023-months-recalc' });

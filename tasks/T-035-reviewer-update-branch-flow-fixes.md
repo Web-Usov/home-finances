@@ -42,6 +42,7 @@ longer sends nearly every PR back to the author; `tasks:check` and `task:clean` 
 - [x] reviewer.md, review.md, workflow.md agree: update-branch conflict => back to the author, otherwise rely on CI + auto-merge
 - [x] `tasks:check` collision message suggests `git merge origin/master` first (test asserts it)
 - [x] `resolveBranch` errors when `branch:` is set but missing locally; falls back only when null/absent (test)
+- [x] `decideClean` allows deleting a branch that is an ancestor of the PR head (unit test)
 - [x] `pnpm verify` is green
 - [x] Task file updated (status, branch, pr, Result)
 
@@ -63,3 +64,5 @@ Fixes findings 1-5 of the PR #18 review (finding 6 needed no change).
 - review.md, workflow.md section 6 aligned; the "master changed generated files" condition is dropped.
 - `tasks:check` collision message suggests `git merge origin/master` first (test asserts it).
 - `resolveBranch`: `branch:` set but missing locally is an error, fallback only for null/absent (tests).
+- `decideClean`: new `inPrHead` input (local branch is an ancestor of `headRefOid`, fetched on demand) so a PR head extended by the
+  server-side update-branch merge commit no longer blocks `task:clean`; unit-tested.
