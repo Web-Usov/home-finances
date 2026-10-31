@@ -70,6 +70,7 @@ Run it before declaring work done. Test details: `docs/testing.md`.
 | Modules, request/recalculation flow, error model | `docs/architecture.md` |
 | Testing strategy and commands | `docs/testing.md` |
 | Agent workflow (one task = one branch = one PR) | `docs/workflow.md` |
+| Owner's preview (auto-deployed master, URLs, logs, reset) | `docs/preview.md` |
 | Work items | `tasks/` (detailed, EN), `epics/` (RU); board in `tasks/README.md` |
 | DB schema | `apps/api/prisma/schema.prisma` |
 | Domain types / error codes | `packages/types/src/` |
@@ -126,5 +127,5 @@ Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Comman
 - Database ids are UUID v4; month `version` is the optimistic-lock counter (ADR 0005).
 - Do not touch generated code in `apps/mobile/src/api` by hand. After changing controllers/DTOs run `pnpm api:generate`
   (writes the committed `apps/api/openapi.json`, then Orval; no running server needed); `pnpm api:contract` fails on drift.
-- `EXPO_PUBLIC_API_URL` is the API **origin** (`http://localhost:3000`), without `/api`; generated paths already start with `/api/v1`.
+- `EXPO_PUBLIC_API_URL` is the API **origin** (`http://localhost:3000`), without `/api`; generated paths already start with `/api/v1`. The value `same-origin` (or `/`) makes the client use the page origin (preview, `docs/preview.md`).
 - Integration tests use the separate DB `family_budget_test` (`apps/api/.env.test`), never the dev DB.

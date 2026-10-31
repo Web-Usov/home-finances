@@ -7,6 +7,7 @@
 | [architecture.md](architecture.md) | EN | Modules, request and recalculation flow, error model, client, data model |
 | [testing.md](testing.md) | EN | Testing strategy, commands, test database, e2e, API contract, compose smoke |
 | [workflow.md](workflow.md) | EN | Task lifecycle: pick, worktree, implement, ship, review, handoff, milestones; OpenCode agents and commands |
+| [preview.md](preview.md) | EN | Owner's preview environment: auto-deployed master, URLs, updater, logs, DB reset, disable |
 | [archive/](archive/) | mixed | History only: original monolithic `SPECIFICATION.md` and archived `omo` plans/evidence. Line numbers in them are obsolete. |
 
 Related: root [AGENTS.md](../AGENTS.md) (agent entry point), `tasks/` and `epics/` (work items; board in `tasks/README.md`),

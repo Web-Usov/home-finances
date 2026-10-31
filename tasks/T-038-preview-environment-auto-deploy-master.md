@@ -26,23 +26,23 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+A persistent preview of the app on the dev host for the owner, auto-updated after every merge to `master`
+(web on port 8100, API on 127.0.0.1:3100, DB `family_budget_preview`), with demo data and systemd units.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- `docs/preview.md` (new), `scripts/preview/*` (updater, web server + `/api` proxy, systemd templates, demo seed).
+- Client same-origin mode: `apps/mobile/src/lib/apiBaseUrl.ts` + `axios-instance.ts`; e2e/dev defaults unchanged.
+- Machine-wide lock `scripts/with-lock.mjs` (name `e2e`) is reused so builds do not collide with e2e runs.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
+- [x] `apps/mobile/src/lib/apiBaseUrl.test.ts` covers default, explicit origin and `same-origin` / `/` modes
+- [x] `scripts/__tests__/preview-serve-web.test.mjs`: SPA fallback, `/version.json`, `/api` proxy, traversal guard
+- [x] `scripts/preview/update.sh` swaps a blue/green slot atomically; a failed build keeps the old release (verified on the host)
+- [x] systemd units installed and running on the host; first deploy and demo seed done; endpoints verified with curl
+- [x] `docs/preview.md` linked from `AGENTS.md` and `docs/README.md`
 - [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
 - [ ] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
