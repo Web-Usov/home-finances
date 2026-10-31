@@ -1,7 +1,8 @@
 import axios, { type AxiosRequestConfig } from 'axios';
+import { resolveApiBaseUrl } from '../lib/apiBaseUrl';
 
 const axiosInstance = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000',
+  baseURL: resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL),
   headers: {
     'Content-Type': 'application/json',
   },

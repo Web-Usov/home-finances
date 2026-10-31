@@ -1,0 +1,27 @@
+[Unit]
+Description=Family Budget preview web (Expo export + /api proxy, port 8100)
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=@PREVIEW_HOME@/preview.env
+# Run from the slot that is active at start; releases are resolved per request through `current`.
+ExecStart=@NODE@ @PREVIEW_HOME@/current/scripts/preview/serve-web.mjs
+Restart=on-failure
+RestartSec=5
+MemoryMax=256M
+Nice=5
+# Hardening. Runs as root because the preview lives under /root/workspace (mode 700), so ProtectHome and a dedicated
+# user are not possible without moving it; the filesystem is read-only instead.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=@PREVIEW_HOME@/state
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target
