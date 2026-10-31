@@ -11,8 +11,8 @@
  * apps/api/.env.test (from the main checkout, else from .env.test.example) -> `pnpm install --frozen-lockfile --prefer-offline` (no timeout) ->
  * status in_progress + branch -> board -> commit `chore(tasks): start T-xxx [T-xxx]`.
  *
- * `--new` first creates the task file from tasks/_template.md with the next free id (highest id on origin/master or in
- * any local/remote task branch, plus one) and then claims it in the same commit. Use it for follow-up work discovered
+ * `--new` first creates the task file from tasks/_template.md with the next free id (highest id in task files on origin/master, in
+ * task files of any local/remote ref, or in a task branch name, plus one) and then claims it in the same commit. Use it for follow-up work discovered
  * while implementing or reviewing; fill in Goal/Context/DoD in the worktree afterwards.
  *
  * If a step fails after the worktree was created, the worktree and branch are removed again so that a retry starts
@@ -26,6 +26,37 @@ import { parseFrontmatter } from './tasks.mjs';
 
 const AREAS = ['api', 'mobile', 'infra', 'docs'];
 const SIZES = ['S', 'M'];
+
+/**
+ * Every task id already taken anywhere: task files on origin/master, task files under tasks/ in every remote and local
+ * ref (unmerged PR branches carry task files whose ids are not in any branch name) and ids in task branch names.
+ * `gitFn(args)` runs git in the main checkout and returns trimmed stdout.
+ */
+export function collectTaskIds(gitFn) {
+  const ids = new Set();
+  const fromFiles = (out) => {
+    for (const f of out.split('\n')) {
+      const id = /(?:^|\/)(T-\d+)-[^/]*\.md$/.exec(f)?.[1];
+      if (id) ids.add(id);
+    }
+  };
+  const refs = new Set(['origin/master']);
+  for (const prefix of ['refs/remotes/origin', 'refs/heads']) {
+    for (const r of gitFn(['for-each-ref', '--format=%(refname)', prefix]).split('\n').filter(Boolean)) refs.add(r);
+  }
+  for (const ref of refs) {
+    try {
+      fromFiles(gitFn(['ls-tree', '--name-only', ref, 'tasks/']));
+    } catch {
+      /* ref without a tasks/ dir or an unreadable ref: nothing to collect */
+    }
+  }
+  for (const b of gitFn(['branch', '-a', '--format=%(refname:short)']).split('\n')) {
+    const id = /(?:^|\/)task\/(T-\d+)-/.exec(b)?.[1];
+    if (id) ids.add(id);
+  }
+  return [...ids];
+}
 
 /** Next free numeric id given every known id (task files and task branches). */
 export function nextTaskId(ids) {
@@ -116,11 +147,7 @@ function main() {
   if (creating) {
     const epics = git(['ls-tree', '--name-only', 'origin/master', 'epics/'], mainDir).split('\n');
     if (!epics.some((e) => e.startsWith(`epics/${opts.epic}-`))) die(`epic ${opts.epic} not found on origin/master`);
-    const branchIds = git(['branch', '-a', '--format=%(refname:short)'], mainDir)
-      .split('\n')
-      .map((b) => /(?:^|\/)task\/(T-\d+)-/.exec(b)?.[1])
-      .filter(Boolean);
-    id = nextTaskId([...tasks.map((t) => t.data.id), ...branchIds]);
+    id = nextTaskId([...tasks.map((t) => t.data.id), ...collectTaskIds((args) => git(args, mainDir))]);
     slug = slugify(opts.new);
     newTaskText = renderNewTask(git(['show', 'origin/master:tasks/_template.md'], mainDir), { id, title: opts.new.trim(), ...opts });
   } else {

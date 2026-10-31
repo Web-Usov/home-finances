@@ -29,7 +29,7 @@ Expo web client (apps/mobile)  --HTTP/JSON-->  NestJS + Fastify API (apps/api)  
 | `allocations/` | save the whole allocation table of a month | UI-11…15, API-04 | done |
 | `operations/` | expenses, transfers, adjustments, history | OP-*, HIST-*, API-10…11 | done |
 | `calculation-engine/` | deterministic cascade recalculation | CALC-*, FIN-*, OP-* | done |
-| `reporting/` | monthly dashboard, yearly analytics | UI-06…10, REP-*, API-12…13 | stubs |
+| `reporting/` | monthly dashboard, yearly analytics | UI-06…10, REP-*, API-12…13 | monthly dashboard done (read-only over snapshots), yearly stub |
 
 Dependency direction: domain modules → `CalculationEngineService` and `PrismaService`; the engine depends only on
 `PrismaService`; nothing depends on controllers. `packages/types` depends on nothing in the repo.

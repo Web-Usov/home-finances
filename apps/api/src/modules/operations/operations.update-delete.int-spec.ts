@@ -62,7 +62,7 @@ describe('Operations update and delete (integration)', () => {
   const resultOf = (operationId: string) =>
     t.prisma.operationResult.findUniqueOrThrow({ where: { operationId } });
 
-  it('OP-17 / AC-12: editing the first operation keeps its sequence_no and later results are recalculated in the old order', async () => {
+  it('OP-17 / FIN-05 / AC-12: editing the first operation keeps its sequence_no and later results are recalculated in the old order', async () => {
     const { month, food } = await setup();
     const first = await addOperation(month.id, { type: 'expense', sourceEnvelopeId: food.id, amount: '8000.00' });
     const second = await addOperation(month.id, { type: 'expense', sourceEnvelopeId: food.id, amount: '5000.00' });
@@ -108,7 +108,7 @@ describe('Operations update and delete (integration)', () => {
     expect(cleared.body.data.operation.comment).toBeNull();
   });
 
-  it('OP-18 / AC-13: delete leaves a sequence gap and updates this and later months', async () => {
+  it('OP-18 / FIN-06 / AC-13: delete leaves a sequence gap and updates this and later months', async () => {
     const { month, food } = await setup();
     const feb = await createMonth(t.prisma, { period: '2026-02', status: 'draft', incomeMinor: 0 });
     const first = await addOperation(month.id, { type: 'expense', sourceEnvelopeId: food.id, amount: '4000.00' });

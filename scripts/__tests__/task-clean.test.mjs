@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { decideClean } from '../task-clean.mjs';
+import { decideClean, resolveBranch } from '../task-clean.mjs';
 import { installGuards } from './helpers.mjs';
 
 installGuards();
@@ -37,4 +37,16 @@ test('refuses (with a note) even when the unpushed commits cannot be listed', ()
   const r = decideClean({ ...base, pr, inMaster: false });
   assert.equal(r.ok, false);
   assert.match(r.reason, /could not be listed/);
+});
+
+test('resolveBranch prefers the task file branch field (renumbered task keeps its old branch name)', () => {
+  const localBranches = ['master', 'task/T-023-months-recalc', 'task/T-033-other'];
+  assert.deepEqual(resolveBranch({ id: 'T-032', branchField: 'task/T-023-months-recalc', localBranches }), { branch: 'task/T-023-months-recalc' });
+});
+
+test('resolveBranch falls back to the task/T-xxx-* pattern and reports ambiguity or absence', () => {
+  assert.deepEqual(resolveBranch({ id: 'T-033', branchField: null, localBranches: ['task/T-033-a'] }), { branch: 'task/T-033-a' });
+  assert.deepEqual(resolveBranch({ id: 'T-033', branchField: 'task/T-033-gone', localBranches: ['task/T-033-a'] }), { branch: 'task/T-033-a' });
+  assert.match(resolveBranch({ id: 'T-032', branchField: 'task/T-023-x', localBranches: ['master'] }).error, /found 0.*task file says task\/T-023-x/);
+  assert.match(resolveBranch({ id: 'T-033', branchField: null, localBranches: ['task/T-033-a', 'task/T-033-b'] }).error, /found 2/);
 });

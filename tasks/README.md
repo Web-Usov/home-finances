@@ -22,6 +22,8 @@
 
 - [T-022](T-022-process-stability-conflict-free-board.md) Process stability: conflict-free board, robust script tests — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/11)
 
+- [T-033](T-033-task-id-allocation.md) Task id allocation sees task files of all remote branches — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/18)
+
 ## E-01. Ядро API: месяцы и операции — done
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
@@ -34,13 +36,17 @@
 
 - [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
 
+- [T-032](T-032-months-recalculate-on-month-creation.md) Months: recalculate on month creation and draft promotion — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/16)
+
+- [T-034](T-034-e01-rule-coverage.md) E-01: tests citing every epic rule — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/19)
+
 ## E-02. Отчётность API — planned
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)
 
-- [T-007](T-007-dashboard-monthly-api.md) Reporting: monthly dashboard endpoint — **todo** · api · M · depends: T-004, T-006 · —
+- [T-007](T-007-dashboard-monthly-api.md) Reporting: monthly dashboard endpoint — **done** · api · M · depends: T-004, T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/14)
 
-- [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **todo** · api · M · depends: T-004 · —
+- [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **done** · api · M · depends: T-004 · [PR](https://github.com/Web-Usov/home-finances/pull/17)
 
 ## E-03. Экран «Месяц» и редактор распределения — planned
 
