@@ -28,7 +28,11 @@ import type {
   OperationsControllerCreateV1201,
   OperationsControllerCreateV1Body,
   OperationsControllerListV1200,
-  OperationsControllerListV1Params
+  OperationsControllerListV1Params,
+  OperationsControllerRemoveV1200,
+  OperationsControllerRemoveV1Params,
+  OperationsControllerUpdateV1200,
+  OperationsControllerUpdateV1Body
 } from '.././model';
 
 import { customAxiosInstance } from '.././axios-instance';
@@ -190,6 +194,133 @@ export const useOperationsControllerCreateV1 = <TError = void,
       > => {
 
       const mutationOptions = getOperationsControllerCreateV1MutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Edit an operation; sequence_no is kept, the cascade is recalculated
+ */
+export const operationsControllerUpdateV1 = (
+    id: string,
+    operationsControllerUpdateV1Body: OperationsControllerUpdateV1Body,
+ ) => {
+      
+      
+      return customAxiosInstance<OperationsControllerUpdateV1200>(
+      {url: `/api/v1/operations/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: operationsControllerUpdateV1Body
+    },
+      );
+    }
+  
+
+
+export const getOperationsControllerUpdateV1MutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext> => {
+
+const mutationKey = ['operationsControllerUpdateV1'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, {id: string;data: OperationsControllerUpdateV1Body}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  operationsControllerUpdateV1(id,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OperationsControllerUpdateV1MutationResult = NonNullable<Awaited<ReturnType<typeof operationsControllerUpdateV1>>>
+    export type OperationsControllerUpdateV1MutationBody = OperationsControllerUpdateV1Body
+    export type OperationsControllerUpdateV1MutationError = void
+
+    /**
+ * @summary Edit an operation; sequence_no is kept, the cascade is recalculated
+ */
+export const useOperationsControllerUpdateV1 = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof operationsControllerUpdateV1>>,
+        TError,
+        {id: string;data: OperationsControllerUpdateV1Body},
+        TContext
+      > => {
+
+      const mutationOptions = getOperationsControllerUpdateV1MutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Delete an operation; the sequence_no gap stays, the cascade is recalculated
+ */
+export const operationsControllerRemoveV1 = (
+    id: string,
+    params: OperationsControllerRemoveV1Params,
+ ) => {
+      
+      
+      return customAxiosInstance<OperationsControllerRemoveV1200>(
+      {url: `/api/v1/operations/${id}`, method: 'DELETE',
+        params
+    },
+      );
+    }
+  
+
+
+export const getOperationsControllerRemoveV1MutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string;params: OperationsControllerRemoveV1Params}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string;params: OperationsControllerRemoveV1Params}, TContext> => {
+
+const mutationKey = ['operationsControllerRemoveV1'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, {id: string;params: OperationsControllerRemoveV1Params}> = (props) => {
+          const {id,params} = props ?? {};
+
+          return  operationsControllerRemoveV1(id,params,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OperationsControllerRemoveV1MutationResult = NonNullable<Awaited<ReturnType<typeof operationsControllerRemoveV1>>>
+    
+    export type OperationsControllerRemoveV1MutationError = void
+
+    /**
+ * @summary Delete an operation; the sequence_no gap stays, the cascade is recalculated
+ */
+export const useOperationsControllerRemoveV1 = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string;params: OperationsControllerRemoveV1Params}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof operationsControllerRemoveV1>>,
+        TError,
+        {id: string;params: OperationsControllerRemoveV1Params},
+        TContext
+      > => {
+
+      const mutationOptions = getOperationsControllerRemoveV1MutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

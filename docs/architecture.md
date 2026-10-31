@@ -27,7 +27,7 @@ Expo web client (apps/mobile)  --HTTP/JSON-->  NestJS + Fastify API (apps/api)  
 | `months/` | month list/create, status transitions, income, close/reopen | MON-*, API-01…06 | list/create/income/close/reopen done |
 | `envelopes/` | list/create/rename/reorder/archive, balances | ENV-*, API-07…09 | done |
 | `allocations/` | save the whole allocation table of a month | UI-11…15, API-04 | done |
-| `operations/` | expenses, transfers, adjustments, history | OP-*, HIST-*, API-10…11 | stubs |
+| `operations/` | expenses, transfers, adjustments, history | OP-*, HIST-*, API-10…11 | done |
 | `calculation-engine/` | deterministic cascade recalculation | CALC-*, FIN-*, OP-* | done |
 | `reporting/` | monthly dashboard, yearly analytics | UI-06…10, REP-*, API-12…13 | stubs |
 
@@ -97,7 +97,7 @@ service throws  ValidationException (422) | ConflictException (409) | NotFoundEx
 
 - `ApiErrorCode` (in `packages/types/src/entities.ts`): `ALLOCATION_EXCEEDS_INCOME`, `MONTH_LOCKED`, `TRANSFER_EXCEEDS_BALANCE`,
   `ENVELOPE_NOT_EMPTY`, `ENVELOPE_NOT_FOUND`, `MONTH_NOT_FOUND`, `VERSION_CONFLICT`, `INVALID_STATUS_TRANSITION`,
-  `INVALID_PERIOD`, `ENVELOPE_NAME_DUPLICATE`. New codes are added there, never locally.
+  `INVALID_PERIOD`, `ENVELOPE_NAME_DUPLICATE`, `VALIDATION_ERROR`, `OPERATION_NOT_FOUND`. New codes are added there, never locally.
 - Message texts mirror spec `MSG-*` where one exists (e.g. MSG-01, MSG-06).
 - Non-fatal conditions are returned as `warnings` (`{ code, message }`) in mutation responses, not as errors (API-16).
 - Unhandled errors fall through to Nest's default 500 handling.
