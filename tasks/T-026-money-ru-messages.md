@@ -1,7 +1,7 @@
 ---
 id: T-026
 title: ru-RU money formatting in server messages
-status: in_progress
+status: done
 epic: E-00
 depends: [T-005, T-025, T-020]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-03]
 area: api
 size: S
 branch: task/T-026-money-ru-messages
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/32
 ---
 
 # T-026. ru-RU money formatting in server messages
