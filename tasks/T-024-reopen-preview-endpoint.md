@@ -1,7 +1,7 @@
 ---
 id: T-024
 title: Reopen preview endpoint GET /months/:period/reopen-preview
-status: todo
+status: in_progress
 epic: E-01
 depends: [T-006, T-020]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-06, API-20, MON-12, MON-13, MON-14]
 acceptance: [AC-15]
 area: api
 size: S
-branch: null
+branch: task/T-024-reopen-preview-endpoint
 pr: null
 ---
 

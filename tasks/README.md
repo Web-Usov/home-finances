@@ -50,7 +50,7 @@
 
 - [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
 
-- [T-024](T-024-reopen-preview-endpoint.md) Reopen preview endpoint GET /months/:period/reopen-preview — **todo** · api · S · depends: T-006, T-020 · —
+- [T-024](T-024-reopen-preview-endpoint.md) Reopen preview endpoint GET /months/:period/reopen-preview — **in_progress** · api · S · depends: T-006, T-020 · —
 
 - [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **todo** · api · M · depends: T-005, T-020 · —
 
