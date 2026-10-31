@@ -75,7 +75,7 @@ test.describe('operation forms', { tag: '@smoke' }, () => {
 
     await expect(page.getByText('Списание сохранено.')).toBeVisible();
     // The uncovered part is the API's answer (warning after the save and the envelope row).
-    await expect(page.getByText(/будут отмечены как непокрытые/)).toBeVisible();
+    await expect(page.getByText(/В конверте доступно 10\s000,00\s₽\. 5\s000,00\s₽ будут отмечены как непокрытые\./)).toBeVisible();
     await expect(page.getByText(/^Не покрыто: 5\s000,00/)).toBeVisible();
     const dashboard = await dashboardFromApi(page, '2026-01');
     expect(dashboard.byName('Продукты')).toMatchObject({ closing: '0.00', spent: '15000.00', expensesCovered: '10000.00' });
@@ -96,7 +96,7 @@ test.describe('operation forms', { tag: '@smoke' }, () => {
     await button(page, 'Сохранить перевод').click();
 
     // Not saved: the API refuses and the form offers the available amount.
-    await expect(page.getByText(/Доступно 6\s?000[.,]00\s₽\. Перевести только/)).toBeVisible();
+    await expect(page.getByText(/Доступно 6\s000,00\s₽\. Перевести только 6\s000,00\s₽\?/)).toBeVisible();
     await shot(page, testInfo, '5-transfer-refused');
     let dashboard = await dashboardFromApi(page, '2026-01');
     expect(dashboard.byName('Дом').closing).toBe('6000.00');
@@ -138,7 +138,7 @@ test.describe('operation forms', { tag: '@smoke' }, () => {
     await shot(page, testInfo, '8-negative-adjustment-warning');
     await button(page, 'Всё равно сохранить').click();
     await expect(page.getByText('Корректировка сохранена.')).toBeVisible();
-    await expect(page.getByText(/будут отмечены как непокрытые/)).toBeVisible();
+    await expect(page.getByText(/Баланс станет 0\s₽, 10\s000,00\s₽ будут отмечены как непокрытые\./)).toBeVisible();
     dashboard = await dashboardFromApi(page, '2026-01');
     expect(dashboard.byName('Подушка')).toMatchObject({ closing: '0.00', adjustmentApplied: '-10000.00' });
     expect(dashboard.byName('Подушка').uncovered.total).toBe('10000.00');

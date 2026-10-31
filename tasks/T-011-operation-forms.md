@@ -29,12 +29,12 @@ Quick actions "Списать", "Перевести", "Скорректиров�
 
 ## Definition of Done
 
-- [ ] Mobile tests: `it('MSG-02 / OP-06: expense above balance asks confirmation and shows X and Y')`, `it('MSG-03 / OP-07 / AC-07: transfer above balance offers the available amount')`, `it('MSG-04 / OP-12: negative adjustment above balance asks confirmation')`, `it('AC-21: forms have no day field')`
-- [ ] Playwright spec `e2e/operations.e2e.ts` covering `AC-05`, `AC-06`, `AC-07`, `AC-09`, `AC-10`
-- [ ] Screenshots of each warning state attached as artifacts
-- [ ] `pnpm verify` is green
-- [ ] `pnpm e2e:smoke` is green and a screenshot of the new screen state is attached as a Playwright artifact
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Mobile tests: `it('MSG-02 / OP-06: expense above balance asks confirmation and shows X and Y')`, `it('MSG-03 / OP-07 / AC-07: transfer above balance offers the available amount')`, `it('MSG-04 / OP-12: negative adjustment above balance asks confirmation')`, `it('AC-21: forms have no day field')`
+- [x] Playwright spec `e2e/operations.e2e.ts` covering `AC-05`, `AC-06`, `AC-07`, `AC-09`, `AC-10`
+- [x] Screenshots of each warning state attached as artifacts
+- [x] `pnpm verify` is green
+- [x] `pnpm e2e:smoke` is green and a screenshot of the new screen state is attached as a Playwright artifact
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -47,4 +47,21 @@ Quick actions "Списать", "Перевести", "Скорректиров�
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+PR: see `pr:` in the front matter.
+
+What changed (mobile only, no API change):
+
+- `OperationForm.tsx` (expense / transfer / adjustment ±), `QuickActionsPanel.tsx` (state: open form + result notice), `useCreateOperation.ts`.
+  `MonthDashboard.tsx` changes by one line (`QuickActions` -> `QuickActionsPanel key={period}`) to keep T-037 merges easy.
+- Every request carries `period` + that month's `version` (UI-16, API-21). Archived envelopes are not offered (ENV-12). Amount input is ru-RU
+  (both separators); the comment is optional and omitted when empty; there is no day field (AC-21; the entry is removed from `scripts/spec-coverage-deferred.json`).
+- Expense / negative adjustment above the `closing` balance returned by the dashboard: a warning is shown and the save button becomes
+  "Всё равно сохранить" (OP-06, OP-12). The uncovered part Y is NOT computed on the client: it is shown after the save from the API warning (MSG-02 / MSG-04 texts, ru-RU since T-026).
+- Transfer above the available amount: the API answers 409 `TRANSFER_EXCEEDS_BALANCE` (shown verbatim); the form then offers "Перевести только X", which retries with
+  the source envelope's `closing` from the dashboard (OP-07, MSG-03, AC-07). Closed month: form disabled with MSG-06.
+- After a request settles the dashboard, months, envelopes and operations queries are invalidated.
+
+Tests: `OperationForm.test.tsx` (16 cases), `e2e/operations.e2e.ts` (5 @smoke tests: AC-05, AC-06, AC-07, AC-09, AC-10, AC-21, UI-16 draft month, MSG-06 closed); screenshots are attached to the Playwright report (`e2e/playwright-report`, CI artifact `playwright-report`).
+
+Deviations: the warning shown BEFORE saving is "В конверте доступно X ₽. Остальная часть будет отмечена как непокрытая." (not the verbatim MSG-02/MSG-04 with Y),
+because Y would need client-side balance arithmetic; the verbatim MSG-02/MSG-04 text with Y is shown after the save from the API response. The transfer-refusal text is the API message.
