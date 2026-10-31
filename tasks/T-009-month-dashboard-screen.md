@@ -1,7 +1,7 @@
 ---
 id: T-009
 title: Mobile: month dashboard screen, period switcher and month actions
-status: todo
+status: in_progress
 epic: E-03
 depends: [T-006, T-007]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [UI-01, UI-02, UI-06, UI-07, UI-08, UI-09, UI-10, MON-12, MSG-06, SCOPE-23
 acceptance: [AC-01, AC-14, AC-15, AC-16]
 area: mobile
 size: M
-branch: null
+branch: task/T-009-month-dashboard-screen
 pr: null
 ---
 
