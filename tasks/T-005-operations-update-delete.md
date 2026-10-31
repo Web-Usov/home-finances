@@ -1,7 +1,7 @@
 ---
 id: T-005
 title: Operations: update and delete with stable sequence and recalculation
-status: in_progress
+status: done
 epic: E-01
 depends: [T-004]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-08, AC-12, AC-13, AC-14]
 area: api
 size: M
 branch: task/T-005-operations-update-delete
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/13
 ---
 
 # T-005. Operations: update and delete with stable sequence and recalculation
