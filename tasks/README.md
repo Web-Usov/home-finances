@@ -106,4 +106,4 @@
 
 - [T-038](T-038-preview-environment-auto-deploy-master.md) Preview environment: auto-deploy master for the owner — **done** · infra · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/28)
 
-- [T-039](T-039-preview-keep-api-up-restart-always.md) Preview: keep API up (Restart=always, health watchdog) — **in_progress** · infra · S · depends: — · —
+- [T-039](T-039-preview-keep-api-up-restart-always.md) Preview: keep API up (Restart=always, health watchdog) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/34)
