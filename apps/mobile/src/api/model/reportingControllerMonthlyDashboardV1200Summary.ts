@@ -12,7 +12,7 @@ export type ReportingControllerMonthlyDashboardV1200Summary = {
   income: string;
   /** @pattern ^\d+(\.\d{1,2})?$ */
   allocated: string;
-  /** @pattern ^\d+(\.\d{1,2})?$ */
+  /** @pattern ^-?\d+(\.\d{1,2})?$ */
   free: string;
   /** @pattern ^\d+(\.\d{1,2})?$ */
   replenished: string;

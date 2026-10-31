@@ -42,7 +42,7 @@
 
 - [T-007](T-007-dashboard-monthly-api.md) Reporting: monthly dashboard endpoint — **done** · api · M · depends: T-004, T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/14)
 
-- [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **todo** · api · M · depends: T-004 · —
+- [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **done** · api · M · depends: T-004 · [PR](https://github.com/Web-Usov/home-finances/pull/17)
 
 ## E-03. Экран «Месяц» и редактор распределения — planned
 
