@@ -35,7 +35,8 @@ describe('EnvelopeCard', () => {
     renderWithProviders(<EnvelopeCard envelope={envelope} />);
 
     expect(screen.getByText('Еда')).toBeTruthy();
-    expect(screen.getByText(/₽/)).toBeTruthy();
+    // NFR-24: ru-RU money format shared with the month screen (balanceMinor 150_000 -> 1 500,00 ₽).
+    expect(screen.getByText('1\u00A0500,00\u00A0₽')).toBeTruthy();
     expect(screen.getByText('Переименовать')).toBeTruthy();
     expect(screen.getByText('Архивировать')).toBeTruthy();
   });

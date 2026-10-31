@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { formatMoneyMinor } from '@family-budget/types';
+import { formatRubles } from '../../lib/money';
 import { EnvelopeRenameForm } from './EnvelopeRenameForm';
 import {
   getEnvelopesControllerListV1QueryKey,
@@ -50,7 +51,7 @@ export function EnvelopeCard({ envelope }: EnvelopeCardProps) {
       <View className="flex-row justify-between items-start mb-3">
         <Text className="text-lg font-semibold text-gray-800 flex-1 mr-2">{envelope.name}</Text>
         <Text className="text-lg font-bold text-gray-900">
-          {formatMoneyMinor(envelope.balanceMinor)} ₽
+          {formatRubles(formatMoneyMinor(envelope.balanceMinor))}
         </Text>
       </View>
       <View className="flex-row gap-3">

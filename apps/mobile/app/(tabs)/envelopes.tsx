@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { formatMoneyMinor } from '@family-budget/types';
+import { formatRubles } from '../../src/lib/money';
 import { useEnvelopesControllerListV1 } from '../../src/api/envelopes/envelopes';
 import { EnvelopeCard } from '../../src/components/envelopes/EnvelopeCard';
 import { EnvelopeCreateForm } from '../../src/components/envelopes/EnvelopeCreateForm';
@@ -88,7 +89,7 @@ export default function EnvelopesScreen() {
                       {envelope.name}
                     </Text>
                     <Text className="text-base text-gray-500">
-                      {formatMoneyMinor(envelope.balanceMinor)} ₽
+                      {formatRubles(formatMoneyMinor(envelope.balanceMinor))}
                     </Text>
                   </View>
                 </View>
