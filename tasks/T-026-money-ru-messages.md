@@ -1,7 +1,7 @@
 ---
 id: T-026
 title: ru-RU money formatting in server messages
-status: todo
+status: in_progress
 epic: E-00
 depends: [T-005, T-025, T-020]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [MSG-01, MSG-02, MSG-03, MSG-04, MSG-05, MSG-07, API-14, AC-03]
 acceptance: [AC-03]
 area: api
 size: S
-branch: null
+branch: task/T-026-money-ru-messages
 pr: null
 ---
 

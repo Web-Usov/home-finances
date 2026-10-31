@@ -24,7 +24,7 @@
 
 - [T-023](T-023-initial-balance-month-not-found.md) Envelope with an initial balance and no month returns MONTH_NOT_FOUND — **done** · api · S · depends: T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/26)
 
-- [T-026](T-026-money-ru-messages.md) ru-RU money formatting in server messages — **todo** · api · S · depends: T-005, T-025, T-020 · —
+- [T-026](T-026-money-ru-messages.md) ru-RU money formatting in server messages — **in_progress** · api · S · depends: T-005, T-025, T-020 · —
 
 - [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **todo** · api · S · depends: T-006 · —
 
