@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { installGuards, makeTmp, gitEnv, repoRoot } from './helpers.mjs';
-import { nextTaskId, slugify, renderNewTask, parseArgs } from '../task-start.mjs';
+import { nextTaskId, collectTaskIds, slugify, renderNewTask, parseArgs } from '../task-start.mjs';
 
 installGuards();
 
@@ -130,4 +130,32 @@ test('--keep leaves the worktree and branch after a failure', () => {
   assert.match(r.stderr, /--keep/);
   assert.ok(fs.existsSync(path.join(fx.dir, 'main', 'finance-wt', 't-031-kept')));
   assert.notEqual(fx.sh(fx.main, 'branch', '--list', 'task/T-031-kept'), '');
+});
+
+/** Commits a task file on a new branch of the fixture (branch name deliberately not `task/...`). */
+function branchWithTask(fx, branch, id, { push, keepLocal }) {
+  fx.sh(fx.main, 'checkout', '-q', '-b', branch, 'origin/master');
+  fs.writeFileSync(path.join(fx.main, `tasks/${id}-pending-pr.md`), `---\nid: ${id}\n---\n`);
+  fx.sh(fx.main, 'add', '-A');
+  fx.sh(fx.main, 'commit', '-m', `add ${id}`);
+  if (push) fx.sh(fx.main, 'push', 'origin', branch);
+  fx.sh(fx.main, 'checkout', '-q', 'master');
+  if (!keepLocal) fx.sh(fx.main, 'branch', '-D', branch);
+}
+
+test('collectTaskIds sees task files of every remote and local ref, not only branch names', () => {
+  const fx = fixture();
+  branchWithTask(fx, 'process/pending-a', 'T-041', { push: true, keepLocal: false }); // only on origin
+  branchWithTask(fx, 'wip/local-only', 'T-045', { push: false, keepLocal: true }); // only local
+  fx.sh(fx.main, 'fetch', 'origin');
+  const ids = collectTaskIds((args) => fx.sh(fx.main, ...args));
+  for (const id of ['T-018', 'T-030', 'T-041', 'T-045']) assert.ok(ids.includes(id), `${id} in ${ids}`);
+});
+
+test('--new skips ids held by task files of unmerged branches (PR with T-023..T-031 style files)', () => {
+  const fx = fixture();
+  branchWithTask(fx, 'task/T-020-big-pr', 'T-041', { push: true, keepLocal: false });
+  const r = start(fx, ['--new', 'After pending', '--epic', 'E-00', '--area', 'infra', '--size', 'S']);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.ok(fs.existsSync(path.join(fx.dir, 'main', 'finance-wt', 't-042-after-pending', 'tasks/T-042-after-pending.md')));
 });

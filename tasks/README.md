@@ -22,6 +22,8 @@
 
 - [T-022](T-022-process-stability-conflict-free-board.md) Process stability: conflict-free board, robust script tests — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/11)
 
+- [T-033](T-033-task-id-allocation.md) Task id allocation sees task files of all remote branches — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/18)
+
 ## E-01. Ядро API: месяцы и операции — planned
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)

@@ -9,6 +9,7 @@ Branch and status: !`git branch --show-current && git status --short | head -20`
 
 1. Preflight - stop and report on the first failure:
    - On a task branch `task/T-xxx-slug`, not `master`; task file `tasks/T-xxx-*.md` exists.
+   - Merge `origin/master` right before shipping (branch protection is strict: a PR behind master cannot merge until updated).
    - `git fetch origin`; if behind `origin/master`, `git merge origin/master` (resolve `tasks/README.md` by running
      `pnpm tasks:board`). Never rebase-and-force-push.
    - `pnpm verify` is green (and `pnpm e2e:smoke` if the task `area` is mobile or it has e2e DoD items).
