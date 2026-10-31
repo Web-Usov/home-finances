@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { decideClean } from '../task-clean.mjs';
+import { installGuards } from './helpers.mjs';
+
+installGuards();
 
 const base = { branch: 'task/T-1-x', localHead: 'a'.repeat(40) };
 const merged = { state: 'MERGED', url: 'https://gh/pr/1', headRefOid: 'a'.repeat(40) };

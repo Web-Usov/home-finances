@@ -4,7 +4,7 @@
  *
  * Usage:
  *   node scripts/tasks.mjs check [--gh]            validate epics/ and tasks/ (exit 1 on errors)
- *   node scripts/tasks.mjs board [--check]         generate tasks/README.md; with --check fail if it is stale
+ *   node scripts/tasks.mjs board [--check]         generate tasks/README.md (counters are printed, not stored); --check fails if stale
  *   node scripts/tasks.mjs next                    list todo tasks whose depends are done and blocked_by is empty
  *   node scripts/tasks.mjs set <T-id> <status> [--branch <name>] [--pr <url>]
  *                                                  update frontmatter in place
@@ -210,35 +210,44 @@ function check({ gh }) {
 
 // ---------- board ----------
 
+/**
+ * The committed board is a pure per-task listing: no counters or anything else that depends on more than one task, so
+ * two PRs that change different tasks merge textually clean and still equal the regenerated board. Tasks are separated by
+ * blank lines (adjacent changed lines would conflict in a 3-way merge). Aggregates go to stdout (`summary`).
+ */
 function renderBoard() {
   const epics = loadEpics().filter((e) => e.data).sort((a, b) => a.data.id.localeCompare(b.data.id));
   const tasks = loadTasks().filter((t) => t.data).sort((a, b) => taskNum(a.data.id) - taskNum(b.data.id));
-  const count = (st) => tasks.filter((t) => t.data.status === st).length;
   const lines = [
     '# Доска задач (генерируется, не редактировать)',
     '',
-    '> Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`.',
-    '',
-    `Всего задач: ${tasks.length} — todo: ${count('todo')}, in_progress: ${count('in_progress')}, review: ${count('review')}, blocked: ${count('blocked')}, done: ${count('done')}.`,
+    '> Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`. Сводные счётчики не хранятся в файле: их печатает `pnpm tasks:board`.',
     '',
   ];
   for (const e of epics) {
-    const et = tasks.filter((t) => t.data.epic === e.data.id);
-    const done = et.filter((t) => t.data.status === 'done').length;
     const acc = e.data.accepted ? `, принят ${e.data.accepted}` : '';
-    lines.push(`## ${e.data.id}. ${e.data.title} — ${e.data.status}${acc} (${done}/${et.length})`, '');
+    lines.push(`## ${e.data.id}. ${e.data.title} — ${e.data.status}${acc}`, '');
     lines.push(`Эпик: [${e.name}](../epics/${e.name})`, '');
-    if (!et.length) { lines.push('_Нет задач._', ''); continue; }
-    lines.push('| ID | Title | Status | Area | Size | Depends | PR |', '| --- | --- | --- | --- | --- | --- | --- |');
-    for (const t of et) {
+    for (const t of tasks.filter((x) => x.data.epic === e.data.id)) {
       const d = t.data;
       const pr = d.pr ? `[PR](${d.pr})` : '—';
       const dep = d.depends.length ? d.depends.join(', ') : '—';
-      lines.push(`| [${d.id}](${t.name}) | ${d.title.replace(/\|/g, '\\|')} | ${d.status} | ${d.area} | ${d.size} | ${dep} | ${pr} |`);
+      lines.push(`- [${d.id}](${t.name}) ${d.title} — **${d.status}** · ${d.area} · ${d.size} · depends: ${dep} · ${pr}`, '');
     }
-    lines.push('');
   }
   return lines.join('\n');
+}
+
+/** Aggregate counters for stdout (never committed). */
+function summary() {
+  const tasks = loadTasks().filter((t) => t.data);
+  const count = (st) => tasks.filter((t) => t.data.status === st).length;
+  const out = [`Total tasks: ${tasks.length} - ${TASK_STATUS.map((s) => `${s}: ${count(s)}`).join(', ')}`];
+  for (const e of loadEpics().filter((x) => x.data).sort((a, b) => a.data.id.localeCompare(b.data.id))) {
+    const et = tasks.filter((t) => t.data.epic === e.data.id);
+    out.push(`  ${e.data.id} ${e.data.status}: ${et.filter((t) => t.data.status === 'done').length}/${et.length} done`);
+  }
+  return out.join('\n');
 }
 
 function board({ checkOnly }) {
@@ -254,6 +263,7 @@ function board({ checkOnly }) {
   }
   fs.writeFileSync(boardPath, content);
   console.log('tasks/README.md written');
+  console.log(summary());
 }
 
 // ---------- next ----------
@@ -265,8 +275,9 @@ function next() {
   const ready = tasks
     .filter((t) => t.data.status === 'todo' && (t.data.depends ?? []).every((d) => done.has(d)) && !(t.data.blocked_by ?? []).length)
     .sort((a, b) => taskNum(a.data.id) - taskNum(b.data.id));
-  if (!ready.length) { console.log('no ready tasks'); return; }
+  if (!ready.length) console.log('no ready tasks');
   for (const t of ready) console.log(`${t.data.id}\t${t.data.title}\t${t.data.epic} ${epics.get(t.data.epic) ?? ''}`.trimEnd());
+  console.log(`\n${summary()}`);
 }
 
 // ---------- set ----------

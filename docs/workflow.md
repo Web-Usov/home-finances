@@ -33,7 +33,7 @@ pnpm task:start T-xxx
 It validates that the task is ready (`todo`, `depends` done, `blocked_by` empty, read from `origin/master`), runs
 `git fetch`, creates `../finance-wt/t-xxx-slug` on `task/T-xxx-slug` from `origin/master` (the absolute path is printed),
 copies `apps/api/.env` from the main checkout, creates `apps/api/.env.test` from the main checkout's file or else from
-`apps/api/.env.test.example`, runs `pnpm install --frozen-lockfile`, sets `in_progress` + `branch`, regenerates the board and
+`apps/api/.env.test.example`, runs `pnpm install --frozen-lockfile --prefer-offline` (no timeout: under load it can take minutes, so do not wrap `task:start` in a short timeout), sets `in_progress` + `branch`, regenerates the board and
 makes the claim commit `chore(tasks): start T-xxx [T-xxx]` as the first commit of the branch (so `master` never carries
 in-progress noise). `.env` files are git-ignored and never committed. Continue in the printed directory.
 
@@ -41,7 +41,8 @@ Claims are therefore visible on `master` only after merge; the orchestrator avoi
 session an explicit task id (and by running `gh pr list` / `git branch -r` before picking).
 
 If any step fails after the worktree was created (install, env, commit), the script rolls back: it removes the worktree
-and the branch and says so, so a retry starts clean. `--keep` leaves them in place for debugging.
+and the branch and says so, so a retry starts clean (just run the same command again). `--keep` leaves them in place and prints how to resume
+or discard them.
 
 ### Filing new work: `--new`
 
@@ -205,7 +206,9 @@ planner PR; only the human sets `accepted` (`accepted: YYYY-MM-DD`). Findings fr
 - The turbo cache is shared across worktrees: logs replayed from a cache hit may show paths of other worktrees; harmless.
 - Each worktree has its own `node_modules`, `.env`, and test schema (schema-per-jest-worker on the shared test DB), so
   parallel `pnpm test:int` runs are safe. The dev DB is not used by tests.
-- Conflicts on `tasks/README.md` (generated) are resolved by running `pnpm tasks:board`, never by hand.
+- `tasks/README.md` (generated) holds one block per task and no aggregate counters, so parallel PRs that change different
+  tasks merge cleanly (covered by `scripts/__tests__/tasks.test.mjs`); counters are printed by `pnpm tasks:board` / `pnpm tasks:next`.
+  If it still conflicts, resolve by running `pnpm tasks:board`, never by hand.
 - Do not touch another session's worktree or branch.
 
 ## Command and permission cheat sheet
