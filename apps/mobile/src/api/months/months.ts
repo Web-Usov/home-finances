@@ -25,6 +25,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  MonthsControllerCloseV1200,
+  MonthsControllerCloseV1Body,
+  MonthsControllerReopenV1200,
+  MonthsControllerReopenV1Body,
+  MonthsControllerUpdateIncomeV1200,
   MonthsControllerUpdateIncomeV1Body
 } from '.././model';
 
@@ -196,7 +201,7 @@ export const monthsControllerUpdateIncomeV1 = (
  ) => {
       
       
-      return customAxiosInstance<void>(
+      return customAxiosInstance<MonthsControllerUpdateIncomeV1200>(
       {url: `/api/v1/months/${period}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: monthsControllerUpdateIncomeV1Body
@@ -252,25 +257,28 @@ export const useMonthsControllerUpdateIncomeV1 = <TError = void,
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * @summary Close an open month
+ * @summary Close an open or reopened month; promotes the draft when closing an open month
  */
 export const monthsControllerCloseV1 = (
     period: string,
+    monthsControllerCloseV1Body: MonthsControllerCloseV1Body,
  signal?: AbortSignal
 ) => {
       
       
-      return customAxiosInstance<void>(
-      {url: `/api/v1/months/${period}/close`, method: 'POST', signal
+      return customAxiosInstance<MonthsControllerCloseV1200>(
+      {url: `/api/v1/months/${period}/close`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: monthsControllerCloseV1Body, signal
     },
       );
     }
   
 
 
-export const getMonthsControllerCloseV1MutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCloseV1>>, TError,{period: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCloseV1>>, TError,{period: string}, TContext> => {
+export const getMonthsControllerCloseV1MutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCloseV1>>, TError,{period: string;data: MonthsControllerCloseV1Body}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCloseV1>>, TError,{period: string;data: MonthsControllerCloseV1Body}, TContext> => {
 
 const mutationKey = ['monthsControllerCloseV1'];
 const {mutation: mutationOptions} = options ?
@@ -282,10 +290,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof monthsControllerCloseV1>>, {period: string}> = (props) => {
-          const {period} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof monthsControllerCloseV1>>, {period: string;data: MonthsControllerCloseV1Body}> = (props) => {
+          const {period,data} = props ?? {};
 
-          return  monthsControllerCloseV1(period,)
+          return  monthsControllerCloseV1(period,data,)
         }
 
         
@@ -294,18 +302,18 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type MonthsControllerCloseV1MutationResult = NonNullable<Awaited<ReturnType<typeof monthsControllerCloseV1>>>
-    
-    export type MonthsControllerCloseV1MutationError = unknown
+    export type MonthsControllerCloseV1MutationBody = MonthsControllerCloseV1Body
+    export type MonthsControllerCloseV1MutationError = void
 
     /**
- * @summary Close an open month
+ * @summary Close an open or reopened month; promotes the draft when closing an open month
  */
-export const useMonthsControllerCloseV1 = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCloseV1>>, TError,{period: string}, TContext>, }
+export const useMonthsControllerCloseV1 = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCloseV1>>, TError,{period: string;data: MonthsControllerCloseV1Body}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof monthsControllerCloseV1>>,
         TError,
-        {period: string},
+        {period: string;data: MonthsControllerCloseV1Body},
         TContext
       > => {
 
@@ -314,25 +322,28 @@ export const useMonthsControllerCloseV1 = <TError = unknown,
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * @summary Reopen a closed month
+ * @summary Reopen a closed month and recalculate later months
  */
 export const monthsControllerReopenV1 = (
     period: string,
+    monthsControllerReopenV1Body: MonthsControllerReopenV1Body,
  signal?: AbortSignal
 ) => {
       
       
-      return customAxiosInstance<void>(
-      {url: `/api/v1/months/${period}/reopen`, method: 'POST', signal
+      return customAxiosInstance<MonthsControllerReopenV1200>(
+      {url: `/api/v1/months/${period}/reopen`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: monthsControllerReopenV1Body, signal
     },
       );
     }
   
 
 
-export const getMonthsControllerReopenV1MutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerReopenV1>>, TError,{period: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof monthsControllerReopenV1>>, TError,{period: string}, TContext> => {
+export const getMonthsControllerReopenV1MutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerReopenV1>>, TError,{period: string;data: MonthsControllerReopenV1Body}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof monthsControllerReopenV1>>, TError,{period: string;data: MonthsControllerReopenV1Body}, TContext> => {
 
 const mutationKey = ['monthsControllerReopenV1'];
 const {mutation: mutationOptions} = options ?
@@ -344,10 +355,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof monthsControllerReopenV1>>, {period: string}> = (props) => {
-          const {period} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof monthsControllerReopenV1>>, {period: string;data: MonthsControllerReopenV1Body}> = (props) => {
+          const {period,data} = props ?? {};
 
-          return  monthsControllerReopenV1(period,)
+          return  monthsControllerReopenV1(period,data,)
         }
 
         
@@ -356,18 +367,18 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type MonthsControllerReopenV1MutationResult = NonNullable<Awaited<ReturnType<typeof monthsControllerReopenV1>>>
-    
-    export type MonthsControllerReopenV1MutationError = unknown
+    export type MonthsControllerReopenV1MutationBody = MonthsControllerReopenV1Body
+    export type MonthsControllerReopenV1MutationError = void
 
     /**
- * @summary Reopen a closed month
+ * @summary Reopen a closed month and recalculate later months
  */
-export const useMonthsControllerReopenV1 = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerReopenV1>>, TError,{period: string}, TContext>, }
+export const useMonthsControllerReopenV1 = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerReopenV1>>, TError,{period: string;data: MonthsControllerReopenV1Body}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof monthsControllerReopenV1>>,
         TError,
-        {period: string},
+        {period: string;data: MonthsControllerReopenV1Body},
         TContext
       > => {
 

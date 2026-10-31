@@ -334,9 +334,9 @@ describe('MonthsService', () => {
     }
 
     function stub(month: BudgetMonth, allocatedMinor = 0): void {
-      mock.budgetMonth.findUnique.mockResolvedValue(month);
       tx.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: allocatedMinor } });
-      // Re-read after the cascade: the engine bumped the version.
+      // First read (inside the tx) returns the month; the re-read after the cascade sees the bumped version.
+      tx.budgetMonth.findUnique.mockResolvedValueOnce(month);
       tx.budgetMonth.findUnique.mockImplementation(() =>
         Promise.resolve(makeMonth({ ...month, incomeMinor: lastIncome, version: month.version + 1 })),
       );
@@ -420,13 +420,13 @@ describe('MonthsService', () => {
     });
 
     it('API-03: throws MONTH_NOT_FOUND for an unknown period', async () => {
-      mock.budgetMonth.findUnique.mockResolvedValue(null);
+      tx.budgetMonth.findUnique.mockResolvedValue(null);
 
       const attempt = service.updateIncome('2026-13', { income: '100.00', version: 1 });
 
       await expect(attempt).rejects.toBeInstanceOf(NotFoundException);
       await expect(attempt).rejects.toMatchObject({ code: 'MONTH_NOT_FOUND', statusCode: 404 });
-      expect(mock.$transaction).not.toHaveBeenCalled();
+      expect(mock.budgetMonth.findUnique).not.toHaveBeenCalled(); // read happens on tx, not prisma
       expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
     });
 
@@ -436,7 +436,7 @@ describe('MonthsService', () => {
       await expect(
         service.updateIncome('2026-08', { income: '100.00', version: 2 }),
       ).rejects.toMatchObject({ code: 'VERSION_CONFLICT', statusCode: 409 });
-      expect(mock.$transaction).not.toHaveBeenCalled();
+      expect(tx.budgetMonth.update).not.toHaveBeenCalled();
       expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
     });
 
@@ -452,7 +452,7 @@ describe('MonthsService', () => {
       await expect(attempt).rejects.toThrow(
         'Месяц закрыт. Откройте его повторно, чтобы внести изменения.',
       );
-      expect(mock.$transaction).not.toHaveBeenCalled();
+      expect(tx.budgetMonth.update).not.toHaveBeenCalled();
       expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
     });
 
@@ -474,6 +474,226 @@ describe('MonthsService', () => {
         data: { incomeMinor: 500_000 },
       });
       expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', tx);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // close() / reopen()
+  // -------------------------------------------------------------------------
+
+  describe('close / reopen', () => {
+    let tx: ReturnType<typeof createMockTx>;
+
+    function createMockTx() {
+      return {
+        budgetMonth: { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+        allocation: { aggregate: jest.fn() },
+      };
+    }
+
+    beforeEach(() => {
+      tx = createMockTx();
+      mock.$transaction.mockImplementation((callback: (client: unknown) => unknown) =>
+        callback(tx),
+      );
+      tx.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 0 } });
+      // update echoes the row with the applied data, bumping version on `increment`
+      tx.budgetMonth.update.mockImplementation(
+        ({ where, data }: { where: { id: string }; data: Partial<BudgetMonth> & { version?: unknown } }) => {
+          const base = where.id === 'draft-1' ? draftMonth : currentMonth;
+          const bumped = typeof data.version === 'object' ? base.version + 1 : base.version;
+          return Promise.resolve({ ...base, ...data, version: bumped });
+        },
+      );
+    });
+
+    let currentMonth: BudgetMonth;
+    let draftMonth: BudgetMonth;
+
+    function setup(current: Partial<BudgetMonth>, draft: BudgetMonth | null) {
+      currentMonth = makeMonth({ id: 'month-1', period: '2026-08', status: 'open', version: 4, ...current });
+      draftMonth = draft ?? makeMonth({ id: 'draft-1', period: '2026-09', status: 'draft', version: 2 });
+      tx.budgetMonth.findUnique.mockResolvedValue(currentMonth);
+      tx.budgetMonth.findFirst.mockImplementation(({ where }: { where?: { status?: string } }) =>
+        Promise.resolve(where?.status === 'draft' ? draft : null),
+      );
+    }
+
+    describe('close', () => {
+      it('MON-08 / AC-17: closing the current month promotes the existing draft to open', async () => {
+        setup({}, makeMonth({ id: 'draft-1', period: '2026-09', status: 'draft', version: 2 }));
+
+        const result = await service.close('2026-08', { version: 4 });
+
+        expect(tx.budgetMonth.update).toHaveBeenCalledWith({
+          where: { id: 'month-1' },
+          data: { status: 'closed', version: { increment: 1 } },
+        });
+        expect(tx.budgetMonth.update).toHaveBeenCalledWith({
+          where: { id: 'draft-1' },
+          data: { status: 'open', version: { increment: 1 } },
+        });
+        expect(mock.$transaction).toHaveBeenCalledTimes(1);
+        expect(mock.budgetMonth.update).not.toHaveBeenCalled();
+        expect(result.data.month).toMatchObject({ period: '2026-08', status: 'closed', version: 5 });
+        expect(result.data.promotedDraft).toMatchObject({ period: '2026-09', status: 'open', version: 3 });
+      });
+
+      it('MON-09: closing without a draft promotes nothing', async () => {
+        setup({}, null);
+
+        const result = await service.close('2026-08', { version: 4 });
+
+        expect(result.data.promotedDraft).toBeNull();
+        expect(tx.budgetMonth.update).toHaveBeenCalledTimes(1);
+      });
+
+      it('MON-15: closing a reopened month does not promote the draft', async () => {
+        setup({ status: 'reopened' }, makeMonth({ id: 'draft-1', period: '2026-09', status: 'draft' }));
+
+        const result = await service.close('2026-08', { version: 4 });
+
+        expect(result.data.month.status).toBe('closed');
+        expect(result.data.promotedDraft).toBeNull();
+        expect(tx.budgetMonth.findFirst).not.toHaveBeenCalled();
+        expect(tx.budgetMonth.update).toHaveBeenCalledTimes(1);
+      });
+
+      it('MON-01 / AC-16: a draft cannot be closed', async () => {
+        setup({ status: 'draft' }, null);
+
+        await expect(service.close('2026-08', { version: 4 })).rejects.toMatchObject({
+          code: 'INVALID_STATUS_TRANSITION',
+          statusCode: 409,
+        });
+        expect(tx.budgetMonth.update).not.toHaveBeenCalled();
+      });
+
+      it('an already closed month cannot be closed again', async () => {
+        setup({ status: 'closed' }, null);
+
+        await expect(service.close('2026-08', { version: 4 })).rejects.toMatchObject({
+          code: 'INVALID_STATUS_TRANSITION',
+        });
+      });
+
+      it('MON-10: free funds and uncovered operations do not block closing', async () => {
+        setup({ incomeMinor: 10_000_000 }, null);
+        tx.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 100 } });
+
+        const result = await service.close('2026-08', { version: 4 });
+
+        expect(result.data.month.freeFundsMinor).toBe(9_999_900);
+        expect(result.warnings).toEqual([]);
+      });
+
+      it('MON-11 / FIN-02: allocations above income block closing', async () => {
+        setup({ incomeMinor: 1_000 }, null);
+        tx.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 1_001 } });
+
+        await expect(service.close('2026-08', { version: 4 })).rejects.toMatchObject({
+          code: 'ALLOCATION_EXCEEDS_INCOME',
+          statusCode: 422,
+        });
+        expect(tx.budgetMonth.update).not.toHaveBeenCalled();
+      });
+
+      it('DATA-12: version is checked inside the transaction (VERSION_CONFLICT)', async () => {
+        setup({}, null);
+
+        await expect(service.close('2026-08', { version: 3 })).rejects.toMatchObject({
+          code: 'VERSION_CONFLICT',
+        });
+        expect(mock.budgetMonth.findUnique).not.toHaveBeenCalled();
+        expect(tx.budgetMonth.update).not.toHaveBeenCalled();
+      });
+
+      it('API-05: unknown month returns MONTH_NOT_FOUND', async () => {
+        tx.budgetMonth.findUnique.mockResolvedValue(null);
+
+        await expect(service.close('2030-01', { version: 1 })).rejects.toMatchObject({
+          code: 'MONTH_NOT_FOUND',
+          statusCode: 404,
+        });
+      });
+    });
+
+    describe('reopen', () => {
+      beforeEach(() => {
+        engine.recalculateMonthAtomically.mockResolvedValue({
+          recalculatedFrom: '2026-06',
+          warnings: [{ code: 'ARCHIVED_ENVELOPE_WITH_BALANCE', message: 'w' }],
+        });
+      });
+
+      function setupReopen(reopened: BudgetMonth | null) {
+        currentMonth = makeMonth({ id: 'month-1', period: '2026-06', status: 'closed', version: 7 });
+        tx.budgetMonth.findUnique
+          .mockResolvedValueOnce(currentMonth)
+          .mockResolvedValue({ ...currentMonth, status: 'reopened', version: 8 });
+        tx.budgetMonth.findFirst.mockImplementation(
+          ({ where }: { where?: { status?: string } }) =>
+            Promise.resolve(
+              where?.status === 'reopened' ? reopened : makeMonth({ id: 'last', period: '2026-09', status: 'draft' }),
+            ),
+        );
+      }
+
+      it('MON-14 / AC-15: reopen recalculates on the same tx, bumps versions and returns the range', async () => {
+        setupReopen(null);
+
+        const result = await service.reopen('2026-06', { version: 7 });
+
+        expect(tx.budgetMonth.update).toHaveBeenCalledWith({
+          where: { id: 'month-1' },
+          data: { status: 'reopened' },
+        });
+        // same-transaction proof; the engine owns the version increment (ADR 0005, CALC-13)
+        expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', tx);
+        expect(mock.budgetMonth.update).not.toHaveBeenCalled();
+        expect(result.data.month).toMatchObject({ period: '2026-06', status: 'reopened', version: 8 });
+        // MON-12: range from the reopened month to the latest month; statuses of later months are untouched (MON-14)
+        expect(result.data.recalcRange).toEqual({ from: '2026-06', to: '2026-09' });
+        expect(result.warnings).toHaveLength(1);
+        expect(tx.budgetMonth.update).toHaveBeenCalledTimes(1);
+      });
+
+      it('MON-13: a second month cannot be reopened while one is reopened', async () => {
+        setupReopen(makeMonth({ id: 'other', period: '2026-05', status: 'reopened' }));
+
+        await expect(service.reopen('2026-06', { version: 7 })).rejects.toMatchObject({
+          code: 'INVALID_STATUS_TRANSITION',
+          statusCode: 409,
+        });
+        expect(tx.budgetMonth.update).not.toHaveBeenCalled();
+        expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+      });
+
+      it.each(['draft', 'open', 'reopened'] as const)('only a closed month can be reopened (%s rejected)', async (status) => {
+        tx.budgetMonth.findUnique.mockResolvedValue(makeMonth({ status, version: 7 }));
+
+        await expect(service.reopen('2026-08', { version: 7 })).rejects.toMatchObject({
+          code: 'INVALID_STATUS_TRANSITION',
+        });
+        expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+      });
+
+      it('DATA-12: stale version returns VERSION_CONFLICT before any write', async () => {
+        setupReopen(null);
+
+        await expect(service.reopen('2026-06', { version: 6 })).rejects.toMatchObject({
+          code: 'VERSION_CONFLICT',
+        });
+        expect(tx.budgetMonth.update).not.toHaveBeenCalled();
+      });
+
+      it('API-06: unknown month returns MONTH_NOT_FOUND', async () => {
+        tx.budgetMonth.findUnique.mockResolvedValue(null);
+
+        await expect(service.reopen('2030-01', { version: 1 })).rejects.toMatchObject({
+          code: 'MONTH_NOT_FOUND',
+        });
+      });
     });
   });
 });
