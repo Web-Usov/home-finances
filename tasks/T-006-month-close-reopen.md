@@ -1,7 +1,7 @@
 ---
 id: T-006
 title: Months: close, reopen and draft promotion
-status: in_progress
+status: done
 epic: E-01
 depends: [T-003]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-14, AC-15, AC-16, AC-17]
 area: api
 size: M
 branch: task/T-006-month-close-reopen
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/9
 ---
 
 # T-006. Months: close, reopen and draft promotion
