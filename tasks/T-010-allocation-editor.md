@@ -29,12 +29,12 @@ The month screen has an editor for income and one amount row per active envelope
 
 ## Definition of Done
 
-- [ ] Mobile tests: `it('UI-13: totals and free funds update while typing')`, `it('UI-14 / MSG-01 / AC-03: 100000.01 on income 100000 blocks save and shows 0,01 overflow')`, `it('UI-12 / AC-04: copied allocation is shown as editable values')`, `it('MSG-06: editor is read-only in a closed month')`
-- [ ] Playwright spec `e2e/allocation-editor.e2e.ts` covering `AC-02`, `AC-03` and `AC-04`
-- [ ] Screenshots of the editor (normal and overflow) attached as artifacts
-- [ ] `pnpm verify` is green
-- [ ] `pnpm e2e:smoke` is green and a screenshot of the new screen state is attached as a Playwright artifact
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Mobile tests: `it('UI-13: totals and free funds update while typing')`, `it('UI-14 / MSG-01 / AC-03: 100000.01 on income 100000 blocks save and shows 0,01 overflow')`, `it('UI-12 / AC-04: copied allocation is shown as editable values')`, `it('MSG-06: editor is read-only in a closed month')`
+- [x] Playwright spec `e2e/allocation-editor.e2e.ts` covering `AC-02`, `AC-03` and `AC-04`
+- [x] Screenshots of the editor (normal and overflow) attached as artifacts
+- [x] `pnpm verify` is green
+- [x] `pnpm e2e:smoke` is green and a screenshot of the new screen state is attached as a Playwright artifact
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -47,4 +47,11 @@ The month screen has an editor for income and one amount row per active envelope
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Added `AllocationEditor` (opened from the month dashboard via "Изменить распределение"), `lib/allocation.ts` (live totals via
+integer kopecks), `useSaveAllocations`. E2E: `e2e/allocation-editor.e2e.ts` (@smoke), screenshots attached to the Playwright report.
+
+- Initial values come from the dashboard (`envelopes[].replenished` = stored allocation snapshot); there is no GET allocations endpoint.
+- The editor includes the income field (UI-11). When it changed, PATCH income and PUT allocations are sent in the safe order
+  (income first when raised, after the allocations when lowered), re-reading the month version from the dashboard in between,
+  because the mutation response shape is not relied upon (pending unified-response question).
+- A new draft month has income 0 but copied allocations; the editor shows that as an overflow until the income is entered.
