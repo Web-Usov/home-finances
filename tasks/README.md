@@ -2,7 +2,7 @@
 
 > Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`.
 
-Всего задач: 21 — todo: 16, in_progress: 0, review: 0, blocked: 0, done: 5.
+Всего задач: 21 — todo: 15, in_progress: 0, review: 0, blocked: 0, done: 6.
 
 ## E-00. Технический долг и соответствие спеке — planned (5/7)
 
