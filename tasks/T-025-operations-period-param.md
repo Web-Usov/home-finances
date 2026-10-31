@@ -1,7 +1,7 @@
 ---
 id: T-025
 title: Operations: optional period on POST /operations
-status: in_progress
+status: done
 epic: E-01
 depends: [T-005, T-020]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-15, AC-16]
 area: api
 size: M
 branch: task/T-025-operations-period-param
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/31
 ---
 
 # T-025. Operations: optional period on POST /operations

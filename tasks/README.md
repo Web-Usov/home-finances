@@ -52,7 +52,7 @@
 
 - [T-024](T-024-reopen-preview-endpoint.md) Reopen preview endpoint GET /months/:period/reopen-preview — **todo** · api · S · depends: T-006, T-020 · —
 
-- [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **in_progress** · api · M · depends: T-005, T-020 · —
+- [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **done** · api · M · depends: T-005, T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/31)
 
 - [T-027](T-027-unify-mutation-summary.md) Unify month mutation response shape (data.summary) — **done** · api · M · depends: T-020, T-029 · [PR](https://github.com/Web-Usov/home-finances/pull/27)
 
