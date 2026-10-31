@@ -22,7 +22,9 @@ import type {
 
 import type {
   ReportingControllerMonthlyDashboardV1200,
-  ReportingControllerMonthlyDashboardV1Params
+  ReportingControllerMonthlyDashboardV1Params,
+  ReportingControllerYearlyAnalyticsV1200,
+  ReportingControllerYearlyAnalyticsV1Params
 } from '.././model';
 
 import { customAxiosInstance } from '.././axios-instance';
@@ -127,13 +129,14 @@ export function useReportingControllerMonthlyDashboardV1<TData = Awaited<ReturnT
  * @summary Yearly analytics
  */
 export const reportingControllerYearlyAnalyticsV1 = (
-    
+    params: ReportingControllerYearlyAnalyticsV1Params,
  signal?: AbortSignal
 ) => {
       
       
-      return customAxiosInstance<void>(
-      {url: `/api/v1/analytics/yearly`, method: 'GET', signal
+      return customAxiosInstance<ReportingControllerYearlyAnalyticsV1200>(
+      {url: `/api/v1/analytics/yearly`, method: 'GET',
+        params, signal
     },
       );
     }
@@ -141,23 +144,23 @@ export const reportingControllerYearlyAnalyticsV1 = (
 
 
 
-export const getReportingControllerYearlyAnalyticsV1QueryKey = () => {
+export const getReportingControllerYearlyAnalyticsV1QueryKey = (params?: ReportingControllerYearlyAnalyticsV1Params,) => {
     return [
-    `/api/v1/analytics/yearly`
+    `/api/v1/analytics/yearly`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getReportingControllerYearlyAnalyticsV1QueryOptions = <TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
+export const getReportingControllerYearlyAnalyticsV1QueryOptions = <TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getReportingControllerYearlyAnalyticsV1QueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getReportingControllerYearlyAnalyticsV1QueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>> = ({ signal }) => reportingControllerYearlyAnalyticsV1(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>> = ({ signal }) => reportingControllerYearlyAnalyticsV1(params, signal);
 
       
 
@@ -167,11 +170,11 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type ReportingControllerYearlyAnalyticsV1QueryResult = NonNullable<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>>
-export type ReportingControllerYearlyAnalyticsV1QueryError = unknown
+export type ReportingControllerYearlyAnalyticsV1QueryError = void
 
 
-export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>> & Pick<
+export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(
+ params: ReportingControllerYearlyAnalyticsV1Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>,
           TError,
@@ -180,8 +183,8 @@ export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnTy
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>> & Pick<
+export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(
+ params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>,
           TError,
@@ -190,20 +193,20 @@ export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnTy
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
+export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(
+ params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Yearly analytics
  */
 
-export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
+export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(
+ params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getReportingControllerYearlyAnalyticsV1QueryOptions(options)
+  const queryOptions = getReportingControllerYearlyAnalyticsV1QueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

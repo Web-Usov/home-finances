@@ -62,6 +62,15 @@ describe('Monthly dashboard (integration)', () => {
     expect(response.body.summary).toMatchObject({ income: '100000.00', allocated: '75000.00', free: '25000.00' });
   });
 
+  it('FIN-11: free is signed and negative when allocations exceed income', async () => {
+    const month = await createMonth(t.prisma, { period: '2026-01', incomeMinor: 10_000_000 });
+    const food = await createEnvelope(t.prisma, { name: 'Food' });
+    // the allocation validation guards the API, so write the over-allocated state directly
+    await t.prisma.allocation.create({ data: { monthId: month.id, envelopeId: food.id, amountMinor: 12_000_000 } });
+    const response = await dashboard('?period=2026-01').expect(200);
+    expect(response.body.summary).toMatchObject({ income: '100000.00', allocated: '120000.00', free: '-20000.00' });
+  });
+
   it('FIN-12: expenses, transfers and adjustments do not change free funds', async () => {
     const { month, food, home } = await setup();
     const before = (await dashboard('?period=2026-01').expect(200)).body.summary.free;

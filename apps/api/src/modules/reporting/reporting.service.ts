@@ -7,6 +7,8 @@ import type {
   DashboardMonthlyQuerySchema,
   DashboardMonthlyResponseSchema,
   DashboardUncoveredSchema,
+  YearlyAnalyticsQuerySchema,
+  YearlyAnalyticsResponseSchema,
 } from '@family-budget/types';
 import { z } from 'zod';
 import { NotFoundException } from '../../common/exceptions';
@@ -14,6 +16,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 export type DashboardMonthlyQuery = z.infer<typeof DashboardMonthlyQuerySchema>;
 export type DashboardMonthlyDto = z.infer<typeof DashboardMonthlyResponseSchema>;
+export type YearlyAnalyticsQuery = z.infer<typeof YearlyAnalyticsQuerySchema>;
+export type YearlyAnalyticsDto = z.infer<typeof YearlyAnalyticsResponseSchema>;
 type DashboardEnvelopeDto = z.infer<typeof DashboardEnvelopeSchema>;
 type DashboardUncoveredDto = z.infer<typeof DashboardUncoveredSchema>;
 
@@ -91,13 +95,144 @@ export class ReportingService {
     };
   }
 
-  yearlyAnalytics() {
-    // TODO(T-008): return three reports: income/allocation/free, envelope balances, uncovered operations
+  /**
+   * API-13: three yearly reports (REP-01) for a calendar year, read from `BudgetMonth`, `Allocation` and
+   * `EnvelopeMonthSnapshot`; nothing is recalculated. Months that do not exist yield null / zero entries.
+   */
+  async yearlyAnalytics(query: YearlyAnalyticsQuery): Promise<YearlyAnalyticsDto> {
+    const { year } = query;
+    const periods = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
+    const range = { gte: periods[0], lte: periods[11] };
+
+    const [months, allocationSums, snapshots, envelopes] = await Promise.all([
+      this.prisma.budgetMonth.findMany({ where: { period: range } }),
+      this.prisma.allocation.groupBy({
+        by: ['monthId'],
+        where: { month: { period: range } },
+        _sum: { amountMinor: true },
+      }),
+      this.prisma.envelopeMonthSnapshot.findMany({ where: { month: { period: range } }, include: { month: true } }),
+      this.prisma.envelope.findMany({ orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] }),
+    ]);
+    const monthByPeriod = new Map(months.map((m) => [m.period, m]));
+    const allocatedByMonth = new Map(allocationSums.map((a) => [a.monthId, a._sum.amountMinor ?? 0]));
+    const snapshotByKey = new Map(snapshots.map((s) => [`${s.month.period}|${s.envelopeId}`, s]));
+
     return {
-      incomeReport: [],
-      envelopeBalances: [],
-      uncoveredOperations: [],
+      year,
+      incomeReport: this.incomeReport(periods, monthByPeriod, allocatedByMonth),
+      envelopeBalances: this.envelopeBalances(periods, monthByPeriod, snapshotByKey, envelopes),
+      uncoveredOperations: this.uncoveredReport(periods, monthByPeriod, snapshotByKey, envelopes),
     };
+  }
+
+  /** REP-02 / REP-03 / REP-04: income, allocation and free funds by month plus totals; free is not added to balances. */
+  private incomeReport(
+    periods: string[],
+    monthByPeriod: Map<string, BudgetMonth>,
+    allocatedByMonth: Map<string, number>,
+  ): YearlyAnalyticsDto['incomeReport'] {
+    const totals = { income: 0, allocated: 0 };
+    const rows = periods.map((period) => {
+      const month = monthByPeriod.get(period);
+      if (month === undefined) return { period, status: null, income: null, allocated: null, free: null };
+      const allocated = allocatedByMonth.get(month.id) ?? 0;
+      totals.income += month.incomeMinor;
+      totals.allocated += allocated;
+      return {
+        period,
+        status: month.status,
+        income: formatMoneyMinor(month.incomeMinor),
+        allocated: formatMoneyMinor(allocated),
+        // FIN-11: only income and allocations; operations never change free funds (FIN-12).
+        free: formatSignedMoneyMinor(month.incomeMinor - allocated),
+      };
+    });
+    return {
+      months: rows,
+      totals: {
+        income: formatMoneyMinor(totals.income),
+        allocated: formatMoneyMinor(totals.allocated),
+        free: formatSignedMoneyMinor(totals.income - totals.allocated),
+      },
+    };
+  }
+
+  /** REP-05 / REP-06: closing balance per envelope and month; archived envelopes stay in with their status (ENV-12). */
+  private envelopeBalances(
+    periods: string[],
+    monthByPeriod: Map<string, BudgetMonth>,
+    snapshotByKey: Map<string, EnvelopeMonthSnapshot>,
+    envelopes: Envelope[],
+  ): YearlyAnalyticsDto['envelopeBalances'] {
+    const rows = envelopes
+      .map((envelope) => ({
+        envelopeId: envelope.id,
+        name: envelope.name,
+        status: envelope.status,
+        displayOrder: envelope.displayOrder,
+        createdPeriod: envelope.createdPeriod,
+        archivedPeriod: envelope.archivedPeriod,
+        months: periods.map((period) => {
+          const snapshot = snapshotByKey.get(`${period}|${envelope.id}`);
+          // No snapshot: the envelope had no movement and no balance (0) if it is listed in an existing month.
+          const listed = monthByPeriod.has(period) && this.isListedIn(envelope, period);
+          return {
+            period,
+            closing: snapshot !== undefined ? formatMoneyMinor(snapshot.closing) : listed ? formatMoneyMinor(0) : null,
+          };
+        }),
+      }))
+      .filter((row) => row.months.some((m) => m.closing !== null));
+    return { periods, envelopes: rows };
+  }
+
+  /**
+   * REP-08 / REP-09 / REP-10 / REP-11: uncovered amounts by month and type, read per month from the snapshots
+   * (the engine never carries an uncovered amount into a later month), with drill-down keys for the history.
+   */
+  private uncoveredReport(
+    periods: string[],
+    monthByPeriod: Map<string, BudgetMonth>,
+    snapshotByKey: Map<string, EnvelopeMonthSnapshot>,
+    envelopes: Envelope[],
+  ): YearlyAnalyticsDto['uncoveredOperations'] {
+    const yearTotal: UncoveredMinor = { expense: 0, transfer: 0, adjustment: 0 };
+    const months = periods.map((period) => {
+      const monthTotal: UncoveredMinor = { expense: 0, transfer: 0, adjustment: 0 };
+      const byEnvelope: YearlyAnalyticsDto['uncoveredOperations']['months'][number]['envelopes'] = [];
+      for (const envelope of envelopes) {
+        const snapshot = snapshotByKey.get(`${period}|${envelope.id}`);
+        if (snapshot === undefined) continue;
+        const u = readUncovered(snapshot.uncoveredByType);
+        monthTotal.expense += u.expense;
+        monthTotal.transfer += u.transfer;
+        monthTotal.adjustment += u.adjustment;
+        if (u.expense + u.transfer + u.adjustment === 0) continue;
+        byEnvelope.push({
+          envelopeId: envelope.id,
+          name: envelope.name,
+          ...formatUncovered(u),
+          drillDown: { period, envelopeId: envelope.id },
+        });
+      }
+      yearTotal.expense += monthTotal.expense;
+      yearTotal.transfer += monthTotal.transfer;
+      yearTotal.adjustment += monthTotal.adjustment;
+      return {
+        period,
+        exists: monthByPeriod.has(period),
+        ...formatUncovered(monthTotal),
+        drillDown: { period },
+        drillDownByType: {
+          expense: { period, type: 'expense' as const },
+          transfer: { period, type: 'transfer' as const },
+          adjustment: { period, type: 'adjustment' as const },
+        },
+        envelopes: byEnvelope,
+      };
+    });
+    return { months, totals: formatUncovered(yearTotal) };
   }
 
   /** Requested period, or the working month: open > reopened > draft (MON-01, MON-02, MON-04), else the latest. */
