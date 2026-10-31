@@ -28,14 +28,14 @@ pr: null
 
 ## Definition of Done
 
-- [ ] `it('API-21 / MON-16: without period the operation goes to the open month even if a reopened month exists')` passes
-- [ ] `it('API-21 / SCOPE-33: period of the reopened month adds the operation there and bumps that month version and later months results')` passes
-- [ ] `it('API-21 / MON-01 / AC-16: period of the draft adds an operation to the draft')` passes
-- [ ] `it('API-21 / MSG-06: period of a closed month answers 409 MONTH_LOCKED')`, `it('API-21: unknown period answers 404 MONTH_NOT_FOUND')` and `it('API-21 / ADR 0005: version of another month answers 409 VERSION_CONFLICT')` pass
-- [ ] `it('API-21 / OP-16: sequence_no continues the target month sequence')` passes
-- [ ] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('API-21 / MON-16: without period the operation goes to the open month even if a reopened month exists')` passes
+- [x] `it('API-21 / SCOPE-33: period of the reopened month adds the operation there and bumps that month version and later months results')` passes
+- [x] `it('API-21 / MON-01 / AC-16: period of the draft adds an operation to the draft')` passes
+- [x] `it('API-21 / MSG-06: period of a closed month answers 409 MONTH_LOCKED')`, `it('API-21: unknown period answers 404 MONTH_NOT_FOUND')` and `it('API-21 / ADR 0005: version of another month answers 409 VERSION_CONFLICT')` pass
+- [x] `it('API-21 / OP-16: sequence_no continues the target month sequence')` passes
+- [x] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -48,4 +48,12 @@ pr: null
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+`POST /api/v1/operations` accepts an optional `period` (API-21). With it the service locks the target month and all later ones in
+ascending order (`lockMonthForMutation`, T-036 rule) and checks version/status under the lock (404 `MONTH_NOT_FOUND`, 409
+`VERSION_CONFLICT`, 409 `MONTH_LOCKED`); without it the working month is used as before (`lockWorkingMonth`). The schema change is in
+`@family-budget/types`; `openapi.json` and the mobile client were regenerated (a new optional field only, no mobile code change).
+Tests: `operations.period.int-spec.ts` (reopened month with a later open month and draft, cascade into later months, draft, closed,
+unknown, stale version, sequence_no, malformed period).
+
+Note: `PeriodSchema` only checks the `YYYY-MM` shape, so `2026-13` passes validation and answers 404 `MONTH_NOT_FOUND`
+(not 422); tightening the schema is outside this task.

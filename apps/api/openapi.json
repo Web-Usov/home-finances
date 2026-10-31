@@ -1066,6 +1066,10 @@
                     "type": "string",
                     "maxLength": 500
                   },
+                  "period": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}$"
+                  },
                   "version": {
                     "type": "integer",
                     "minimum": 0
@@ -1322,7 +1326,7 @@
             "description": "VALIDATION_ERROR"
           }
         },
-        "summary": "Create an operation in the current working month",
+        "summary": "Create an operation in the given period (default: the working month)",
         "tags": [
           "Operations"
         ]
