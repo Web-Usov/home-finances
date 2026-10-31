@@ -155,20 +155,65 @@ export const UpdateEnvelopeRequestSchema = z.object({
   displayOrder: z.number().int().nonnegative().optional(),
 });
 
-export const CreateOperationRequestSchema = z.object({
-  type: OperationTypeSchema,
-  sourceEnvelopeId: z.string().uuid(),
-  destinationEnvelopeId: z.string().uuid().optional(),
-  amount: MoneyStringSchema,
-  sign: z.enum(['+', '-']).optional(),
-  comment: z.string().max(500).optional(),
-});
+export const CreateOperationRequestSchema = z
+  .object({
+    type: OperationTypeSchema,
+    sourceEnvelopeId: z.string().uuid(),
+    destinationEnvelopeId: z.string().uuid().optional(),
+    amount: MoneyStringSchema,
+    sign: z.enum(['+', '-']).optional(),
+    comment: z.string().max(500).optional(),
+    /** Optimistic-lock counter of the working month (ADR 0005). */
+    version: z.number().int().nonnegative(),
+  })
+  .superRefine((value, ctx) => {
+    // OP-10: the initial balance is created only together with an envelope.
+    if (value.type === 'initial_balance') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['type'],
+        message: 'initial_balance is created only together with an envelope',
+      });
+    }
+    // OP-02 / DATA-09: a transfer needs a destination different from the source.
+    if (value.type === 'transfer') {
+      if (value.destinationEnvelopeId === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['destinationEnvelopeId'],
+          message: 'Required for a transfer',
+        });
+      } else if (value.destinationEnvelopeId === value.sourceEnvelopeId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['destinationEnvelopeId'],
+          message: 'Must differ from sourceEnvelopeId',
+        });
+      }
+    }
+    // OP-03 / OP-04: an adjustment carries a sign.
+    if (value.type === 'adjustment' && value.sign === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['sign'],
+        message: "Required for an adjustment ('+' or '-')",
+      });
+    }
+  });
 
 export const UpdateOperationRequestSchema = z.object({
   amount: MoneyStringSchema.optional(),
   sourceEnvelopeId: z.string().uuid().optional(),
   destinationEnvelopeId: z.string().uuid().optional(),
   comment: z.string().max(500).optional(),
+  version: z.number().int().nonnegative(),
+});
+
+/** HIST-11: history filters (the month is selected by `period`). */
+export const OperationListQuerySchema = z.object({
+  period: PeriodSchema.optional(),
+  envelopeId: z.string().uuid().optional(),
+  type: OperationTypeSchema.optional(),
 });
 
 export const ReopenMonthRequestSchema = z.object({
@@ -203,6 +248,25 @@ export const MonthSummarySchema = z.object({
 export function mutationResponseSchema<T extends z.ZodTypeAny>(data: T) {
   return z.object({ data, warnings: z.array(ApiWarningSchema) });
 }
+
+export const OperationHistoryItemSchema = OperationSchema.extend({
+  period: PeriodSchema,
+  result: OperationResultSchema.nullable(),
+});
+
+/** API-10: history response. */
+export const OperationListResponseSchema = z.object({
+  operations: z.array(OperationHistoryItemSchema),
+});
+
+/** API-10 / API-16: operation, its result and the affected month summary, with warnings. */
+export const OperationMutationResponseSchema = mutationResponseSchema(
+  z.object({
+    operation: OperationSchema,
+    result: OperationResultSchema,
+    summary: MonthSummarySchema,
+  }),
+);
 
 /** API-05: the closed month and the draft promoted to open (null when none or MON-15). */
 export const CloseMonthResultSchema = z.object({
