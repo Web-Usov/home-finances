@@ -1,7 +1,7 @@
 ---
 id: T-020
 title: Spec gaps from pilot reviews (API-18 VALIDATION_ERROR, initial balance without a month)
-status: todo
+status: in_progress
 epic: E-00
 depends: []
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-17, API-18, ENV-03, OP-10]
 acceptance: []
 area: docs
 size: S
-branch: null
+branch: task/T-020-spec-gaps-validation-error-month-not-found
 pr: null
 ---
 
