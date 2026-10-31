@@ -1,7 +1,7 @@
 ---
 id: T-028
 title: Enforce a single reopened month in the database (MON-13 race)
-status: in_progress
+status: done
 epic: E-00
 depends: [T-006]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-15]
 area: api
 size: S
 branch: task/T-028-single-reopened-month-db
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/36
 ---
 
 # T-028. Enforce a single reopened month in the database (MON-13 race)
