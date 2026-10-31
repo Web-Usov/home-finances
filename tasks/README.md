@@ -30,7 +30,7 @@
 
 - [T-004](T-004-operations-list-create.md) Operations: history list and create (expense, transfer, adjustment) — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/10)
 
-- [T-005](T-005-operations-update-delete.md) Operations: update and delete with stable sequence and recalculation — **todo** · api · M · depends: T-004 · —
+- [T-005](T-005-operations-update-delete.md) Operations: update and delete with stable sequence and recalculation — **done** · api · M · depends: T-004 · [PR](https://github.com/Web-Usov/home-finances/pull/13)
 
 - [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
 

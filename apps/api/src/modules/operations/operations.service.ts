@@ -5,16 +5,18 @@ import {
   parseMoneyMinor,
   CreateOperationRequestSchema,
   OperationListQuerySchema,
+  UpdateOperationRequestSchema,
   type ApiWarning,
   type MutationResponse,
 } from '@family-budget/types';
 import { z } from 'zod';
-import { ConflictException, NotFoundException } from '../../common/exceptions';
+import { ConflictException, NotFoundException, ValidationException } from '../../common/exceptions';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 import type { MonthSummaryDto } from '../months/months.service';
 
 export type CreateOperationRequest = z.infer<typeof CreateOperationRequestSchema>;
+export type UpdateOperationRequest = z.infer<typeof UpdateOperationRequestSchema>;
 export type OperationListQuery = z.infer<typeof OperationListQuerySchema>;
 
 /** Satisfied by both PrismaService and an interactive transaction client. */
@@ -35,10 +37,14 @@ export interface OperationMutationData {
   summary: MonthSummaryDto;
 }
 
+export interface OperationDeleteData {
+  summary: MonthSummaryDto;
+}
+
 /**
  * Operations service — expenses, transfers, adjustments.
  * Rules: OP-01..OP-04 (types), OP-05/OP-09/OP-14 (formulas, in the engine), OP-07 (transfer
- * limit), OP-16/OP-17 (sequence_no), HIST-10 (closed month is read-only), API-15/API-16.
+ * limit), OP-16..OP-18 (sequence_no), HIST-07..HIST-10 (closed month is read-only), API-15/API-16.
  *
  * - Money is integer kopecks; API strings are converted once via parseMoneyMinor (API-14).
  * - The month is read, locked FOR UPDATE and version-checked INSIDE the transaction, so
@@ -140,7 +146,129 @@ export class OperationsService {
     });
   }
 
-  // update/remove: T-005.
+  /**
+   * HIST-07 / HIST-08 / API-11: edit amount, envelopes or comment. `sequence_no` never changes
+   * (OP-17), so the cascade replays the month in the original order. Check order: operation →
+   * version → month status → business rules.
+   */
+  async update(
+    id: string,
+    dto: UpdateOperationRequest,
+  ): Promise<MutationResponse<OperationMutationData>> {
+    return this.prisma.$transaction(async (tx) => {
+      const { operation: current, period } = await this.lockOperationMonth(tx, id, dto.version);
+
+      if (current.type !== 'transfer' && dto.destinationEnvelopeId !== undefined) {
+        throw new ValidationException(
+          'VALIDATION_ERROR',
+          'Конечный конверт указывается только для перевода.',
+        );
+      }
+
+      const sourceEnvelopeId = dto.sourceEnvelopeId ?? current.sourceEnvelopeId;
+      const destinationEnvelopeId =
+        current.type === 'transfer'
+          ? (dto.destinationEnvelopeId ?? current.destinationEnvelopeId)
+          : null;
+      // OP-02 / DATA-09: the transfer keeps two different envelopes after the edit.
+      if (current.type === 'transfer' && destinationEnvelopeId === sourceEnvelopeId) {
+        throw new ValidationException(
+          'VALIDATION_ERROR',
+          'Конверты перевода должны различаться.',
+        );
+      }
+      // DATA-11: only envelopes that are being changed are re-validated.
+      if (sourceEnvelopeId !== current.sourceEnvelopeId) {
+        await this.findEnvelope(tx, sourceEnvelopeId, period);
+      }
+      if (destinationEnvelopeId !== null && destinationEnvelopeId !== current.destinationEnvelopeId) {
+        await this.findEnvelope(tx, destinationEnvelopeId, period);
+      }
+
+      const requestedMinor =
+        dto.amount !== undefined ? parseMoneyMinor(dto.amount) : current.requestedMinor;
+      const operation = await tx.operation.update({
+        where: { id },
+        data: {
+          requestedMinor,
+          sourceEnvelopeId,
+          destinationEnvelopeId,
+          ...(dto.comment !== undefined ? { comment: dto.comment === '' ? null : dto.comment } : {}),
+        },
+      });
+
+      const recalc = await this.engine.recalculateMonthAtomically(operation.monthId, tx);
+      const result = await this.findFreshResult(tx, operation.id);
+
+      // OP-07 / HIST-09: a manual transfer edit never leaves the transfer itself uncovered. The
+      // balance the transfer meets at its own position is known only after the replay, so the
+      // check runs on the fresh result and the throw rolls the whole edit back. Later operations
+      // that lose cover because of the edit stay uncovered (OP-08), they are not rejected.
+      const moneyChanged =
+        requestedMinor !== current.requestedMinor || sourceEnvelopeId !== current.sourceEnvelopeId;
+      if (operation.type === 'transfer' && moneyChanged && result.uncoveredMinor > 0) {
+        this.assertTransferCovered(requestedMinor, result.sourceBalanceBefore);
+      }
+
+      const summary = await this.buildSummary(tx, operation.monthId);
+      return {
+        data: { operation, result, summary },
+        warnings: [...recalc.warnings, ...this.uncoveredWarnings(result, operation)],
+      };
+    });
+  }
+
+  /**
+   * HIST-07 / OP-18 / API-11: delete an operation. The `sequence_no` gap stays; the month and all
+   * later months are recalculated in the same transaction (the result row goes with the operation).
+   */
+  async remove(id: string, version: number): Promise<MutationResponse<OperationDeleteData>> {
+    return this.prisma.$transaction(async (tx) => {
+      const { operation } = await this.lockOperationMonth(tx, id, version);
+
+      await tx.operation.delete({ where: { id } });
+
+      const recalc = await this.engine.recalculateMonthAtomically(operation.monthId, tx);
+      const summary = await this.buildSummary(tx, operation.monthId);
+      return { data: { summary }, warnings: recalc.warnings };
+    });
+  }
+
+  /**
+   * Shared head of update/remove: find the operation, lock ITS month FOR UPDATE, check version and
+   * status inside the transaction, then re-read the operation under the lock. The initial balance
+   * (OP-10) is managed together with its envelope, never through this API.
+   */
+  private async lockOperationMonth(
+    db: DbClient,
+    id: string,
+    version: number,
+  ): Promise<{ operation: Operation; period: string }> {
+    const notFound = () => new NotFoundException('OPERATION_NOT_FOUND', `Операция не найдена: ${id}`);
+    const found = await db.operation.findUnique({
+      where: { id },
+      select: { monthId: true, month: { select: { period: true } } },
+    });
+    if (found === null) {
+      throw notFound();
+    }
+    const locked = await this.lockMonth(db, found.monthId);
+    this.assertVersion(locked, found.month.period, version);
+    this.assertMonthMutable(locked, found.month.period);
+
+    // re-read under the lock: a concurrent delete of the same operation has committed by now
+    const operation = await db.operation.findUnique({ where: { id } });
+    if (operation === null) {
+      throw notFound();
+    }
+    if (operation.isInitial || operation.type === 'initial_balance') {
+      throw new ValidationException(
+        'VALIDATION_ERROR',
+        'Стартовый остаток нельзя изменить или удалить как обычную операцию.',
+      );
+    }
+    return { operation, period: found.month.period };
+  }
 
   /** DATA-12 / ADR 0005: stale `version` → VERSION_CONFLICT. */
   private assertVersion(locked: { version: number }, period: string, expected: number): void {

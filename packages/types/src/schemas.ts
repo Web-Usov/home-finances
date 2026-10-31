@@ -209,6 +209,11 @@ export const UpdateOperationRequestSchema = z.object({
   version: z.number().int().nonnegative(),
 });
 
+/** API-11: DELETE /operations/:id carries the month `version` as a query parameter (ADR 0005). */
+export const DeleteOperationQuerySchema = z.object({
+  version: z.coerce.number().int().nonnegative(),
+});
+
 /** HIST-11: history filters (the month is selected by `period`). */
 export const OperationListQuerySchema = z.object({
   period: PeriodSchema.optional(),
@@ -266,6 +271,11 @@ export const OperationMutationResponseSchema = mutationResponseSchema(
     result: OperationResultSchema,
     summary: MonthSummarySchema,
   }),
+);
+
+/** API-11 / API-16: delete returns the recalculated month summary (the operation is gone). */
+export const DeleteOperationResponseSchema = mutationResponseSchema(
+  z.object({ summary: MonthSummarySchema }),
 );
 
 /** API-05: the closed month and the draft promoted to open (null when none or MON-15). */

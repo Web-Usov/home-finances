@@ -1226,6 +1226,427 @@
         ]
       }
     },
+    "/api/v1/operations/{id}": {
+      "patch": {
+        "operationId": "OperationsController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Operation id (UUID)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                  },
+                  "sourceEnvelopeId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "destinationEnvelopeId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "comment": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation, its fresh result, the new month summary and warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "operation": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "monthId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "sequenceNo": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "expense",
+                                "transfer",
+                                "adjustment",
+                                "initial_balance"
+                              ]
+                            },
+                            "sourceEnvelopeId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "destinationEnvelopeId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "nullable": true
+                            },
+                            "requestedMinor": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "sign": {
+                              "type": "string",
+                              "enum": [
+                                "+",
+                                "-"
+                              ],
+                              "nullable": true
+                            },
+                            "isInitial": {
+                              "type": "boolean"
+                            },
+                            "comment": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "nullable": true
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "monthId",
+                            "sequenceNo",
+                            "type",
+                            "sourceEnvelopeId",
+                            "destinationEnvelopeId",
+                            "requestedMinor",
+                            "sign",
+                            "isInitial",
+                            "comment",
+                            "createdAt",
+                            "updatedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "result": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "operationId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "coveredMinor": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "uncoveredMinor": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "sourceBalanceBefore": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "sourceBalanceAfter": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "destinationBalanceBefore": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "nullable": true
+                            },
+                            "destinationBalanceAfter": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "nullable": true
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "operationId",
+                            "coveredMinor",
+                            "uncoveredMinor",
+                            "sourceBalanceBefore",
+                            "sourceBalanceAfter",
+                            "destinationBalanceBefore",
+                            "destinationBalanceAfter",
+                            "createdAt",
+                            "updatedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "operation",
+                        "result",
+                        "summary"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "OPERATION_NOT_FOUND or ENVELOPE_NOT_FOUND"
+          },
+          "409": {
+            "description": "VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope"
+          },
+          "422": {
+            "description": "VALIDATION_ERROR"
+          }
+        },
+        "summary": "Edit an operation; sequence_no is kept, the cascade is recalculated",
+        "tags": [
+          "Operations"
+        ]
+      },
+      "delete": {
+        "operationId": "OperationsController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Operation id (UUID)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "query",
+            "description": "Month version (ADR 0005)",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The recalculated month summary and warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "summary"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "OPERATION_NOT_FOUND"
+          },
+          "409": {
+            "description": "VERSION_CONFLICT or MONTH_LOCKED"
+          },
+          "422": {
+            "description": "VALIDATION_ERROR"
+          }
+        },
+        "summary": "Delete an operation; the sequence_no gap stays, the cascade is recalculated",
+        "tags": [
+          "Operations"
+        ]
+      }
+    },
     "/api/v1/dashboard/monthly": {
       "get": {
         "operationId": "ReportingController_monthlyDashboard_v1",
