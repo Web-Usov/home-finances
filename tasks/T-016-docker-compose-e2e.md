@@ -1,7 +1,7 @@
 ---
 id: T-016
 title: Delivery: docker compose from scratch and persistence after restart
-status: todo
+status: in_progress
 epic: E-06
 depends: [T-014]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [DOD-01, DOD-04, DOD-05, NFR-03, NFR-04, NFR-17, NFR-29]
 acceptance: [AC-22]
 area: infra
 size: S
-branch: null
+branch: task/T-016-docker-compose-e2e
 pr: null
 ---
 
