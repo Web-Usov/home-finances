@@ -1,7 +1,7 @@
 ---
 id: T-010
 title: Mobile: allocation editor with live totals and overflow block
-status: todo
+status: in_progress
 epic: E-03
 depends: [T-009]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [UI-11, UI-12, UI-13, UI-14, UI-15, FIN-02, FIN-11, MSG-01, MSG-06, API-04
 acceptance: [AC-02, AC-03, AC-04]
 area: mobile
 size: M
-branch: null
+branch: task/T-010-allocation-editor
 pr: null
 ---
 
