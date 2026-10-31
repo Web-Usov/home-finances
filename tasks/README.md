@@ -38,7 +38,7 @@
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)
 
-- [T-007](T-007-dashboard-monthly-api.md) Reporting: monthly dashboard endpoint — **todo** · api · M · depends: T-004, T-006 · —
+- [T-007](T-007-dashboard-monthly-api.md) Reporting: monthly dashboard endpoint — **done** · api · M · depends: T-004, T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/14)
 
 - [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **todo** · api · M · depends: T-004 · —
 

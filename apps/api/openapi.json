@@ -1650,10 +1650,265 @@
     "/api/v1/dashboard/monthly": {
       "get": {
         "operationId": "ReportingController_monthlyDashboard_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "period",
+            "required": false,
+            "in": "query",
+            "description": "YYYY-MM; defaults to the working month",
+            "schema": {}
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Summary, envelopes, warnings"
+            "description": "Summary, envelopes, warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "month": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "period": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}$"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "draft",
+                            "open",
+                            "closed",
+                            "reopened"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "period",
+                        "status",
+                        "version"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "income": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "allocated": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "free": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "replenished": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "spent": {
+                          "type": "string",
+                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                        },
+                        "adjustmentsApplied": {
+                          "type": "string",
+                          "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                        },
+                        "uncovered": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            },
+                            "expense": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            },
+                            "transfer": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            },
+                            "adjustment": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            }
+                          },
+                          "required": [
+                            "total",
+                            "expense",
+                            "transfer",
+                            "adjustment"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "income",
+                        "allocated",
+                        "free",
+                        "replenished",
+                        "spent",
+                        "adjustmentsApplied",
+                        "uncovered"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "envelopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "envelopeId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "archived"
+                            ]
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "opening": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "initial": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "closing": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "replenished": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "spent": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "expensesCovered": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "adjustmentApplied": {
+                            "type": "string",
+                            "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                          },
+                          "transfersIn": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "transfersOut": {
+                            "type": "string",
+                            "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          },
+                          "uncovered": {
+                            "type": "object",
+                            "properties": {
+                              "total": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$"
+                              },
+                              "expense": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$"
+                              },
+                              "transfer": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$"
+                              },
+                              "adjustment": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$"
+                              }
+                            },
+                            "required": [
+                              "total",
+                              "expense",
+                              "transfer",
+                              "adjustment"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "envelopeId",
+                          "name",
+                          "status",
+                          "displayOrder",
+                          "opening",
+                          "initial",
+                          "closing",
+                          "replenished",
+                          "spent",
+                          "expensesCovered",
+                          "adjustmentApplied",
+                          "transfersIn",
+                          "transfersOut",
+                          "uncovered"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "month",
+                    "summary",
+                    "envelopes",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MONTH_NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (invalid period)"
           }
         },
         "summary": "Monthly dashboard",
