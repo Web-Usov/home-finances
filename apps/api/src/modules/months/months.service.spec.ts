@@ -132,6 +132,47 @@ describe('MonthsService', () => {
         Promise.resolve(makeMonth({ id: 'month-new', ...data })),
       );
       mock.allocation.findMany.mockResolvedValue([]);
+      // the service re-reads the month after the recalculation (engine bumps version)
+      mock.budgetMonth.findUnique.mockImplementation(() => {
+        const created = mock.budgetMonth.create.mock.results.at(-1)?.value as Promise<BudgetMonth>;
+        return created.then((month) => ({ ...month, version: month.version + 1 }));
+      });
+    });
+
+    it('FIN-04 / DATA-06 / API-15: recalculates the new month with the transaction client, after the allocation copy', async () => {
+      const tx = {
+        budgetMonth: {
+          create: jest.fn().mockResolvedValue(makeMonth({ id: 'month-new', period: '2026-09' })),
+          findUnique: jest.fn().mockResolvedValue(makeMonth({ id: 'month-new', period: '2026-09', version: 2 })),
+        },
+        allocation: {
+          findMany: jest.fn().mockResolvedValue([
+            { envelopeId: 'env-a', amountMinor: 100_000, envelope: { status: 'active' } },
+          ]),
+          createMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+      };
+      mock.$transaction.mockImplementation((callback: (client: unknown) => unknown) => callback(tx));
+      mock.budgetMonth.findMany.mockResolvedValue([
+        makeMonth({ id: 'month-prev', period: '2026-08', status: 'open' }),
+      ]);
+
+      const result = await service.create({ period: '2026-09' });
+
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledTimes(1);
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-new', tx);
+      expect(engine.recalculateMonthAtomically.mock.invocationCallOrder[0]).toBeGreaterThan(
+        tx.allocation.createMany.mock.invocationCallOrder[0] ?? Infinity,
+      );
+      expect(mock.budgetMonth.create).not.toHaveBeenCalled(); // writes go through tx, not the root client
+      expect(result.month).toMatchObject({ id: 'month-new', version: 2, totalAllocatedMinor: 100_000 });
+    });
+
+    it('API-15: a failing recalculation rejects the creation (transaction rolls back)', async () => {
+      mock.budgetMonth.findMany.mockResolvedValue([]);
+      engine.recalculateMonthAtomically.mockRejectedValue(new Error('boom'));
+
+      await expect(service.create({ period: '2026-08' })).rejects.toThrow('boom');
     });
 
     it('creates the very first month as open with zero income', async () => {

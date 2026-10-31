@@ -26,24 +26,28 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+`POST /months` writes the new month's `EnvelopeMonthSnapshot` rows in the same transaction, so a freshly created month
+shows carried opening balances and copied allocations as replenished on `GET /dashboard/monthly`.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- Defect found in the PR #14 review: `MonthsService.create` (`apps/api/src/modules/months/months.service.ts`) copied
+  allocations but never ran the cascade; the dashboard showed opening 0 / replenished 0 with non-zero allocated.
+- Rules: FIN-04 (closing carries into next opening), DATA-06 (snapshots are the dashboard source), API-15.
+- ADR 0004 (engine receives the external tx), ADR 0005 (the cascade bumps `version` of the recalculated months; the new
+  month goes 1 -> 2 and the response re-reads it, so client and DB agree; no other client can hold its version yet).
+- `close()` promoting a draft only changes status; snapshots do not depend on status and the draft was recalculated at
+  creation, so no recalculation is needed there (covered by a test).
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Month creation runs `engine.recalculateMonthAtomically(monthId, tx)` in the same transaction as the insert and allocation copy
+- [x] Unit test with a distinct tx object asserts the engine is called with tx, after the copy (`FIN-04 / DATA-06 / API-15`)
+- [x] Int test: month 2 dashboard shows carried openings and copied allocations as replenished (`FIN-04 / DATA-06`)
+- [x] Int test: draft promoted on close has a consistent dashboard (`MON-08 / FIN-04 / DATA-06`)
+- [x] Int test: first month (no previous) still works; response version equals DB version (ADR 0005)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -55,4 +59,8 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Fixed in `months.service.ts` `create`: after the insert and allocation copy, the engine recalculates the new month with
+the same tx and the summary is re-read (version 2 after the bump, ADR 0005). `close()` needed no code change: tests prove
+the promoted draft's dashboard is identical before and after promotion. Tests: `months.service.spec.ts` (tx identity,
+rollback on engine failure), `months.create-recalc.int-spec.ts` (4 cases; the carry cases fail without the fix).
+Deviation: new months now report `version: 2` instead of 1 on creation.
