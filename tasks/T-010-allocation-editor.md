@@ -3,7 +3,7 @@ id: T-010
 title: Mobile: allocation editor with live totals and overflow block
 status: todo
 epic: E-03
-depends: [T-009]
+depends: [T-009, T-026, T-027]
 blocked_by: []
 spec: [UI-11, UI-12, UI-13, UI-14, UI-15, FIN-02, FIN-11, MSG-01, MSG-06, API-04, SCOPE-25]
 acceptance: [AC-02, AC-03, AC-04]
@@ -25,6 +25,7 @@ The month screen has an editor for income and one amount row per active envelope
 - Shared schema `SaveAllocationsRequestSchema` in `packages/types`; forms use React Hook Form + Zod resolver (see `FormInput.tsx`).
 - New month: values are prefilled by the API copy from the previous month (UI-12); the editor must show them as editable.
 - Money math uses integer kopecks via `parseMoneyMinor`; no floats. Message MSG-01 verbatim with exact X.
+- Response shape follows API-22 (T-027, Q-04 resolved); overflow message amounts are ru-RU formatted by the server (MSG-07, T-026).
 - Handle `VERSION_CONFLICT` (reload prompt) and `MONTH_LOCKED`.
 
 ## Definition of Done

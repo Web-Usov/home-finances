@@ -16,11 +16,21 @@
 
 - [T-019](T-019-remove-class-validator-deps.md) Remove unused class-validator and class-transformer dependencies — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/8)
 
-- [T-020](T-020-spec-gaps-validation-error-month-not-found.md) Spec gaps from pilot reviews (API-18 VALIDATION_ERROR, initial balance without a month) — **todo** · docs · S · depends: — · —
+- [T-020](T-020-spec-gaps-validation-error-month-not-found.md) Spec gaps from pilot reviews (error codes, working month and period on operations, reopen preview, message format) — **done** · docs · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/12)
 
 - [T-021](T-021-harden-process-scripts.md) Harden process scripts (with-lock, task-start, task-clean) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/6)
 
 - [T-022](T-022-process-stability-conflict-free-board.md) Process stability: conflict-free board, robust script tests — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/11)
+
+- [T-023](T-023-initial-balance-month-not-found.md) Envelope with an initial balance and no month returns MONTH_NOT_FOUND — **todo** · api · S · depends: T-020 · —
+
+- [T-026](T-026-money-ru-messages.md) ru-RU money formatting in server messages — **todo** · api · S · depends: T-005, T-025, T-020 · —
+
+- [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **todo** · api · S · depends: T-006 · —
+
+- [T-029](T-029-version-check-in-tx.md) Re-check month version inside the transaction in allocations.save and other mutations — **todo** · api · S · depends: — · —
+
+- [T-030](T-030-openapi-allocations-uuid-keys.md) Keep propertyNames uuid for the allocations map in openapi.json — **todo** · api · S · depends: — · —
 
 - [T-033](T-033-task-id-allocation.md) Task id allocation sees task files of all remote branches — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/18)
 
@@ -40,6 +50,14 @@
 
 - [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
 
+- [T-024](T-024-reopen-preview-endpoint.md) Reopen preview endpoint GET /months/:period/reopen-preview — **todo** · api · S · depends: T-006, T-020 · —
+
+- [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **todo** · api · M · depends: T-005, T-020 · —
+
+- [T-027](T-027-unify-mutation-summary.md) Unify month mutation response shape (data.summary) — **todo** · api · M · depends: T-020, T-029 · —
+
+- [T-031](T-031-int-uncovered-does-not-block-close.md) Int test: uncovered operations do not block closing a month — **todo** · api · S · depends: T-004, T-006 · —
+
 - [T-032](T-032-months-recalculate-on-month-creation.md) Months: recalculate on month creation and draft promotion — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/16)
 
 - [T-034](T-034-e01-rule-coverage.md) E-01: tests citing every epic rule — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/19)
@@ -58,13 +76,15 @@
 
 - [T-009](T-009-month-dashboard-screen.md) Mobile: month dashboard screen, period switcher and month actions — **done** · mobile · M · depends: T-006, T-007 · [PR](https://github.com/Web-Usov/home-finances/pull/23)
 
-- [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **todo** · mobile · M · depends: T-009 · —
+- [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **todo** · mobile · M · depends: T-009, T-026, T-027 · —
+
+- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **todo** · mobile · S · depends: T-009, T-024 · —
 
 ## E-04. Операции и история (UI) — planned
 
 Эпик: [E-04-operations-ui.md](../epics/E-04-operations-ui.md)
 
-- [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **todo** · mobile · M · depends: T-004, T-009 · —
+- [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **todo** · mobile · M · depends: T-004, T-009, T-025, T-026 · —
 
 - [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **todo** · mobile · M · depends: T-005, T-011 · —
 

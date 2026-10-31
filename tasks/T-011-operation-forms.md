@@ -3,7 +3,7 @@ id: T-011
 title: Mobile: expense, transfer and adjustment forms
 status: todo
 epic: E-04
-depends: [T-004, T-009]
+depends: [T-004, T-009, T-025, T-026]
 blocked_by: []
 spec: [UI-10, OP-06, OP-07, OP-12, OP-13, HIST-05, MSG-02, MSG-03, MSG-04, MSG-06, SCOPE-24, ENV-03]
 acceptance: [AC-05, AC-06, AC-07, AC-09, AC-10, AC-21]
@@ -22,6 +22,7 @@ Quick actions "Списать", "Перевести", "Скорректиров�
 ## Context
 
 - Entry points: dashboard quick actions from T-009. API: `POST /operations` from T-004 (generated hooks in `apps/mobile/src/api/operations`).
+- Operations are created for the month shown on screen: always send `period` and that month's `version` (API-21, UI-16, T-025), so reopened months and drafts work; message amounts are ru-RU (MSG-07, T-026).
 - Warnings texts verbatim from `docs/spec/60-ui.md` (MSG-02, MSG-03, MSG-04). Expense/negative adjustment above balance: allow after confirmation (OP-06, OP-12). Transfer above balance: not saved, offer to transfer the available amount (OP-07, MSG-03).
 - Comment optional, max 500 chars (HIST-05, OP-13). Archived envelopes are not selectable (ENV-12).
 - Form patterns: `FormInput.tsx`, React Hook Form + Zod from `@family-budget/types`.
