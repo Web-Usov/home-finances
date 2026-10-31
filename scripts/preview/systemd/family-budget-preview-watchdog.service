@@ -1,0 +1,15 @@
+[Unit]
+Description=Family Budget preview: restart the API when /api/v1/health fails twice in a row
+After=network.target
+# The script arrives with the first deploy that contains it; skip quietly until then.
+ConditionPathExists=@PREVIEW_HOME@/current/scripts/preview/watchdog.sh
+
+[Service]
+Type=oneshot
+EnvironmentFile=@PREVIEW_HOME@/preview.env
+Environment=PATH=@PATH@
+ExecStart=@PREVIEW_HOME@/current/scripts/preview/watchdog.sh
+TimeoutStartSec=2min
+OOMScoreAdjust=-200
+NoNewPrivileges=yes
+PrivateTmp=yes
