@@ -1,0 +1,328 @@
+import React from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { FormProvider, useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { parseMoneyMinor } from '@family-budget/types';
+import { FormInput } from '../FormInput';
+import type { OperationsControllerCreateV1201 } from '../../api/model';
+import { amountToApiString, amountToMinor } from '../../lib/allocation';
+import { MONTH_LOCKED_MESSAGE, describeMonthError } from '../../lib/apiErrors';
+import { formatRubles, isNonZeroMoney, toInputMoney } from '../../lib/money';
+import { formatPeriodLabel } from '../../lib/period';
+import { invalidateMonthData } from './useMonthMutations';
+import { useCreateOperation } from './useCreateOperation';
+import type { QuickActionKind } from './QuickActions';
+import type { Dashboard } from './types';
+import { useQueryClient } from '@tanstack/react-query';
+
+interface OperationFormValues {
+  sourceEnvelopeId: string;
+  destinationEnvelopeId: string;
+  sign: '+' | '-';
+  amount: string;
+  comment: string;
+}
+
+const MONEY_ERROR = 'Сумма в рублях, до 2 знаков после запятой';
+
+const TITLES: Record<QuickActionKind, string> = {
+  expense: 'Списание',
+  transfer: 'Перевод',
+  adjustment: 'Корректировка',
+};
+
+const SAVE_LABELS: Record<QuickActionKind, string> = {
+  expense: 'Сохранить списание',
+  transfer: 'Сохранить перевод',
+  adjustment: 'Сохранить корректировку',
+};
+
+/** Form-level checks only; amounts, balances and uncovered parts are decided by the API (OP-04..OP-07). */
+function buildSchema(kind: QuickActionKind) {
+  return z
+    .object({
+      sourceEnvelopeId: z.string().min(1, 'Выберите конверт'),
+      destinationEnvelopeId: z.string(),
+      sign: z.enum(['+', '-']),
+      amount: z.string().refine((value) => {
+        const minor = amountToMinor(value);
+        return minor !== null && minor > 0 && value.trim() !== '';
+      }, MONEY_ERROR),
+      comment: z.string().max(500, 'Комментарий — не более 500 символов'),
+    })
+    .superRefine((value, ctx) => {
+      if (kind !== 'transfer') return;
+      if (value.destinationEnvelopeId === '') {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['destinationEnvelopeId'], message: 'Выберите конверт-получатель' });
+      } else if (value.destinationEnvelopeId === value.sourceEnvelopeId) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['destinationEnvelopeId'], message: 'Выберите другой конверт' });
+      }
+    });
+}
+
+interface EnvelopePickerProps {
+  label: string;
+  envelopes: Dashboard['envelopes'];
+  value: string;
+  onChange: (id: string) => void;
+  error?: string;
+  disabled: boolean;
+}
+
+/** Radio list of envelopes with their balance for the displayed month (data from the dashboard response). */
+function EnvelopePicker({ label, envelopes, value, onChange, error, disabled }: EnvelopePickerProps) {
+  return (
+    <View className="mb-4" accessibilityRole="radiogroup" accessibilityLabel={label}>
+      <Text className="text-sm font-medium text-gray-700 mb-1">{label}</Text>
+      <View className="flex-row flex-wrap gap-2">
+        {envelopes.map((envelope) => {
+          const selected = envelope.envelopeId === value;
+          return (
+            <Pressable
+              key={envelope.envelopeId}
+              accessibilityRole="radio"
+              accessibilityLabel={`${label}: ${envelope.name}`}
+              accessibilityState={{ checked: selected, disabled }}
+              disabled={disabled}
+              onPress={() => onChange(envelope.envelopeId)}
+              className={`rounded-lg border px-3 py-2 disabled:opacity-40 ${
+                selected ? 'border-primary-600 bg-primary-50' : 'border-gray-300 bg-white'
+              }`}
+            >
+              <Text className="text-sm font-medium text-gray-900">{envelope.name}</Text>
+              <Text className="text-xs text-gray-600">{formatRubles(envelope.closing)}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {error !== undefined && <Text className="text-sm text-danger mt-1">{error}</Text>}
+    </View>
+  );
+}
+
+export interface OperationSaved {
+  kind: QuickActionKind;
+  /** Warnings returned by the API (OP-06 / OP-12 uncovered parts), already in Russian. */
+  warnings: string[];
+}
+
+interface OperationFormProps {
+  kind: QuickActionKind;
+  dashboard: Dashboard;
+  onSaved: (saved: OperationSaved) => void;
+  onCancel: () => void;
+}
+
+/**
+ * Expense / transfer / adjustment form (UI-10). Month-only (AC-21): the operation always goes to the month shown on
+ * screen — `period` and that month's `version` are sent with every request (UI-16, API-21). Archived envelopes are not
+ * offered (ENV-12). The balance shown and compared is the envelope's `closing` from the dashboard response; the
+ * uncovered part is never computed here — it arrives in the API warnings after the save (OP-06, OP-12).
+ * A transfer above the available balance is refused by the API (OP-07); the form then offers one click to
+ * transfer the available amount (MSG-03).
+ */
+export function OperationForm({ kind, dashboard, onSaved, onCancel }: OperationFormProps) {
+  const { month, envelopes } = dashboard;
+  const queryClient = useQueryClient();
+  const locked = month.status === 'closed';
+  const active = envelopes.filter((envelope) => envelope.status === 'active');
+  const create = useCreateOperation();
+
+  const methods = useForm<OperationFormValues>({
+    resolver: zodResolver(buildSchema(kind)),
+    defaultValues: { sourceEnvelopeId: '', destinationEnvelopeId: '', sign: '+', amount: '', comment: '' },
+  });
+  const { control, handleSubmit, setValue, setError, clearErrors, formState } = methods;
+
+  const sourceId = useWatch({ control, name: 'sourceEnvelopeId' });
+  const destinationId = useWatch({ control, name: 'destinationEnvelopeId' });
+  const sign = useWatch({ control, name: 'sign' });
+  const amount = useWatch({ control, name: 'amount' }) ?? '';
+  const [exceedsOffer, setExceedsOffer] = React.useState<{ message: string } | null>(null);
+
+  const source = active.find((envelope) => envelope.envelopeId === sourceId);
+  const amountMinor = amountToMinor(amount);
+  // Only a comparison against the balance the API returned decides whether the warning is shown (OP-06, OP-12).
+  const reducesBalance = kind === 'expense' || (kind === 'adjustment' && sign === '-');
+  const exceedsBalance =
+    reducesBalance && source !== undefined && amountMinor !== null && amountMinor > parseMoneyMinor(source.closing);
+
+  const send = (values: OperationFormValues, amountOverride?: string) => {
+    clearErrors('root');
+    setExceedsOffer(null);
+    create.mutate(
+      {
+        data: {
+          type: kind,
+          sourceEnvelopeId: values.sourceEnvelopeId,
+          ...(kind === 'transfer' ? { destinationEnvelopeId: values.destinationEnvelopeId } : {}),
+          ...(kind === 'adjustment' ? { sign: values.sign } : {}),
+          amount: amountOverride ?? amountToApiString(values.amount),
+          ...(values.comment.trim() !== '' ? { comment: values.comment.trim() } : {}),
+          period: month.period,
+          version: month.version,
+        },
+      },
+      {
+        onSuccess: (response: OperationsControllerCreateV1201) =>
+          onSaved({ kind, warnings: response.warnings.map((warning) => warning.message) }),
+        onError: (error) => {
+          const { code, message } = describeMonthError(error, 'Не удалось сохранить операцию');
+          if (code === 'TRANSFER_EXCEEDS_BALANCE') setExceedsOffer({ message });
+          else setError('root', { message });
+          if (code === 'VERSION_CONFLICT') void invalidateMonthData(queryClient);
+        },
+      },
+    );
+  };
+
+  const availableForTransfer = source?.closing;
+  const canOfferAvailable = exceedsOffer !== null && availableForTransfer !== undefined && isNonZeroMoney(availableForTransfer);
+  const blocked = locked || create.isPending;
+
+  const onTransferAvailable = () => {
+    if (availableForTransfer === undefined) return;
+    setValue('amount', toInputMoney(availableForTransfer));
+    void handleSubmit((values) => send(values, availableForTransfer))();
+  };
+
+  const saveLabel = exceedsBalance ? 'Всё равно сохранить' : SAVE_LABELS[kind];
+
+  return (
+    <FormProvider {...methods}>
+      <View className="mt-3 rounded-lg border border-gray-200 p-3">
+        <Text accessibilityRole="header" className="text-base font-semibold text-gray-800 mb-1">
+          {TITLES[kind]}
+        </Text>
+        <Text className="text-sm text-gray-600 mb-3">Месяц: {formatPeriodLabel(month.period)}</Text>
+        {locked && <Text className="mb-3 text-sm text-gray-700">{MONTH_LOCKED_MESSAGE}</Text>}
+
+        {active.length === 0 ? (
+          <Text className="text-gray-500 italic mb-3">Нет активных конвертов</Text>
+        ) : (
+          <>
+            <EnvelopePicker
+              label={kind === 'transfer' ? 'Откуда' : 'Конверт'}
+              envelopes={active}
+              value={sourceId}
+              onChange={(id) => {
+                setValue('sourceEnvelopeId', id, { shouldValidate: formState.isSubmitted });
+                setExceedsOffer(null);
+              }}
+              error={formState.errors.sourceEnvelopeId?.message}
+              disabled={blocked}
+            />
+            {kind === 'transfer' && (
+              <EnvelopePicker
+                label="Куда"
+                envelopes={active.filter((envelope) => envelope.envelopeId !== sourceId)}
+                value={destinationId}
+                onChange={(id) => setValue('destinationEnvelopeId', id, { shouldValidate: formState.isSubmitted })}
+                error={formState.errors.destinationEnvelopeId?.message}
+                disabled={blocked}
+              />
+            )}
+          </>
+        )}
+
+        {kind === 'adjustment' && (
+          <View className="mb-4 flex-row gap-2" accessibilityRole="radiogroup" accessibilityLabel="Знак корректировки">
+            {(['+', '-'] as const).map((value) => (
+              <Pressable
+                key={value}
+                accessibilityRole="radio"
+                accessibilityLabel={value === '+' ? 'Увеличить' : 'Уменьшить'}
+                accessibilityState={{ checked: sign === value, disabled: blocked }}
+                disabled={blocked}
+                onPress={() => setValue('sign', value)}
+                className={`flex-1 rounded-lg border px-3 py-2 ${
+                  sign === value ? 'border-primary-600 bg-primary-50' : 'border-gray-300 bg-white'
+                }`}
+              >
+                <Text className="text-center font-medium text-gray-900">{value === '+' ? '+ Увеличить' : '− Уменьшить'}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        <FormInput
+          label="Сумма (₽)"
+          controllerProps={{ name: 'amount' }}
+          placeholder="0,00"
+          keyboardType="decimal-pad"
+          autoCapitalize="none"
+          editable={!blocked}
+          accessibilityLabel="Сумма"
+        />
+        <FormInput
+          label="Комментарий (необязательно)"
+          controllerProps={{ name: 'comment' }}
+          maxLength={500}
+          multiline
+          editable={!blocked}
+          accessibilityLabel="Комментарий"
+        />
+
+        {exceedsBalance && source && (
+          <View className="mb-3 rounded-lg border border-amber-600 bg-amber-50 p-3">
+            <Text accessibilityRole="alert" className="text-sm text-gray-900">
+              {kind === 'expense'
+                ? `В конверте доступно ${formatRubles(source.closing)}. Остальная часть будет отмечена как непокрытая.`
+                : `Баланс станет ${formatRubles('0.00')}, остальная часть будет отмечена как непокрытая.`}
+            </Text>
+          </View>
+        )}
+
+        {exceedsOffer !== null && (
+          <View className="mb-3 rounded-lg border border-amber-600 bg-amber-50 p-3">
+            <Text accessibilityRole="alert" className="text-sm text-gray-900">
+              {exceedsOffer.message}
+            </Text>
+            {canOfferAvailable && availableForTransfer !== undefined && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Перевести только ${formatRubles(availableForTransfer)}`}
+                disabled={blocked}
+                onPress={onTransferAvailable}
+                className="mt-2 rounded-lg bg-primary-600 py-2 active:bg-primary-700 disabled:opacity-50"
+              >
+                <Text className="text-center font-semibold text-white">
+                  Перевести только {formatRubles(availableForTransfer)}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {formState.errors.root && (
+          <Text accessibilityRole="alert" className="text-sm text-danger mb-3">
+            {formState.errors.root.message}
+          </Text>
+        )}
+
+        <View className="flex-row gap-2">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={saveLabel}
+            accessibilityState={{ disabled: blocked }}
+            disabled={blocked}
+            onPress={handleSubmit((values) => send(values))}
+            className="flex-1 rounded-lg bg-primary-600 py-3 active:bg-primary-700 disabled:opacity-50"
+          >
+            <Text className="text-center font-semibold text-white">{create.isPending ? 'Сохранение…' : saveLabel}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Закрыть форму операции"
+            disabled={create.isPending}
+            onPress={onCancel}
+            className="flex-1 rounded-lg bg-gray-200 py-3 active:bg-gray-300"
+          >
+            <Text className="text-center font-semibold text-gray-700">Отмена</Text>
+          </Pressable>
+        </View>
+      </View>
+    </FormProvider>
+  );
+}
