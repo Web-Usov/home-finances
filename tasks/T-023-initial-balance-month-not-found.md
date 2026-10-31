@@ -1,7 +1,7 @@
 ---
 id: T-023
 title: Envelope with an initial balance and no month returns MONTH_NOT_FOUND
-status: in_progress
+status: done
 epic: E-00
 depends: [T-020]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-01]
 area: api
 size: S
 branch: task/T-023-initial-balance-month-not-found
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/26
 ---
 
 # T-023. Envelope with an initial balance and no month returns MONTH_NOT_FOUND
