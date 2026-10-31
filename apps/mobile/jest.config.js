@@ -2,8 +2,6 @@
 module.exports = {
   // jest-expo applies babel.config.js (NativeWind's jsxImportSource included).
   preset: 'jest-expo',
-  // The first render of a suite compiles NativeWind/RN modules; on a loaded machine that exceeds the default 5 s.
-  testTimeout: 20000,
   testMatch: ['<rootDir>/src/**/*.test.{ts,tsx}', '<rootDir>/app/**/*.test.{ts,tsx}'],
   setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   // pnpm layout (node_modules/.pnpm/<pkg>/node_modules/<pkg>): transpile RN/Expo packages, skip everything else.

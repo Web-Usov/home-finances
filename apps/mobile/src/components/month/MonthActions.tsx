@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { useMonthsControllerCloseV1, useMonthsControllerReopenV1 } from '../../api/months/months';
 import { describeMonthError } from '../../lib/apiErrors';
-import { formatPeriodLabel, nextPeriod } from '../../lib/period';
+import { formatPeriodGenitive, formatPeriodLabel, formatPeriodLower, nextPeriod } from '../../lib/period';
 import type { ApiErrorResponse } from '../envelopes/types';
 import { ReopenConfirm } from './ReopenConfirm';
 import { invalidateMonthData, useCreateMonth } from './useMonthMutations';
@@ -70,7 +70,9 @@ export function MonthActions({ month, months }: MonthActionsProps) {
   const latest = months[months.length - 1];
   const hasDraft = months.some((m) => m.status === 'draft');
   const hasReopened = months.some((m) => m.status === 'reopened');
-  const canCreateNext = latest !== undefined && !hasDraft;
+  // The next month always follows the latest one, so the action belongs to the latest month's screen only (MON-06, MON-07).
+  const isLatest = latest !== undefined && latest.period === month.period;
+  const canCreateNext = isLatest && !hasDraft;
   const canClose = month.status === 'open' || month.status === 'reopened';
   const canReopen = month.status === 'closed' && !hasReopened;
 
@@ -83,7 +85,10 @@ export function MonthActions({ month, months }: MonthActionsProps) {
         onSuccess: ({ month: created }) =>
           setNotice({
             tone: 'info',
-            text: `${created.status === 'draft' ? 'Создан черновик' : 'Создан месяц'}: ${formatPeriodLabel(created.period)}.`,
+            text:
+              created.status === 'draft'
+                ? `Черновик ${formatPeriodGenitive(created.period)} создан.`
+                : `${formatPeriodLabel(created.period)} создан.`,
           }),
         onError: (error) => fail(error, 'Не удалось создать месяц'),
       },
@@ -98,9 +103,9 @@ export function MonthActions({ month, months }: MonthActionsProps) {
         onSuccess: ({ data }) => {
           void invalidateMonthData(queryClient);
           const promoted = data.promotedDraft
-            ? ` Месяц ${formatPeriodLabel(data.promotedDraft.period)} теперь открыт.`
+            ? ` ${formatPeriodLabel(data.promotedDraft.period)} теперь открыт.`
             : '';
-          setNotice({ tone: 'info', text: `Месяц ${formatPeriodLabel(month.period)} закрыт.${promoted}` });
+          setNotice({ tone: 'info', text: `${formatPeriodLabel(month.period)} закрыт.${promoted}` });
         },
         onError: (error) => fail(error, 'Не удалось закрыть месяц'),
       },
@@ -119,7 +124,7 @@ export function MonthActions({ month, months }: MonthActionsProps) {
           const { from, to } = data.recalcRange;
           setNotice({
             tone: 'info',
-            text: `Месяц открыт повторно. Пересчитаны месяцы с ${formatPeriodLabel(from)} по ${formatPeriodLabel(to)}.`,
+            text: `${formatPeriodLabel(month.period)} открыт повторно. Пересчитаны месяцы с ${formatPeriodGenitive(from)} по ${formatPeriodLower(to)}.`,
           });
         },
         onError: (error) => {
@@ -133,7 +138,10 @@ export function MonthActions({ month, months }: MonthActionsProps) {
   let hint: string | null = null;
   if (month.status === 'draft') hint = 'Черновик нельзя закрыть, пока не закрыт текущий месяц.';
   else if (month.status === 'closed' && hasReopened) hint = 'Одновременно можно исправлять только один закрытый месяц.';
-  else if (hasDraft && latest) hint = 'Черновик следующего месяца уже создан.';
+  else if (hasDraft) hint = 'Черновик следующего месяца уже создан.';
+  else if (!isLatest && latest) {
+    hint = `Следующий месяц создаётся на экране последнего месяца: ${formatPeriodLower(latest.period)}.`;
+  }
 
   return (
     <View>

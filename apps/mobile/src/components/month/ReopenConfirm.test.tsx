@@ -14,6 +14,6 @@ describe('ReopenConfirm', () => {
       />,
     );
 
-    expect(screen.getByText('Будут пересчитаны месяцы с Январь 2026 по Март 2026.')).toBeTruthy();
+    expect(screen.getByText('Будут пересчитаны месяцы с января 2026 по март 2026.')).toBeTruthy();
   });
 });

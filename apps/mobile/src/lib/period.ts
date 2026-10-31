@@ -1,19 +1,20 @@
 import { PeriodSchema } from '@family-budget/types';
 
+/** Month names, nominative ("январь") and genitive ("января"), lowercase. */
 const MONTH_NAMES = [
-  'Январь',
-  'Февраль',
-  'Март',
-  'Апрель',
-  'Май',
-  'Июнь',
-  'Июль',
-  'Август',
-  'Сентябрь',
-  'Октябрь',
-  'Ноябрь',
-  'Декабрь',
-];
+  ['январь', 'января'],
+  ['февраль', 'февраля'],
+  ['март', 'марта'],
+  ['апрель', 'апреля'],
+  ['май', 'мая'],
+  ['июнь', 'июня'],
+  ['июль', 'июля'],
+  ['август', 'августа'],
+  ['сентябрь', 'сентября'],
+  ['октябрь', 'октября'],
+  ['ноябрь', 'ноября'],
+  ['декабрь', 'декабря'],
+] as const;
 
 function parts(period: string): { year: number; month: number } {
   const [year = '0', month = '1'] = period.split('-');
@@ -26,10 +27,25 @@ function ordinal(period: string): number {
   return year * 12 + (month - 1);
 }
 
-/** "2026-01" -> "Январь 2026". Periods are month-only (AC-21, ADR 0006). */
+function monthName(period: string, form: 0 | 1): string {
+  const { month } = parts(period);
+  return MONTH_NAMES[month - 1]?.[form] ?? period;
+}
+
+/** Nominative lowercase, for the middle of a sentence ("по февраль 2026", "Открыть январь 2026"). */
+export function formatPeriodLower(period: string): string {
+  return `${monthName(period, 0)} ${parts(period).year}`;
+}
+
+/** Nominative, capitalised, for headings and sentence starts: "2026-01" -> "Январь 2026". Month-only (AC-21, ADR 0006). */
 export function formatPeriodLabel(period: string): string {
-  const { year, month } = parts(period);
-  return `${MONTH_NAMES[month - 1] ?? period} ${year}`;
+  const lower = formatPeriodLower(period);
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+/** Genitive lowercase: "2026-01" -> "января 2026" ("с января 2026", "черновик февраля 2026"). */
+export function formatPeriodGenitive(period: string): string {
+  return `${monthName(period, 1)} ${parts(period).year}`;
 }
 
 /** YYYY-MM with a real month number (01-12). */

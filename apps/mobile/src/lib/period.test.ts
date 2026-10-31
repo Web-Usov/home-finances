@@ -1,9 +1,26 @@
-import { adjacentYearPeriod, formatPeriodLabel, isValidPeriod, neighbourPeriod, nextPeriod } from './period';
+import {
+  adjacentYearPeriod,
+  formatPeriodGenitive,
+  formatPeriodLabel,
+  formatPeriodLower,
+  isValidPeriod,
+  neighbourPeriod,
+  nextPeriod,
+} from './period';
 
 describe('period helpers', () => {
   it('AC-21: labels are month-and-year only', () => {
     expect(formatPeriodLabel('2026-01')).toBe('Январь 2026');
     expect(formatPeriodLabel('2026-12')).toBe('Декабрь 2026');
+  });
+
+  it('ru-RU: month case forms for notices (nominative, lowercase, genitive)', () => {
+    expect(formatPeriodLower('2026-02')).toBe('февраль 2026');
+    expect(formatPeriodGenitive('2026-01')).toBe('января 2026');
+    expect(formatPeriodGenitive('2026-03')).toBe('марта 2026');
+    expect(formatPeriodGenitive('2026-05')).toBe('мая 2026');
+    expect(formatPeriodGenitive('2026-08')).toBe('августа 2026');
+    expect(formatPeriodGenitive('2026-12')).toBe('декабря 2026');
   });
 
   it('MON-06: next period rolls over the year', () => {

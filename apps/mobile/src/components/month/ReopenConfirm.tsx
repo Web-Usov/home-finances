@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { formatPeriodLabel } from '../../lib/period';
+import { formatPeriodGenitive, formatPeriodLower } from '../../lib/period';
 
 interface ReopenConfirmProps {
   period: string;
@@ -20,11 +20,11 @@ export function ReopenConfirm({ period, recalcRange, pending, onConfirm, onCance
   return (
     <View className="mt-3 rounded-lg border border-amber-600 bg-amber-50 p-3">
       <Text className="text-base font-semibold text-gray-900 mb-1">
-        Открыть {formatPeriodLabel(period)} повторно?
+        Открыть {formatPeriodLower(period)} повторно?
       </Text>
       <Text className="text-sm text-gray-800 mb-3">
         {recalcRange
-          ? `Будут пересчитаны месяцы с ${formatPeriodLabel(recalcRange.from)} по ${formatPeriodLabel(recalcRange.to)}.`
+          ? `Будут пересчитаны месяцы с ${formatPeriodGenitive(recalcRange.from)} по ${formatPeriodLower(recalcRange.to)}.`
           : 'Все последующие месяцы будут пересчитаны.'}
       </Text>
       <View className="flex-row gap-2">

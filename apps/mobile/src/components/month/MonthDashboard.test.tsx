@@ -28,17 +28,23 @@ function apiError(status: number, error: string, message: string) {
   });
 }
 
-function renderDashboard(status: MonthSummary['status'], months: MonthSummary[] = [makeMonth('2026-01', status)]) {
+function renderDashboard(
+  status: MonthSummary['status'],
+  months: MonthSummary[] = [makeMonth('2026-01', status)],
+  period = '2026-01',
+) {
   const onPeriodChange = jest.fn();
-  renderWithProviders(
-    <MonthDashboard dashboard={makeDashboard({ status })} months={months} onPeriodChange={onPeriodChange} />,
+  const { queryClient } = renderWithProviders(
+    <MonthDashboard dashboard={makeDashboard({ status, period })} months={months} onPeriodChange={onPeriodChange} />,
   );
-  return { onPeriodChange };
+  return { onPeriodChange, queryClient };
 }
 
 function button(name: string) {
   return screen.getByRole('button', { name });
 }
+
+jest.setTimeout(20000); // first render compiles NativeWind/RN modules; slow on a loaded machine
 
 describe('MonthDashboard', () => {
   beforeEach(() => {
@@ -116,6 +122,19 @@ describe('MonthDashboard', () => {
     expect(button('Создать следующий').props.accessibilityState.disabled).toBe(true);
   });
 
+  it('MON-06: "Создать следующий" is disabled on a past month, with a hint pointing to the latest month', () => {
+    renderDashboard('closed', [makeMonth('2026-01', 'closed'), makeMonth('2026-02', 'open')]);
+
+    expect(button('Создать следующий').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText('Следующий месяц создаётся на экране последнего месяца: февраль 2026.')).toBeTruthy();
+  });
+
+  it('MON-06: "Создать следующий" is enabled on the latest month when there is no draft', () => {
+    renderDashboard('open', [makeMonth('2026-01', 'closed'), makeMonth('2026-02', 'open')], '2026-02');
+
+    expect(button('Создать следующий').props.accessibilityState.disabled).toBe(false);
+  });
+
   it('MON-13: reopening is disabled while another month is reopened', () => {
     renderDashboard('closed', [makeMonth('2026-01', 'closed'), makeMonth('2026-02', 'reopened')]);
 
@@ -130,7 +149,7 @@ describe('MonthDashboard', () => {
     fireEvent.press(button('Создать следующий'));
 
     await waitFor(() => expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({ url: '/api/v1/months', method: 'POST', data: { period: '2026-02' } }));
-    expect(await screen.findByText('Создан черновик: Февраль 2026.')).toBeTruthy();
+    expect(await screen.findByText('Черновик февраля 2026 создан.')).toBeTruthy();
   });
 
   it('MON-08: closing sends the month version and reports the promoted draft', async () => {
@@ -149,7 +168,7 @@ describe('MonthDashboard', () => {
         data: { version: 3 },
       }),
     );
-    expect(await screen.findByText('Месяц Январь 2026 закрыт. Месяц Февраль 2026 теперь открыт.')).toBeTruthy();
+    expect(await screen.findByText('Январь 2026 закрыт. Февраль 2026 теперь открыт.')).toBeTruthy();
   });
 
   it('NFR-18 / ADR 0005: a 409 VERSION_CONFLICT shows the API message and refetches the month data', async () => {
@@ -158,13 +177,18 @@ describe('MonthDashboard', () => {
       config.url?.endsWith('/close')
         ? Promise.reject(apiError(409, 'VERSION_CONFLICT', message))
         : Promise.resolve(undefined)) as never);
-    renderDashboard('open');
+    const { queryClient } = renderDashboard('open');
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
 
     fireEvent.press(button('Закрыть'));
 
     expect(await screen.findByText(message)).toBeTruthy();
-    // Active queries are refetched through invalidation; in this isolated render only the mutation call is made.
     expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({ url: '/api/v1/months/2026-01/close' });
+    // The month data is refetched so the retry uses the current version.
+    const keys = invalidate.mock.calls.map(([filters]) => filters?.queryKey);
+    expect(keys).toEqual(
+      expect.arrayContaining([['/api/v1/dashboard/monthly'], ['/api/v1/months']]),
+    );
   });
 
   it('AC-15: reopening asks for confirmation first and sends the version only after it', async () => {
@@ -175,7 +199,7 @@ describe('MonthDashboard', () => {
     renderDashboard('closed', [makeMonth('2026-01', 'closed'), makeMonth('2026-03', 'open')]);
 
     fireEvent.press(button('Открыть повторно'));
-    expect(screen.getByText('Открыть Январь 2026 повторно?')).toBeTruthy();
+    expect(screen.getByText('Открыть январь 2026 повторно?')).toBeTruthy();
     expect(screen.getByText('Все последующие месяцы будут пересчитаны.')).toBeTruthy();
     expect(mockRequest).not.toHaveBeenCalled();
 
@@ -189,16 +213,16 @@ describe('MonthDashboard', () => {
       }),
     );
     // MON-12 (range after the fact, until the preview endpoint T-024 exists): taken from the reopen response.
-    expect(await screen.findByText('Месяц открыт повторно. Пересчитаны месяцы с Январь 2026 по Март 2026.')).toBeTruthy();
+    expect(await screen.findByText('Январь 2026 открыт повторно. Пересчитаны месяцы с января 2026 по март 2026.')).toBeTruthy();
   });
 
   it('cancelling the reopen confirmation sends nothing', () => {
     renderDashboard('closed');
 
     fireEvent.press(button('Открыть повторно'));
-    fireEvent.press(within(screen.getByText('Открыть Январь 2026 повторно?').parent!.parent!).getByRole('button', { name: 'Отмена' }));
+    fireEvent.press(within(screen.getByText('Открыть январь 2026 повторно?').parent!.parent!).getByRole('button', { name: 'Отмена' }));
 
-    expect(screen.queryByText('Открыть Январь 2026 повторно?')).toBeNull();
+    expect(screen.queryByText('Открыть январь 2026 повторно?')).toBeNull();
     expect(mockRequest).not.toHaveBeenCalled();
   });
 

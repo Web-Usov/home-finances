@@ -43,7 +43,7 @@ test.describe('month dashboard', { tag: '@smoke' }, () => {
 
     // AC-16 / MON-07: next month is created as a draft; a draft cannot be closed.
     await button(page, 'Создать следующий').click();
-    await expect(page.getByText('Создан черновик: Февраль 2026.')).toBeVisible();
+    await expect(page.getByText('Черновик февраля 2026 создан.')).toBeVisible();
     await expect(button(page, 'Создать следующий')).toBeDisabled();
     await button(page, 'Следующий месяц').click();
     await expect(page.getByRole('heading', { name: 'Февраль 2026' })).toBeVisible();
@@ -56,7 +56,7 @@ test.describe('month dashboard', { tag: '@smoke' }, () => {
     await button(page, 'Предыдущий месяц').click();
     await expect(page.getByRole('heading', { name: 'Январь 2026' })).toBeVisible();
     await button(page, 'Закрыть').click();
-    await expect(page.getByText('Месяц Январь 2026 закрыт. Месяц Февраль 2026 теперь открыт.')).toBeVisible();
+    await expect(page.getByText('Январь 2026 закрыт. Февраль 2026 теперь открыт.')).toBeVisible();
     await expect(page.getByLabel('Статус месяца: Закрыт')).toBeVisible();
     await expect(page.getByText('Месяц закрыт. Откройте его повторно, чтобы внести изменения.')).toBeVisible();
     for (const name of ['Списать', 'Перевести', 'Скорректировать', 'Изменить доход', 'Закрыть']) {
@@ -78,14 +78,16 @@ test.describe('month dashboard', { tag: '@smoke' }, () => {
     await expect(page.getByRole('heading', { name: 'Февраль 2026' })).toBeVisible();
     await button(page, 'Предыдущий месяц').click();
     await expect(page.getByLabel('Статус месяца: Закрыт')).toBeVisible();
+    // MON-06: the next month can only be created from the latest month's screen.
+    await expect(button(page, 'Создать следующий')).toBeDisabled();
 
     await button(page, 'Открыть повторно').click();
-    await expect(page.getByText('Открыть Январь 2026 повторно?')).toBeVisible();
+    await expect(page.getByText('Открыть январь 2026 повторно?')).toBeVisible();
     await shot(page, testInfo, '5-reopen-confirmation');
 
     await button(page, 'Подтвердить повторное открытие').click();
     await expect(page.getByLabel('Статус месяца: Открыт повторно')).toBeVisible();
-    await expect(page.getByText('Месяц открыт повторно. Пересчитаны месяцы с Январь 2026 по Февраль 2026.')).toBeVisible();
+    await expect(page.getByText('Январь 2026 открыт повторно. Пересчитаны месяцы с января 2026 по февраль 2026.')).toBeVisible();
     await expect(button(page, 'Списать')).toBeEnabled();
     await expect(button(page, 'Открыть повторно')).toBeDisabled();
     await shot(page, testInfo, '6-reopened-month');

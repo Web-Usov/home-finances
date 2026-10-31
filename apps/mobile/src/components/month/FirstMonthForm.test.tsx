@@ -13,6 +13,8 @@ jest.mock('../../api/axios-instance', () => ({
 
 const mockRequest = customAxiosInstance as jest.MockedFunction<typeof customAxiosInstance>;
 
+jest.setTimeout(20000); // first render compiles NativeWind/RN modules; slow on a loaded machine
+
 describe('FirstMonthForm', () => {
   beforeEach(() => {
     mockRequest.mockReset();
@@ -41,7 +43,7 @@ describe('FirstMonthForm', () => {
     fireEvent.changeText(screen.getByLabelText('Первый месяц'), '2026-01-15');
     fireEvent.press(screen.getByRole('button', { name: 'Создать месяц' }));
 
-    expect(await screen.findByText('Месяц в формате ГГГГ-ММ, например 2026-01')).toBeTruthy();
+    expect(await screen.findByText('Введите месяц как ГГГГ-ММ, например 2026-01')).toBeTruthy();
     expect(mockRequest).not.toHaveBeenCalled();
   });
 });
