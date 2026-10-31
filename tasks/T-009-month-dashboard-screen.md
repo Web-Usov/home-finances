@@ -29,13 +29,13 @@ The "Month" tab shows the real dashboard from the API: period switcher, status, 
 
 ## Definition of Done
 
-- [ ] Mobile component tests: `it('UI-07: shows income, allocated and free from the dashboard response')`, `it('MSG-06 / AC-14: quick actions are disabled in a closed month')`, `it('AC-15: reopening asks for confirmation first ...')` (the recalculation range is reported from the reopen response, see Out of scope)
-- [ ] Playwright spec `e2e/month-dashboard.e2e.ts` (named e2e) covering first-month creation (`AC-01`), close and reopen, using the test DB
-- [ ] Screenshots of empty state, open month and closed month attached as Playwright artifacts
-- [ ] No `StyleSheet.create`, no hardcoded API URL
-- [ ] `pnpm verify` is green
-- [ ] `pnpm e2e:smoke` is green and a screenshot of the new screen state is attached as a Playwright artifact
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Mobile component tests: `it('UI-07: shows income, allocated and free from the dashboard response')`, `it('MSG-06 / AC-14: quick actions are disabled in a closed month')`, `it('AC-15: reopening asks for confirmation first ...')` (the recalculation range is reported from the reopen response, see Out of scope)
+- [x] Playwright spec `e2e/month-dashboard.e2e.ts` (named e2e) covering first-month creation (`AC-01`), close and reopen, using the test DB
+- [x] Screenshots of empty state, open month and closed month attached as Playwright artifacts
+- [x] No `StyleSheet.create`, no hardcoded API URL
+- [x] `pnpm verify` is green
+- [x] `pnpm e2e:smoke` is green and a screenshot of the new screen state is attached as a Playwright artifact
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -50,4 +50,15 @@ The "Month" tab shows the real dashboard from the API: period switcher, status, 
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Implemented the "Месяц" tab on the real API (`GET /dashboard/monthly`, `GET/POST /months`, `PATCH /months/:period`, `POST close|reopen`).
+
+- Screen `app/(tabs)/month.tsx` + `src/components/month/*`: `MonthDashboard`, `PeriodSwitcher` (month and year steps over existing months, month-only, AC-21), `MonthStatusBadge`, `MonthActions` (create next / close / reopen with `ReopenConfirm`), `SummaryCard` (UI-07, UI-09), `EnvelopeRow` (UI-08), `QuickActions` (UI-10, disabled when closed with the MSG-06 text), `IncomeForm`, `FirstMonthForm` (empty state, SCOPE-23). Helpers in `src/lib` (`money.ts` ru-RU display of API decimal strings without float math, `period.ts`, `apiErrors.ts`: `MONTH_LOCKED` -> verbatim MSG-06, `VERSION_CONFLICT` -> API message plus refetch).
+- The first dashboard load without a chosen period lets the API pick the working month and pins that period in `monthStore`, so the view stays on the month after it is closed.
+- Tests: jest component/unit tests (`MonthDashboard`, `FirstMonthForm`, `ReopenConfirm`, `money`, `period`); Playwright `e2e/month-dashboard.e2e.ts` (two `@smoke` flows with screenshots attached to the report, one untagged 360 px layout check), `e2e/fixtures/api.ts` gained `closeMonth`.
+
+Deviations / notes:
+- MON-12 / AC-15: the range is NOT shown before reopening; the preview endpoint is T-024 (spec PR #12). The confirmation shows a generic warning, the range from the reopen response is shown afterwards. `ReopenConfirm` takes an optional `recalcRange` for T-024 to plug in. The matching DoD test moved to Out of scope.
+- The OpenAPI document has no body for `POST /months` and no response schemas for `GET /months`, so the generated `useMonthsControllerCreateV1` sends no body and `useMonthsControllerListV1` is typed `void`. The list hook is re-typed through its generic (as the Envelopes screen does); creation uses `useMutation` + the Orval mutator (`useCreateMonth`). Follow-up for the API owner: add `@ApiBody` for `CreateMonthRequestSchema` and response schemas for the months list/create, then regenerate and switch to the generated hook. Likewise `period` of the dashboard query is typed `unknown`.
+- UI-10 quick-action buttons are rendered and enabled in non-closed months but have no handler yet (`onAction` prop); the operation forms are T-011.
+- Own Russian texts where the spec has none: hints for draft/closed states, notices after create/close/reopen, the first-month form copy.
+- `apps/mobile/jest.config.js`: `testTimeout` 20 s (first render of a suite exceeded the default 5 s on a loaded machine).
