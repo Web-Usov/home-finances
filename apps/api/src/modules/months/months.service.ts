@@ -18,6 +18,7 @@ import type {
 import { z } from 'zod';
 import { ConflictException, NotFoundException, ValidationException } from '../../common/exceptions';
 import { planReopen } from './reopen-plan';
+import { isSingleReopenedViolation } from './reopen-violation';
 import type { MonthSummaryDto } from '../../common/month-summary';
 import { lockAllMonths, lockMonthForMutation } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -297,7 +298,19 @@ export class MonthsService {
       const lastBefore = await tx.budgetMonth.findFirst({ orderBy: { period: 'desc' } });
       const recalcRange = planReopen(month, alreadyReopened, lastBefore);
 
-      await tx.budgetMonth.update({ where: { id: month.id }, data: { status: 'reopened' } });
+      // Defence in depth for MON-13: the partial unique index rejects a second reopened month even
+      // if the lock-based check above was bypassed. Only that index maps to the domain error.
+      try {
+        await tx.budgetMonth.update({ where: { id: month.id }, data: { status: 'reopened' } });
+      } catch (error) {
+        if (isSingleReopenedViolation(error)) {
+          throw new ConflictException(
+            'INVALID_STATUS_TRANSITION',
+            'Другой месяц уже открыт повторно. Закройте его, прежде чем открывать другой.',
+          );
+        }
+        throw error;
+      }
       const recalc = await this.engine.recalculateMonthAtomically(month.id, tx);
       const refreshed = await this.refreshMonth(tx, month.id);
       const totalAllocatedMinor = await this.sumAllocations(tx, month.id);

@@ -1,4 +1,4 @@
-import type { BudgetMonth } from '@prisma/client';
+import { Prisma, type BudgetMonth } from '@prisma/client';
 import type { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 import {
   ConflictException,
@@ -730,6 +730,35 @@ describe('MonthsService', () => {
         });
         expect(tx.budgetMonth.update).not.toHaveBeenCalled();
         expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+      });
+
+      it('MON-13: a unique violation of the single-reopened index (lock check bypassed) becomes 409 INVALID_STATUS_TRANSITION', async () => {
+        setupReopen(null);
+        tx.budgetMonth.update.mockRejectedValueOnce(
+          new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+            code: 'P2002',
+            clientVersion: 'test',
+            meta: { target: ['status'] },
+          }),
+        );
+
+        await expect(service.reopen('2026-06', { version: 7 })).rejects.toMatchObject({
+          code: 'INVALID_STATUS_TRANSITION',
+          statusCode: 409,
+        });
+        expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+      });
+
+      it('MON-13: a P2002 on another unique target during reopen is rethrown, not mapped', async () => {
+        setupReopen(null);
+        const other = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: 'test',
+          meta: { target: ['period'] },
+        });
+        tx.budgetMonth.update.mockRejectedValueOnce(other);
+
+        await expect(service.reopen('2026-06', { version: 7 })).rejects.toBe(other);
       });
 
       it.each(['draft', 'open', 'reopened'] as const)('only a closed month can be reopened (%s rejected)', async (status) => {
