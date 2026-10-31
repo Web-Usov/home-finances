@@ -1,16 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { installGuards, makeTmp, waitFor } from './helpers.mjs';
 
 const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'with-lock.mjs');
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+installGuards();
 
 function sandbox() {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'with-lock-test-'));
+  const tmp = makeTmp('with-lock-test-');
   return {
     tmp,
     lock: path.join(tmp, 'family-budget-t.lock'),
@@ -40,15 +40,6 @@ const alive = (pid) => {
     return false;
   }
 };
-
-async function waitFor(cond, ms = 5000) {
-  const end = Date.now() + ms;
-  while (Date.now() < end) {
-    if (cond()) return true;
-    await sleep(20);
-  }
-  return false;
-}
 
 test('propagates the exit code of the command and releases the lock', async () => {
   const sb = sandbox();
@@ -139,7 +130,7 @@ test('SIGINT while waiting for the lock exits 130 without touching the holder lo
   const sb = sandbox();
   fs.writeFileSync(sb.lock, JSON.stringify({ pid: process.pid, cwd: '/x', started: 'now' }));
   const r = run(sb, ['true']);
-  await sleep(300);
+  assert.ok(await waitFor(() => /waiting/.test(r.stderr)), 'process is polling for the lock');
   r.proc.kill('SIGINT');
   assert.equal((await r.exit).code, 130);
   assert.equal(JSON.parse(fs.readFileSync(sb.lock, 'utf8')).pid, process.pid);

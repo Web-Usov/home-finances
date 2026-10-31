@@ -8,7 +8,7 @@
  * Run it from the main checkout (or any worktree; the main checkout is found through git).
  * Steps: validate the task on origin/master (todo, depends done, blocked_by empty) -> git fetch ->
  * `git worktree add ../finance-wt/t-xxx-slug -b task/T-xxx-slug origin/master` -> copy apps/api/.env and
- * apps/api/.env.test (from the main checkout, else from .env.test.example) -> `pnpm install --frozen-lockfile` ->
+ * apps/api/.env.test (from the main checkout, else from .env.test.example) -> `pnpm install --frozen-lockfile --prefer-offline` (no timeout) ->
  * status in_progress + branch -> board -> commit `chore(tasks): start T-xxx [T-xxx]`.
  *
  * `--new` first creates the task file from tasks/_template.md with the next free id (highest id on origin/master or in
@@ -154,7 +154,7 @@ function main() {
     if (envTestSrc) fs.copyFileSync(envTestSrc, path.join(apiDir, '.env.test'));
     console.log(`env files: .env from main, .env.test from ${envTestSrc ? path.basename(envTestSrc) : 'nowhere (missing!)'}`);
 
-    if (!process.env.TASK_START_SKIP_INSTALL) run('pnpm', ['install', '--frozen-lockfile'], wtPath);
+    if (!process.env.TASK_START_SKIP_INSTALL) run('pnpm', ['install', '--frozen-lockfile', '--prefer-offline'], wtPath); // no timeout: a loaded machine may need minutes
     if (newTaskText) {
       const file = path.join(wtPath, 'tasks', `${id}-${slug}.md`);
       fs.writeFileSync(file, newTaskText);
@@ -168,13 +168,15 @@ function main() {
   } catch (e) {
     console.error(`\ntask:start: failed after the worktree was created: ${e.message}`);
     if (opts.keep) {
-      console.error(`--keep: worktree ${wtPath} and branch ${branch} are left in place for debugging.`);
-      console.error(`Remove them with: git worktree remove --force ${wtPath} && git branch -D ${branch}`);
+      console.error(`--keep: worktree ${wtPath} and branch ${branch} are KEPT (nothing was rolled back).`);
+      console.error(`To resume: cd ${wtPath}, fix the cause (e.g. pnpm install --frozen-lockfile), then finish the claim by hand:`);
+      console.error(`  node scripts/tasks.mjs set ${id} in_progress --branch ${branch} && node scripts/tasks.mjs board && git add tasks && git commit -m "chore(tasks): start ${id} [${id}]"`);
+      console.error(`To discard: git worktree remove --force ${wtPath} && git branch -D ${branch}`);
     } else {
       try {
         git(['worktree', 'remove', '--force', wtPath], mainDir);
         git(['branch', '-D', branch], mainDir);
-        console.error(`Rolled back: removed worktree ${wtPath} and branch ${branch}. Fix the problem and run the command again (--keep to inspect the leftovers).`);
+        console.error(`Rolled back: worktree ${wtPath} and branch ${branch} were removed, nothing is left behind. To resume, fix the cause and run the same command again (add --keep to keep the worktree for inspection instead).`);
       } catch (re) {
         console.error(`Rollback failed (${String(re.stderr ?? re.message).trim()}). Remove by hand: git worktree remove --force ${wtPath} && git branch -D ${branch}`);
       }
