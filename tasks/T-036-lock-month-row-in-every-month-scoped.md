@@ -26,28 +26,38 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+Every month-scoped mutation locks the month row `FOR UPDATE` and checks existence, `version` and status under the lock, in
+one shared helper, so two writers with the same `version` can no longer both succeed (DATA-12) and nothing is written
+into a month that is closing (MON-03).
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- Defect reproduced in the review of PR #22 (finding 1): `close` + `PUT allocations` + `POST envelopes {initialBalance}` fired
+  concurrently with the same `version` gave 200/200/201 in 1 of 40 rounds. Only `OperationsService.lockMonth` locked the row.
+- Supersedes/extends T-029 from the pending spec PR #12 (`allocations.save` version check inside the transaction): the planner
+  reconciles. T-028 (DB-level constraint for MON-13) is still open; here MON-13 is checked under the lock.
+- Spec: DATA-12, MON-03, MON-13, CALC-13. ADRs 0004, 0005. Files: `apps/api/src/common/month-lock.ts`, the months,
+  allocations, envelopes and operations services.
+- Lock order: target month and all later months, ascending period, in ONE `ORDER BY period FOR UPDATE` statement (the cascade
+  bumps `version` of all of them). Create: advisory lock + all months ascending. Working-month mutations: resolve, lock,
+  re-resolve under the lock.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `lockMonthForMutation` / `lockWorkingMonth` / `lockAllMonths` in `common/month-lock.ts`, unit-tested with a distinct tx (`month-lock.spec.ts`): order existence → version → status
+- [x] Used by operations (replaces its private `lockMonth`), allocations.save, envelopes create/archive, months create/updateIncome/close/reopen
+- [x] `it('DATA-12 / MON-03 / CALC-13: close vs ...')` races pass: exactly one 2xx, losers 409, no 5xx, state equals answers (`month-lock.concurrency.close-vs-mutation.int-spec.ts`)
+- [x] Same-kind races, MON-13 reopen race, unique-name and first-month races pass (`month-lock.concurrency.same-kind.int-spec.ts`)
+- [x] The new race tests fail against the previous services (checked)
+- [x] AC-14 test uses concurrent requests on the listened harness; misleading comment removed
+- [x] `pnpm verify` is green
+- [x] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
+- [x] Mutations still bump the BudgetMonth `version` (existing int tests unchanged)
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- A DB-level constraint for MON-13 (T-028), spec/ADR edits, changes in `apps/mobile`.
 
 ## Handoff log
 
@@ -55,4 +65,17 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Shared helper `apps/api/src/common/month-lock.ts`; all month-scoped mutations lock the month row inside their transaction.
+
+- Lock order (single global order, ascending period): target month + all later months in one `ORDER BY period FOR UPDATE`.
+  close = month then draft; reopen = target then later months (MON-13 is checked under that lock: the reopened month either lies
+  in the range or its close shares a locked row); create = advisory lock + all months; operations create / envelope create / archive
+  = `lockWorkingMonth` (resolve, lock, re-resolve; an earlier working month after the lock gives 409 VERSION_CONFLICT instead of
+  an out-of-order lock).
+- Also fixed on the way: concurrent envelope creates with one name (and a rename) ended in a Prisma unique violation = 500, now
+  409 ENVELOPE_NAME_DUPLICATE; concurrent creates of one month = unique violation, now 422/409.
+- Race tests (real concurrency on `t.listen()`): 15 rounds x 14 races (close vs allocations, income, expense, edit/delete operation,
+  envelope create with a balance, archive, next month; same-kind pairs; MON-13 reopen pair; same-name envelope with and without a
+  month; same first month). Against the previous services 7 of 8 `close vs ...` races fail in the first rounds (200/200).
+- Deviation: ROUNDS is 15 (not 20) to keep the two files at ~45 s wall time on a loaded machine; the AC-14 test is concurrent again.
+- Follow-up for the planner: T-029 (allocations version-in-tx) is covered here; T-028 (DB constraint for MON-13) stays useful as defence in depth.

@@ -59,6 +59,14 @@ Rules:
   `EnvelopeMonthSnapshot.closing`) would show 0.
 - Month-scoped mutations check, in this order: existence (`MONTH_NOT_FOUND`) → `version` (`VERSION_CONFLICT`, ADR 0005)
   → month status (`MONTH_LOCKED`, MON-03, NFR-18) → domain rules. See `AllocationsService.save` for the reference flow.
+- All of these checks run **inside** the mutation's `$transaction`, after `lockMonthForMutation(tx, ...)` (`common/month-lock.ts`):
+  one `SELECT ... WHERE period >= <target> ORDER BY period FOR UPDATE` locks the target month and every later month, because
+  the cascade rewrites and bumps `version` of all of them (ADR 0004/0005). Locks are therefore always taken in ascending period
+  order (close: the month, then the draft; reopen: the target, then the later months; create: all months via `lockAllMonths`
+  plus an advisory lock), so mutations never deadlock and any two mutations with overlapping cascades serialise (DATA-12). The
+  single-reopened rule (MON-13) is checked under that lock. Mutations without a period (operations create, envelope
+  create/archive) lock the working month through `lockWorkingMonth`. A check outside the transaction or without the lock is a
+  race (two tabs with the same `version` both succeed).
 - `ZodValidationPipe` throws the domain `ValidationException` (HTTP 422, code `VALIDATION_ERROR`, message lists failing field
   paths; API-17), rendered by `DomainExceptionFilter` as `{ error, message }`.
 - Gap: only `EnvelopesController` and `AllocationsController` use `ZodValidationPipe`; other controllers still accept

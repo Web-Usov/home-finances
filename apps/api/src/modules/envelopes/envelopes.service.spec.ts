@@ -62,8 +62,19 @@ function createMockPrisma() {
       findMany: jest.fn(),
     },
     $transaction: jest.fn(),
+    $queryRaw: jest.fn(),
   };
   mock.$transaction.mockImplementation((callback: (tx: unknown) => unknown) => callback(mock));
+  // The `FOR UPDATE` month-lock query (common/month-lock.ts, bind value = month id) returns the month the
+  // working-month lookups (budgetMonth.findMany / findFirst) stubbed by the test.
+  mock.$queryRaw.mockImplementation(async (_sql: unknown, id: string) => {
+    const months = ((await mock.budgetMonth.findMany()) ?? []) as BudgetMonth[];
+    const fallback = (await mock.budgetMonth.findFirst()) as BudgetMonth | null;
+    const month = [...months, ...(fallback === null || fallback === undefined ? [] : [fallback])].find(
+      (m) => m.id === id,
+    );
+    return month === undefined ? [] : [month];
+  });
   return mock;
 }
 

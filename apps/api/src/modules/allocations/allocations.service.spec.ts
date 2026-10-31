@@ -94,8 +94,15 @@ function createMockPrisma() {
       findMany: jest.fn(),
     },
     $transaction: jest.fn(),
+    $queryRaw: jest.fn(),
   };
   mock.$transaction.mockImplementation((callback: (tx: unknown) => unknown) => callback(mock));
+  // The `FOR UPDATE` month-lock query (common/month-lock.ts) reads the row stubbed on budgetMonth.findUnique.
+  mock.$queryRaw.mockImplementation(() =>
+    (mock.budgetMonth.findUnique() as Promise<BudgetMonth | null>).then((month) =>
+      month === null ? [] : [month],
+    ),
+  );
   return mock;
 }
 
@@ -109,9 +116,19 @@ function createMockEngine() {
 
 type MockEngine = ReturnType<typeof createMockEngine>;
 
+/**
+ * `mock` is the transaction client handed to the callback; the service itself gets a DISTINCT root
+ * client without any write or lock surface, so a write outside the transaction fails the test.
+ */
 function createService(mock: MockPrisma, engine: MockEngine): AllocationsService {
+  const root = {
+    $transaction: mock.$transaction,
+    // read path only (getAllocations); save() must not touch these
+    budgetMonth: { findUnique: mock.budgetMonth.findUnique },
+    allocation: { findMany: mock.allocation.findMany },
+  };
   return new AllocationsService(
-    mock as unknown as PrismaService,
+    root as unknown as PrismaService,
     engine as unknown as CalculationEngineService,
   );
 }
@@ -199,6 +216,17 @@ describe('AllocationsService', () => {
           uncovered: 50_000,
         },
       ]);
+    });
+
+    it('DATA-12 / MON-03: locks the month row FOR UPDATE on the transaction client before any write', async () => {
+      stubSaveDefaults(mock, engine);
+
+      await service.save('2026-08', { allocations: { [ENV_A]: '100.00' }, version: 3 });
+
+      expect(mock.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(mock.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+        mock.allocation.deleteMany.mock.invocationCallOrder[0] ?? Infinity,
+      );
     });
 
     it('accepts a total equal to the income exactly', async () => {

@@ -30,6 +30,27 @@ function makeMonth(overrides: Partial<BudgetMonth> = {}): BudgetMonth {
 // $transaction hands the same mock to the callback as the tx client.
 // ---------------------------------------------------------------------------
 
+/**
+ * Adds the `FOR UPDATE` lock queries of common/month-lock.ts to a mock client. They read the rows the
+ * tests stub on `budgetMonth`: lockAllMonths (no bind values) -> findMany, lockMonthForMutation -> findUnique.
+ */
+function withLockQueries<T extends object>(
+  client: T,
+): T & { $executeRaw: jest.Mock; $queryRaw: jest.Mock } {
+  const months = (client as { budgetMonth?: unknown }).budgetMonth as {
+    findMany?: jest.Mock;
+    findUnique: jest.Mock;
+  };
+  const queryRaw = jest.fn((_sql: unknown, ...values: unknown[]) =>
+    values.length === 0
+      ? (months.findMany?.() as Promise<BudgetMonth[]>)
+      : (months.findUnique() as Promise<BudgetMonth | null>).then((month) =>
+          month === null ? [] : [month],
+        ),
+  );
+  return Object.assign(client, { $executeRaw: jest.fn(), $queryRaw: queryRaw });
+}
+
 function createMockPrisma() {
   const mock = {
     budgetMonth: {
@@ -46,6 +67,7 @@ function createMockPrisma() {
     },
     $transaction: jest.fn(),
   };
+  withLockQueries(mock);
   mock.$transaction.mockImplementation((callback: (tx: unknown) => unknown) => callback(mock));
   return mock;
 }
@@ -140,10 +162,13 @@ describe('MonthsService', () => {
     });
 
     it('FIN-04 / DATA-06 / API-15: recalculates the new month with the transaction client, after the allocation copy', async () => {
-      const tx = {
+      const tx = withLockQueries({
         budgetMonth: {
           create: jest.fn().mockResolvedValue(makeMonth({ id: 'month-new', period: '2026-09' })),
           findUnique: jest.fn().mockResolvedValue(makeMonth({ id: 'month-new', period: '2026-09', version: 2 })),
+          findMany: jest.fn().mockResolvedValue([
+            makeMonth({ id: 'month-prev', period: '2026-08', status: 'open' }),
+          ]),
         },
         allocation: {
           findMany: jest.fn().mockResolvedValue([
@@ -151,11 +176,8 @@ describe('MonthsService', () => {
           ]),
           createMany: jest.fn().mockResolvedValue({ count: 1 }),
         },
-      };
+      });
       mock.$transaction.mockImplementation((callback: (client: unknown) => unknown) => callback(tx));
-      mock.budgetMonth.findMany.mockResolvedValue([
-        makeMonth({ id: 'month-prev', period: '2026-08', status: 'open' }),
-      ]);
 
       const result = await service.create({ period: '2026-09' });
 
@@ -368,10 +390,10 @@ describe('MonthsService', () => {
     let tx: ReturnType<typeof createMockTx>;
 
     function createMockTx() {
-      return {
+      return withLockQueries({
         budgetMonth: { findUnique: jest.fn(), update: jest.fn() },
         allocation: { aggregate: jest.fn() },
-      };
+      });
     }
 
     function stub(month: BudgetMonth, allocatedMinor = 0): void {
@@ -526,10 +548,10 @@ describe('MonthsService', () => {
     let tx: ReturnType<typeof createMockTx>;
 
     function createMockTx() {
-      return {
+      return withLockQueries({
         budgetMonth: { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
         allocation: { aggregate: jest.fn() },
-      };
+      });
     }
 
     beforeEach(() => {

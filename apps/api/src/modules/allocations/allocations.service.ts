@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Allocation, BudgetMonth, Prisma } from '@prisma/client';
+import type { Allocation, Prisma } from '@prisma/client';
 import {
   SaveAllocationsRequestSchema,
   formatMoneyMinor,
@@ -10,11 +10,8 @@ import {
   type MutationResponse,
 } from '@family-budget/types';
 import { z } from 'zod';
-import {
-  ConflictException,
-  NotFoundException,
-  ValidationException,
-} from '../../common/exceptions';
+import { NotFoundException, ValidationException } from '../../common/exceptions';
+import { lockMonthForMutation, type LockedMonth } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 
@@ -49,8 +46,8 @@ function sumUncoveredByType(uncoveredByType: Prisma.JsonValue): number {
  * Notes:
  * - All monetary values are integer kopecks; API strings are converted exactly
  *   once at the boundary via parseMoneyMinor (never float).
- * - Check order is load month → version → status → Σ ≤ income → envelopes:
- *   a stale tab reports VERSION_CONFLICT even when the month closed meanwhile.
+ * - Check order is lock month → version → status → Σ ≤ income → envelopes, all inside the
+ *   transaction under `lockMonthForMutation` (DATA-12): a stale tab reports VERSION_CONFLICT even when the month closed meanwhile.
  * - Archived envelopes are rejected (ENV-12): they are excluded from new
  *   allocations, so for the write path an archived id is as unavailable as an
  *   unknown one → ENVELOPE_NOT_FOUND with a message naming the archive reason.
@@ -72,46 +69,35 @@ export class AllocationsService {
     period: string,
     dto: SaveAllocationsRequest,
   ): Promise<MutationResponse<MonthSummary>> {
-    const month = await this.prisma.budgetMonth.findUnique({ where: { period } });
-    if (month === null) {
-      throw new NotFoundException('MONTH_NOT_FOUND', `Месяц не найден: ${period}`);
-    }
-
-    if (dto.version !== month.version) {
-      throw new ConflictException(
-        'VERSION_CONFLICT',
-        `Данные месяца ${period} изменились. Обновите страницу и повторите сохранение.`,
-      );
-    }
-
-    if (month.status === 'closed') {
-      throw new ConflictException(
-        'MONTH_LOCKED',
-        'Месяц закрыт. Откройте его повторно, чтобы внести изменения.',
-      );
-    }
-
-    const amountByEnvelopeId = new Map<string, number>();
-    for (const [envelopeId, amount] of Object.entries(dto.allocations)) {
-      amountByEnvelopeId.set(envelopeId, parseMoneyMinor(amount));
-    }
-
-    const { valid, excessMinor } = validateAllocations(
-      month.incomeMinor,
-      Object.fromEntries(amountByEnvelopeId),
-    );
-    if (!valid) {
-      throw new ValidationException(
-        'ALLOCATION_EXCEEDS_INCOME',
-        `Распределено на ${formatMoneyMinor(excessMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
-      );
-    }
-
-    if (amountByEnvelopeId.size > 0) {
-      await this.assertEnvelopesAvailable(this.prisma, amountByEnvelopeId);
-    }
-
     const { summary, warnings } = await this.prisma.$transaction(async (tx) => {
+      // DATA-12 / MON-03: existence → version → status, checked under FOR UPDATE inside the
+      // transaction, so a concurrent writer cannot slip between the check and the write.
+      const month = await lockMonthForMutation(
+        tx,
+        { period },
+        { expectedVersion: dto.version },
+      );
+
+      const amountByEnvelopeId = new Map<string, number>();
+      for (const [envelopeId, amount] of Object.entries(dto.allocations)) {
+        amountByEnvelopeId.set(envelopeId, parseMoneyMinor(amount));
+      }
+
+      const { valid, excessMinor } = validateAllocations(
+        month.incomeMinor,
+        Object.fromEntries(amountByEnvelopeId),
+      );
+      if (!valid) {
+        throw new ValidationException(
+          'ALLOCATION_EXCEEDS_INCOME',
+          `Распределено на ${formatMoneyMinor(excessMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
+        );
+      }
+
+      if (amountByEnvelopeId.size > 0) {
+        await this.assertEnvelopesAvailable(tx, amountByEnvelopeId);
+      }
+
       await tx.allocation.deleteMany({ where: { monthId: month.id } });
       if (amountByEnvelopeId.size > 0) {
         await tx.allocation.createMany({
@@ -171,7 +157,7 @@ export class AllocationsService {
   /** Month summary from the just-recalculated snapshots plus the saved totals. */
   private async buildSummary(
     db: DbClient,
-    month: BudgetMonth,
+    month: LockedMonth,
     amountByEnvelopeId: Map<string, number>,
   ): Promise<MonthSummary> {
     const snapshots = await db.envelopeMonthSnapshot.findMany({
