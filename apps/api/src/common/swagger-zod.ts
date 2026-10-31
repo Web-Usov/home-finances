@@ -10,6 +10,6 @@ type JsonSchemaObject = Record<string, unknown> & { $schema?: string };
  * swagger request schemas are derived, never hand-written.
  */
 export function zodOpenApiSchema(schema: ZodTypeAny): SchemaObject {
-  const { $schema: _drop, ...rest } = zodToJsonSchema(schema) as JsonSchemaObject;
+  const { $schema: _drop, ...rest } = zodToJsonSchema(schema, { $refStrategy: 'none', target: 'openApi3' }) as JsonSchemaObject;
   return rest as unknown as SchemaObject;
 }
