@@ -226,7 +226,7 @@ export class MonthsService {
    * (MON-08, AC-17); closing a `reopened` month does not (MON-15). A draft cannot be
    * closed (MON-01, AC-16). Source data only changes status, so no recalculation is
    * needed (snapshots do not depend on status and the draft was already recalculated when it
- * was created or edited, T-032); the changed months get a version bump (ADR 0005).
+   * was created or edited, T-032); the changed months get a version bump (ADR 0005).
    */
   async close(
     period: string,
