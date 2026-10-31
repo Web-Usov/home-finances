@@ -26,7 +26,7 @@
 
 - [T-026](T-026-money-ru-messages.md) ru-RU money formatting in server messages — **done** · api · S · depends: T-005, T-025, T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/32)
 
-- [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **todo** · api · S · depends: T-006 · —
+- [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **done** · api · S · depends: T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/36)
 
 - [T-029](T-029-version-check-in-tx.md) Re-check month version inside the transaction in allocations.save and other mutations — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
 
@@ -80,7 +80,7 @@
 
 - [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **done** · mobile · M · depends: T-009, T-027 · [PR](https://github.com/Web-Usov/home-finances/pull/24)
 
-- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **todo** · mobile · S · depends: T-009, T-024 · —
+- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **done** · mobile · S · depends: T-009, T-024 · [PR](https://github.com/Web-Usov/home-finances/pull/37)
 
 ## E-04. Операции и история (UI) — planned
 

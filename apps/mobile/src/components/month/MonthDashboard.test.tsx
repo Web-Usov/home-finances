@@ -200,39 +200,64 @@ describe('MonthDashboard', () => {
     );
   });
 
-  it('AC-15: reopening asks for confirmation first and sends the version only after it', async () => {
-    mockRequest.mockResolvedValue({
-      data: { month: makeMonth('2026-01', 'reopened', 4), recalcRange: { from: '2026-01', to: '2026-03' } },
-      warnings: [],
-    } as never);
+  it('MON-12 / AC-15: reopen shows the recalculation range from the preview before confirming', async () => {
+    mockRequest.mockImplementation((async (config: { url?: string }) => {
+      if (config.url === '/api/v1/months/2026-01/reopen-preview') {
+        return { month: makeMonth('2026-01', 'closed'), recalcRange: { from: '2026-01', to: '2026-03' } };
+      }
+      return {
+        data: { month: makeMonth('2026-01', 'reopened', 4), recalcRange: { from: '2026-01', to: '2026-02' } },
+        warnings: [],
+      };
+    }) as never);
     renderDashboard('closed', [makeMonth('2026-01', 'closed'), makeMonth('2026-03', 'open')]);
 
     fireEvent.press(button('Открыть повторно'));
     expect(screen.getByText('Открыть январь 2026 повторно?')).toBeTruthy();
-    expect(screen.getByText('Все последующие месяцы будут пересчитаны.')).toBeTruthy();
-    expect(mockRequest).not.toHaveBeenCalled();
+    expect(await screen.findByText('Будут пересчитаны месяцы с января 2026 по март 2026.')).toBeTruthy();
+    // Only the read-only preview was requested so far.
+    expect(mockRequest.mock.calls.map(([config]) => `${config.method} ${config.url}`)).toEqual([
+      'GET /api/v1/months/2026-01/reopen-preview',
+    ]);
 
     fireEvent.press(button('Подтвердить повторное открытие'));
 
     await waitFor(() =>
-      expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({
+      expect(mockRequest.mock.calls[1]?.[0]).toMatchObject({
         url: '/api/v1/months/2026-01/reopen',
         method: 'POST',
         data: { version: 3 },
       }),
     );
-    // MON-12 (range after the fact, until the preview endpoint T-024 exists): taken from the reopen response.
-    expect(await screen.findByText('Январь 2026 открыт повторно. Пересчитаны месяцы с января 2026 по март 2026.')).toBeTruthy();
+    // The reopen response stays authoritative: its range is reported afterwards.
+    expect(await screen.findByText('Январь 2026 открыт повторно. Пересчитаны месяцы с января 2026 по февраль 2026.')).toBeTruthy();
+  });
+
+  it('MON-12: a refused preview shows the API message and nothing can be confirmed', async () => {
+    mockRequest.mockRejectedValue(apiError(409, 'INVALID_STATUS_TRANSITION', 'Месяц нельзя открыть повторно.'));
+    renderDashboard('closed');
+
+    fireEvent.press(button('Открыть повторно'));
+
+    expect(await screen.findByText('Месяц нельзя открыть повторно.')).toBeTruthy();
+    expect(button('Подтвердить повторное открытие').props.accessibilityState).toMatchObject({ disabled: true });
+    fireEvent.press(button('Подтвердить повторное открытие'));
+    expect(mockRequest).toHaveBeenCalledTimes(1);
   });
 
   it('cancelling the reopen confirmation sends nothing', () => {
+    mockRequest.mockResolvedValue({
+      month: makeMonth('2026-01', 'closed'),
+      recalcRange: { from: '2026-01', to: '2026-01' },
+    } as never);
     renderDashboard('closed');
 
     fireEvent.press(button('Открыть повторно'));
     fireEvent.press(within(screen.getByText('Открыть январь 2026 повторно?').parent!.parent!).getByRole('button', { name: 'Отмена' }));
 
     expect(screen.queryByText('Открыть январь 2026 повторно?')).toBeNull();
-    expect(mockRequest).not.toHaveBeenCalled();
+    // Only the read-only preview may have been requested; nothing is written.
+    expect(mockRequest.mock.calls.filter(([config]) => config.method !== 'GET')).toEqual([]);
   });
 
   it('MSG-06: a MONTH_LOCKED refusal while saving income shows the verbatim closed-month text', async () => {
