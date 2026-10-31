@@ -29,7 +29,7 @@ The "Month" tab shows the real dashboard from the API: period switcher, status, 
 
 ## Definition of Done
 
-- [ ] Mobile component tests: `it('UI-07: shows income, allocated and free from the dashboard response')`, `it('MSG-06 / AC-14: quick actions are disabled in a closed month')`, `it('MON-12 / AC-15: reopen shows the recalculation range before confirming')`
+- [ ] Mobile component tests: `it('UI-07: shows income, allocated and free from the dashboard response')`, `it('MSG-06 / AC-14: quick actions are disabled in a closed month')`, `it('AC-15: reopening asks for confirmation first ...')` (the recalculation range is reported from the reopen response, see Out of scope)
 - [ ] Playwright spec `e2e/month-dashboard.e2e.ts` (named e2e) covering first-month creation (`AC-01`), close and reopen, using the test DB
 - [ ] Screenshots of empty state, open month and closed month attached as Playwright artifacts
 - [ ] No `StyleSheet.create`, no hardcoded API URL
@@ -42,6 +42,7 @@ The "Month" tab shows the real dashboard from the API: period switcher, status, 
 - Allocation editor (T-010).
 - Operation forms (T-011).
 - Envelope management (already exists).
+- MON-12 / AC-15 "show the recalculation range BEFORE reopening": deferred to T-024. The preview endpoint is pending (spec PR #12), so the reopen confirmation shows a generic warning and the range from the reopen response is shown afterwards. `ReopenConfirm` already accepts an optional `recalcRange`; T-024 only has to fetch the preview and pass it in. The former DoD test `MON-12 / AC-15: reopen shows the recalculation range before confirming` moves to T-024 (`ReopenConfirm.test.tsx` already covers the component with a range supplied).
 
 ## Handoff log
 
