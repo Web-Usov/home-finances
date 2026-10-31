@@ -170,7 +170,7 @@ does not allow approving your own PR. So:
   the reviewer runs `gh pr merge <n> --squash --auto` (GitHub merges as soon as `verify`, `contract`, `e2e` are green) and
   then reports "merged" or "auto-merge enabled" based on `gh pr view <n> --json state,autoMergeRequest`.
   Branch protection is strict (the branch must be up to date with master): if `gh pr view <n> --json mergeStateStatus` is
-  `BEHIND`, the reviewer first runs `gh pr update-branch <n>` (merge only; `--rebase` is denied; this is the reviewer's one
+  `BEHIND`, the reviewer first runs `gh api -X PUT repos/Web-Usov/home-finances/pulls/<n>/update-branch` (merge only, the API default; `update_method` is denied; gh v2.45 has no `pr update-branch`; this is the reviewer's one
   permitted branch modification). GitHub merges master in and re-runs CI on the new head. If GitHub reports a conflict, the
   reviewer sends the PR back to the author, who merges `origin/master` locally, runs `pnpm tasks:board`, `pnpm verify` and
   pushes. Otherwise the reviewer enables auto-merge without comparing files: `verify` (`tasks:check`, board `--check`) and

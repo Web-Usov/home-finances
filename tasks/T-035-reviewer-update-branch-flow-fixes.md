@@ -26,7 +26,7 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-Fix the minor findings of the PR #18 review: the reviewer's `gh pr update-branch` step is explicitly allowed, merge-only, and no
+Fix the minor findings of the PR #18 review: the reviewer's update-branch step (`gh api -X PUT .../pulls/<n>/update-branch`) is explicitly allowed, merge-only, and no
 longer sends nearly every PR back to the author; `tasks:check` and `task:clean` give safer messages/behavior.
 
 ## Context
@@ -37,8 +37,8 @@ longer sends nearly every PR back to the author; `tasks:check` and `task:clean` 
 
 ## Definition of Done
 
-- [x] reviewer.md states `gh pr update-branch <n>` as the only allowed branch modification
-- [x] permissions: allow `gh pr update-branch ?*`, then deny `gh pr update-branch *--rebase*` (last match wins)
+- [x] reviewer.md states `gh api -X PUT repos/Web-Usov/home-finances/pulls/<n>/update-branch` as the only allowed branch modification
+- [x] permissions: allow that exact `gh api -X PUT` form, then deny `gh api * update_method*` (last match wins); gh v2.45 has no `pr update-branch`
 - [x] reviewer.md, review.md, workflow.md agree: update-branch conflict => back to the author, otherwise rely on CI + auto-merge
 - [x] `tasks:check` collision message suggests `git merge origin/master` first (test asserts it)
 - [x] `resolveBranch` errors when `branch:` is set but missing locally; falls back only when null/absent (test)
@@ -57,9 +57,9 @@ longer sends nearly every PR back to the author; `tasks:check` and `task:clean` 
 
 Fixes findings 1-5 of the PR #18 review (finding 6 needed no change).
 
-- reviewer.md: explicit exception for `gh pr update-branch <n>`; permissions `allow gh pr update-branch ?*` then `deny
-  gh pr update-branch *--rebase*` (V2 permissions: last match wins; patterns support only `*` and `?`, so `[0-9]*` would be
-  literal and `?*` is used). Conflict => back to the author; otherwise CI on the updated head + auto-merge.
+- reviewer.md: explicit exception for the update-branch API call (`gh api -X PUT repos/Web-Usov/home-finances/pulls/<n>/update-branch`, because gh v2.45
+  has no `gh pr update-branch`); permissions allow exactly that form, then deny `gh api * update_method*` (V2: last match wins;
+  patterns support only `*` and `?`, so `[0-9]*` would be literal). Everything else stays denied by the `shell *` deny. Conflict => back to the author; otherwise CI on the updated head + auto-merge.
 - review.md, workflow.md section 6 aligned; the "master changed generated files" condition is dropped.
 - `tasks:check` collision message suggests `git merge origin/master` first (test asserts it).
 - `resolveBranch`: `branch:` set but missing locally is an error, fallback only for null/absent (tests).
