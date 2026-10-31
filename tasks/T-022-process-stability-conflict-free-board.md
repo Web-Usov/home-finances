@@ -26,24 +26,24 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+Make the process tooling stable under parallel work: the generated board never carries cross-task aggregates (no silent
+wrong counters after squash merges), and the script tests are deterministic under load, leak nothing and cannot touch the real repo.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- `scripts/tasks.mjs` (board), `scripts/task-start.mjs`, `scripts/with-lock.mjs`, `scripts/__tests__/*.test.mjs`, `docs/workflow.md`, `docs/testing.md`.
+- Observed: two parallel PRs regenerating `tasks/README.md` merged textually clean but left wrong counters on master.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Board has no aggregate counters; one block per task, tasks separated by blank lines, sorted by epic then id; summary is printed by `tasks:board` / `tasks:next` to stdout
+- [x] `tasks.test.mjs`: two independent status changes merged with `git merge-file` equal the freshly generated board
+- [x] script tests wait on conditions with generous deadlines (no fixed sleeps as synchronisation); `test:scripts` has a per-test timeout; 10x loop under CPU load is green
+- [x] tests remove their `mkdtemp` dirs (and worktrees) in `after` hooks
+- [x] `task:start` install step has no short timeout, uses `--prefer-offline`, and prints a clear rolled-back / kept + resume message on failure
+- [x] test helpers set `GIT_CEILING_DIRECTORIES` and assert `core.bare` of the real repo is not `true` after each test
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -55,4 +55,8 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+1. Board: no counters; one block per task (blank-line separated so adjacent tasks merge cleanly), sorted by epic then id; epic `(done/total)` removed, "no tasks" placeholder removed. Summary printed by `tasks:board`/`tasks:next`. New `tasks.test.mjs` merges two changes of adjacent tasks with `git merge-file` and compares with the regenerated board.
+2. Script tests: fixed sleeps replaced by `waitFor` (60s deadline; SIGINT test waits for the "waiting" message), `--test-timeout=300000`. Stress: 6 busy loops + 3 parallel copies, every test file x10 each (120 runs, load average ~12 on 4 CPUs): 0 failures.
+3. `makeTmp`/`installGuards` remove all temp dirs in `after`; 120 stress runs leaked nothing.
+4. `task:start`: `pnpm install --frozen-lockfile --prefer-offline`, no timeout in the script (the timeout seen came from the caller), explicit rolled-back / kept + resume messages.
+5. `helpers.mjs`: `GIT_CEILING_DIRECTORIES` = tmp root and a per-test `core.bare` guard.
