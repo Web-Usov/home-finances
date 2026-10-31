@@ -55,7 +55,7 @@ describe('Yearly analytics (integration)', () => {
   async function createFebruary(food: { id: string }) {
     const feb = (await http().post('/api/v1/months').send({ period: '2026-02', income: '90000.00' }).expect(201)).body
       .month;
-    // month creation writes no snapshots; saving the allocation runs the cascade
+    // creation already recalculated (T-032); this PUT overrides the copied allocation
     await allocate('2026-02', feb.id, { [food.id]: '30000.00' });
     return feb;
   }

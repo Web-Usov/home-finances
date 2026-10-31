@@ -164,7 +164,7 @@ describe('Monthly dashboard (integration)', () => {
     const { month, food } = await setup();
     await addOperation(month.id, { type: 'expense', sourceEnvelopeId: food.id, amount: '10000.00' });
     const next = (await http().post('/api/v1/months').send({ period: '2026-02', income: '100000.00' }).expect(201)).body.month;
-    // month creation writes no snapshots; saving the allocation runs the cascade
+    // creation already recalculated (T-032); this PUT overrides the copied allocation
     await http()
       .put('/api/v1/months/2026-02/allocations')
       .send({ allocations: { [food.id]: '30000.00' }, version: await monthVersion(next.id) })
