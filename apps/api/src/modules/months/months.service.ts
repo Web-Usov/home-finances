@@ -1,12 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import type { BudgetMonth, Prisma } from '@prisma/client';
 import {
+  CloseMonthRequestSchema,
   CreateMonthRequestSchema,
+  ReopenMonthRequestSchema,
   UpdateIncomeRequestSchema,
   formatMoneyMinor,
   parseMoneyMinor,
 } from '@family-budget/types';
-import type { MonthStatus, MutationResponse } from '@family-budget/types';
+import type {
+  CloseMonthResultSchema,
+  MonthStatus,
+  MonthSummarySchema,
+  MutationResponse,
+  ReopenMonthResultSchema,
+} from '@family-budget/types';
 import { z } from 'zod';
 import {
   ConflictException,
@@ -18,17 +26,13 @@ import { CalculationEngineService } from '../calculation-engine/calculation-engi
 
 export type CreateMonthRequest = z.infer<typeof CreateMonthRequestSchema>;
 export type UpdateIncomeRequest = z.infer<typeof UpdateIncomeRequestSchema>;
+export type CloseMonthRequest = z.infer<typeof CloseMonthRequestSchema>;
+export type ReopenMonthRequest = z.infer<typeof ReopenMonthRequestSchema>;
 
 /** Brief per-month totals — the "краткие итоги" of the months API (spec line 465). */
-export interface MonthSummaryDto {
-  id: string;
-  period: string;
-  status: MonthStatus;
-  incomeMinor: number;
-  version: number;
-  totalAllocatedMinor: number;
-  freeFundsMinor: number;
-}
+export type MonthSummaryDto = z.infer<typeof MonthSummarySchema>;
+export type CloseMonthResultDto = z.infer<typeof CloseMonthResultSchema>;
+export type ReopenMonthResultDto = z.infer<typeof ReopenMonthResultSchema>;
 
 /** Satisfied by both PrismaService and an interactive transaction client. */
 type DbClient = Prisma.TransactionClient;
@@ -183,17 +187,17 @@ export class MonthsService {
     period: string,
     dto: UpdateIncomeRequest,
   ): Promise<MutationResponse<MonthSummaryDto>> {
-    const month = await this.findMonthOrThrow(period);
-    this.assertVersion(month, dto.version);
-    if (month.status === 'closed') {
-      throw new ConflictException(
-        'MONTH_LOCKED',
-        'Месяц закрыт. Откройте его повторно, чтобы внести изменения.',
-      );
-    }
-
     const incomeMinor = parseMoneyMinor(dto.income);
     return this.prisma.$transaction(async (tx) => {
+      // Read and version-check inside the transaction (DATA-12): no window between check and write.
+      const month = await this.findMonthOrThrow(tx, period);
+      this.assertVersion(month, dto.version);
+      if (month.status === 'closed') {
+        throw new ConflictException(
+          'MONTH_LOCKED',
+          'Месяц закрыт. Откройте его повторно, чтобы внести изменения.',
+        );
+      }
       // FIN-02: income may not drop below what is already allocated (MSG-01).
       const allocatedMinor = await this.sumAllocations(tx, month.id);
       if (incomeMinor < allocatedMinor) {
@@ -210,8 +214,106 @@ export class MonthsService {
     });
   }
 
-  private async findMonthOrThrow(period: string): Promise<BudgetMonth> {
-    const month = await this.prisma.budgetMonth.findUnique({ where: { period } });
+  /**
+   * Close an open or reopened month (API-05). Blocked only by hard invariants
+   * (MON-11: allocations above income); free funds and uncovered operations never
+   * block (MON-10). Closing an `open` month promotes the existing draft to `open`
+   * (MON-08, AC-17); closing a `reopened` month does not (MON-15). A draft cannot be
+   * closed (MON-01, AC-16). Source data only changes status, so no recalculation is
+   * needed; the changed months get a version bump (ADR 0005).
+   */
+  async close(
+    period: string,
+    dto: CloseMonthRequest,
+  ): Promise<MutationResponse<CloseMonthResultDto>> {
+    return this.prisma.$transaction(async (tx) => {
+      const month = await this.findMonthOrThrow(tx, period);
+      this.assertVersion(month, dto.version);
+      if (month.status !== 'open' && month.status !== 'reopened') {
+        throw new ConflictException(
+          'INVALID_STATUS_TRANSITION',
+          month.status === 'draft'
+            ? `Черновик ${period} нельзя закрыть. Закрыть можно только открытый месяц.`
+            : `Месяц ${period} уже закрыт.`,
+        );
+      }
+
+      const allocatedMinor = await this.sumAllocations(tx, month.id);
+      if (allocatedMinor > month.incomeMinor) {
+        throw new ValidationException(
+          'ALLOCATION_EXCEEDS_INCOME',
+          `Распределено на ${formatMoneyMinor(allocatedMinor - month.incomeMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
+        );
+      }
+
+      const closed = await tx.budgetMonth.update({
+        where: { id: month.id },
+        data: { status: 'closed', version: { increment: 1 } },
+      });
+
+      let promotedDraft: MonthSummaryDto | null = null;
+      if (month.status === 'open') {
+        const draft = await tx.budgetMonth.findFirst({ where: { status: 'draft' } });
+        if (draft !== null) {
+          const promoted = await tx.budgetMonth.update({
+            where: { id: draft.id },
+            data: { status: 'open', version: { increment: 1 } },
+          });
+          promotedDraft = toSummary(promoted, await this.sumAllocations(tx, draft.id));
+        }
+      }
+
+      return {
+        data: { month: toSummary(closed, allocatedMinor), promotedDraft },
+        warnings: [],
+      };
+    });
+  }
+
+  /**
+   * Reopen a closed month (API-06). Only one month may be `reopened` (MON-13). The month
+   * switches to `reopened` and the cascade recalculates it and every later month in the
+   * same transaction (AC-15, CALC-13); later months keep their statuses (MON-14). The
+   * response carries the recalculated range (MON-12).
+   */
+  async reopen(
+    period: string,
+    dto: ReopenMonthRequest,
+  ): Promise<MutationResponse<ReopenMonthResultDto>> {
+    return this.prisma.$transaction(async (tx) => {
+      const month = await this.findMonthOrThrow(tx, period);
+      this.assertVersion(month, dto.version);
+      if (month.status !== 'closed') {
+        throw new ConflictException(
+          'INVALID_STATUS_TRANSITION',
+          `Месяц ${period} не закрыт. Повторно открыть можно только закрытый месяц.`,
+        );
+      }
+      const alreadyReopened = await tx.budgetMonth.findFirst({ where: { status: 'reopened' } });
+      if (alreadyReopened !== null) {
+        throw new ConflictException(
+          'INVALID_STATUS_TRANSITION',
+          `Месяц ${alreadyReopened.period} уже открыт повторно. Закройте его, прежде чем открывать другой.`,
+        );
+      }
+
+      await tx.budgetMonth.update({ where: { id: month.id }, data: { status: 'reopened' } });
+      const recalc = await this.engine.recalculateMonthAtomically(month.id, tx);
+      const refreshed = await this.refreshMonth(tx, month.id);
+      const last = await tx.budgetMonth.findFirst({ orderBy: { period: 'desc' } });
+      const totalAllocatedMinor = await this.sumAllocations(tx, month.id);
+      return {
+        data: {
+          month: toSummary(refreshed, totalAllocatedMinor),
+          recalcRange: { from: period, to: last?.period ?? period },
+        },
+        warnings: recalc.warnings,
+      };
+    });
+  }
+
+  private async findMonthOrThrow(db: DbClient, period: string): Promise<BudgetMonth> {
+    const month = await db.budgetMonth.findUnique({ where: { period } });
     if (month === null) {
       throw new NotFoundException('MONTH_NOT_FOUND', `Месяц не найден: ${period}`);
     }
@@ -242,15 +344,5 @@ export class MonthsService {
       _sum: { amountMinor: true },
     });
     return aggregate._sum.amountMinor ?? 0;
-  }
-
-  close(period: string) {
-    // TODO(todo 16): validate month is open, promote draft to open
-    return { period, status: 'closed', message: 'Not implemented' };
-  }
-
-  reopen(period: string, dto: unknown) {
-    // TODO(todo 16): validate month is closed, warn about recalculation range
-    return { period, status: 'reopened', recalcRange: [], dto, message: 'Not implemented' };
   }
 }

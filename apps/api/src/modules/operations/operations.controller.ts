@@ -1,7 +1,25 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiQuery,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiResponse,
+} from '@nestjs/swagger';
+import {
+  CreateOperationRequestSchema,
+  OperationListQuerySchema,
+  OperationListResponseSchema,
+  OperationMutationResponseSchema,
+} from '@family-budget/types';
+import { ZodValidationPipe } from '../../common/pipes';
+import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { OperationsService } from './operations.service';
+import type { CreateOperationRequest, OperationListQuery } from './operations.service';
 
+// PATCH/DELETE /operations/:id are added by T-005.
 @ApiTags('Operations')
 @Controller('operations')
 export class OperationsController {
@@ -9,29 +27,36 @@ export class OperationsController {
 
   @Get()
   @ApiOperation({ summary: 'Get operation history' })
-  @ApiResponse({ status: 200, description: 'List of operations with results' })
-  list() {
-    return this.operationsService.list();
+  @ApiQuery({ name: 'period', required: false, description: 'YYYY-MM' })
+  @ApiQuery({ name: 'envelopeId', required: false, description: 'Source or destination envelope' })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ['expense', 'transfer', 'adjustment', 'initial_balance'],
+  })
+  @ApiOkResponse({
+    description: 'Operations with results, ordered by period and sequence_no',
+    schema: zodOpenApiSchema(OperationListResponseSchema),
+  })
+  @ApiResponse({ status: 422, description: 'VALIDATION_ERROR' })
+  list(@Query(new ZodValidationPipe(OperationListQuerySchema)) query: OperationListQuery) {
+    return this.operationsService.list(query);
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create an operation' })
-  @ApiResponse({ status: 201, description: 'Operation, result and new summary' })
-  create(@Body() dto: unknown) {
+  @ApiOperation({ summary: 'Create an operation in the current working month' })
+  @ApiBody({ schema: zodOpenApiSchema(CreateOperationRequestSchema) })
+  @ApiCreatedResponse({
+    description: 'Operation, its result, the new month summary and warnings',
+    schema: zodOpenApiSchema(OperationMutationResponseSchema),
+  })
+  @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND or ENVELOPE_NOT_FOUND' })
+  @ApiResponse({
+    status: 409,
+    description: 'VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope',
+  })
+  @ApiResponse({ status: 422, description: 'VALIDATION_ERROR' })
+  create(@Body(new ZodValidationPipe(CreateOperationRequestSchema)) dto: CreateOperationRequest) {
     return this.operationsService.create(dto);
-  }
-
-  @Patch(':id')
-  @ApiOperation({ summary: 'Edit an operation' })
-  @ApiResponse({ status: 200, description: 'Cascade recalculated results' })
-  update(@Param('id') id: string, @Body() dto: unknown) {
-    return this.operationsService.update(id, dto);
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete an operation' })
-  @ApiResponse({ status: 200, description: 'Cascade recalculated results' })
-  remove(@Param('id') id: string) {
-    return this.operationsService.remove(id);
   }
 }

@@ -24,7 +24,7 @@ Expo web client (apps/mobile)  --HTTP/JSON-->  NestJS + Fastify API (apps/api)  
 | `common/` | `ZodValidationPipe`, domain exceptions, `DomainExceptionFilter`, `zodOpenApiSchema` | API-17 | done |
 | `prisma/` | `PrismaService` (extends `PrismaClient`, connects on init) | — | done |
 | `health/` | `GET /api/v1/health` | — | done |
-| `months/` | month list/create, status transitions, income, close/reopen | MON-*, API-01…06 | list/create/income done; close/reopen stubs |
+| `months/` | month list/create, status transitions, income, close/reopen | MON-*, API-01…06 | list/create/income/close/reopen done |
 | `envelopes/` | list/create/rename/reorder/archive, balances | ENV-*, API-07…09 | done |
 | `allocations/` | save the whole allocation table of a month | UI-11…15, API-04 | done |
 | `operations/` | expenses, transfers, adjustments, history | OP-*, HIST-*, API-10…11 | stubs |

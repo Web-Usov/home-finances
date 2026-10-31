@@ -28,11 +28,11 @@
 
 - [T-003](T-003-months-income-update.md) Months: update income with cascade recalculation — **done** · api · M · depends: T-001 · [PR](https://github.com/Web-Usov/home-finances/pull/7)
 
-- [T-004](T-004-operations-list-create.md) Operations: history list and create (expense, transfer, adjustment) — **todo** · api · M · depends: T-003 · —
+- [T-004](T-004-operations-list-create.md) Operations: history list and create (expense, transfer, adjustment) — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/10)
 
 - [T-005](T-005-operations-update-delete.md) Operations: update and delete with stable sequence and recalculation — **todo** · api · M · depends: T-004 · —
 
-- [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **todo** · api · M · depends: T-003 · —
+- [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
 
 ## E-02. Отчётность API — planned
 
