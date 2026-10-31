@@ -1,0 +1,18 @@
+[Unit]
+Description=Family Budget preview API (port 3100, DB family_budget_preview)
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+EnvironmentFile=@PREVIEW_HOME@/preview.env
+Environment=NODE_ENV=production
+WorkingDirectory=@PREVIEW_HOME@/current/apps/api
+ExecStart=@NODE@ dist/main.js
+Restart=on-failure
+RestartSec=5
+MemoryMax=768M
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+[Unit]
+Description=Family Budget preview web (Expo export + /api proxy, port 8100)
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=@PREVIEW_HOME@/preview.env
+# Run from the slot that is active at start; releases are resolved per request through `current`.
+ExecStart=@NODE@ @PREVIEW_HOME@/current/scripts/preview/serve-web.mjs
+Restart=on-failure
+RestartSec=5
+MemoryMax=256M
+Nice=5
+
+[Install]
+WantedBy=multi-user.target
