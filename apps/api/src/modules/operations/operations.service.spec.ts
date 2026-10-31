@@ -68,6 +68,11 @@ function makeResult(overrides: Partial<OperationResult> = {}): OperationResult {
   };
 }
 
+/** Rows of the `FOR UPDATE` month-lock query (the first one is the target month). */
+function lockedRows(status: string, version: number, id = 'month-1', period = '2026-08') {
+  return [{ id, period, status, incomeMinor: 0, version }];
+}
+
 function createMockPrisma() {
   const mock = {
     budgetMonth: { findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
@@ -115,7 +120,7 @@ describe('OperationsService', () => {
     // the engine bumps the version, so the post-recalculation re-read is month.version + 1
     tx.budgetMonth.findUnique.mockResolvedValue({ ...month, version: month.version + 1 });
     tx.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 400_000 } });
-    tx.$queryRaw.mockResolvedValue([{ status: month.status, version: month.version }]);
+    tx.$queryRaw.mockResolvedValue(lockedRows(month.status, month.version, month.id, month.period));
     tx.envelope.findUnique.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
       Promise.resolve([SOURCE, DESTINATION].find((e) => e.id === id) ?? null),
     );
@@ -199,7 +204,7 @@ describe('OperationsService', () => {
     });
 
     it('DATA-12: reads the month inside the transaction and rejects a stale version without writing', async () => {
-      tx.$queryRaw.mockResolvedValue([{ status: 'open', version: 2 }]); // changed after the client read v1
+      tx.$queryRaw.mockResolvedValue(lockedRows('open', 2)); // changed after the client read v1
 
       await expect(service.create(EXPENSE)).rejects.toMatchObject({
         statusCode: 409,
@@ -221,14 +226,14 @@ describe('OperationsService', () => {
     });
 
     it('HIST-10: a month closed concurrently (locked row reads closed) → MONTH_LOCKED', async () => {
-      tx.$queryRaw.mockResolvedValue([{ status: 'closed', version: 1 }]);
+      tx.$queryRaw.mockResolvedValue(lockedRows('closed', 1));
 
       await expect(service.create(EXPENSE)).rejects.toMatchObject({ code: 'MONTH_LOCKED' });
       expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
     });
 
     it('version is checked before the month status (order of checks)', async () => {
-      tx.$queryRaw.mockResolvedValue([{ status: 'closed', version: 5 }]);
+      tx.$queryRaw.mockResolvedValue(lockedRows('closed', 5));
 
       await expect(service.create(EXPENSE)).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
     });
@@ -238,7 +243,11 @@ describe('OperationsService', () => {
       const open = makeMonth({ id: 'open', period: '2026-08', status: 'open' });
       const reopened = makeMonth({ id: 'reopened', period: '2026-05', status: 'reopened' });
       tx.budgetMonth.findMany.mockResolvedValue([draft, open, reopened]);
-      tx.$queryRaw.mockResolvedValue([{ status: 'open', version: 1 }]);
+      // the lock query returns the month whose id it was asked to lock
+      tx.$queryRaw.mockImplementation((_sql: unknown, ...values: string[]) => {
+        const asked = [draft, open, reopened].find((m) => m.id === values[0]);
+        return Promise.resolve(lockedRows('open', 1, asked?.id, asked?.period));
+      });
 
       await service.create(EXPENSE);
 
@@ -438,7 +447,7 @@ describe('OperationsService', () => {
       const order: string[] = [];
       tx.$queryRaw.mockImplementation(() => {
         order.push('lock');
-        return Promise.resolve([{ status: 'open', version: 1 }]);
+        return Promise.resolve(lockedRows('open', 1));
       });
       tx.operation.aggregate.mockImplementation(() => {
         order.push('sequence');
@@ -485,7 +494,7 @@ describe('OperationsService', () => {
     });
 
     it('DATA-12: the version is checked inside the transaction under FOR UPDATE; stale → VERSION_CONFLICT, nothing written', async () => {
-      tx.$queryRaw.mockResolvedValue([{ status: 'open', version: 2 }]);
+      tx.$queryRaw.mockResolvedValue(lockedRows('open', 2));
 
       await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
         statusCode: 409,
@@ -498,7 +507,7 @@ describe('OperationsService', () => {
     });
 
     it('HIST-10 / AC-14: a closed month returns MONTH_LOCKED without writing', async () => {
-      tx.$queryRaw.mockResolvedValue([{ status: 'closed', version: 1 }]);
+      tx.$queryRaw.mockResolvedValue(lockedRows('closed', 1));
 
       await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
         statusCode: 409,
@@ -629,10 +638,10 @@ describe('OperationsService', () => {
     });
 
     it('DATA-12: stale version → VERSION_CONFLICT; HIST-10: closed month → MONTH_LOCKED; nothing deleted', async () => {
-      tx.$queryRaw.mockResolvedValue([{ status: 'open', version: 5 }]);
+      tx.$queryRaw.mockResolvedValue(lockedRows('open', 5));
       await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
 
-      tx.$queryRaw.mockResolvedValue([{ status: 'closed', version: 1 }]);
+      tx.$queryRaw.mockResolvedValue(lockedRows('closed', 1));
       await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'MONTH_LOCKED' });
 
       expect(tx.operation.delete).not.toHaveBeenCalled();

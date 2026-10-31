@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { BudgetMonth, Envelope, Prisma } from '@prisma/client';
+import { Prisma, type Envelope } from '@prisma/client';
 import {
   CreateEnvelopeRequestSchema,
   UpdateEnvelopeRequestSchema,
@@ -8,6 +8,7 @@ import {
 } from '@family-budget/types';
 import { z } from 'zod';
 import { ConflictException, NotFoundException } from '../../common/exceptions';
+import { lockWorkingMonth } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 
@@ -28,6 +29,22 @@ function currentCalendarPeriod(now: Date = new Date()): string {
 }
 
 /**
+ * A unique-name violation of a concurrent writer that slipped past `assertNameAvailable`
+ * (no month row to serialise on, or a rename) is the same domain error as the pre-check (ENV-06).
+ */
+function rethrowDuplicateName(name: string): (error: unknown) => never {
+  return (error) => {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new ConflictException(
+        'ENVELOPE_NAME_DUPLICATE',
+        `Конверт с названием «${name}» уже существует.`,
+      );
+    }
+    throw error;
+  };
+}
+
+/**
  * Envelopes service — manages envelope lifecycle, naming, ordering.
  * Implemented per ENV-01..ENV-13.
  *
@@ -35,7 +52,8 @@ function currentCalendarPeriod(now: Date = new Date()): string {
  * - All monetary values are integer kopecks (never float).
  * - Name uniqueness is case-insensitive across ALL envelopes, including archived
  *   (ENV-06), enforced via Prisma `mode: 'insensitive'` (LOWER comparison).
- * - Mutations are forbidden in closed months (MON-03) → MONTH_LOCKED.
+ * - Mutations are forbidden in closed months (MON-03) → MONTH_LOCKED; create/archive lock the working
+ *   month row FOR UPDATE first and check its status under the lock (DATA-12).
  */
 @Injectable()
 export class EnvelopesService {
@@ -73,63 +91,67 @@ export class EnvelopesService {
    * month is recalculated in the same transaction (ENV-03, OP-10, FIN-14, CALC-04).
    */
   async create(dto: CreateEnvelopeRequest): Promise<{ envelope: EnvelopeWithBalance }> {
-    const month = await this.findCurrentMonth(this.prisma);
+    const envelope = await this.prisma
+      .$transaction(async (tx) => {
+        // DATA-12 / MON-03: lock the working month, then check its status under the lock; the
+        // name check, display order and the initial-balance operation all run under the same lock.
+        const month = await lockWorkingMonth(tx, { rejectClosed: false });
 
-    if (month !== null && month.status === 'closed') {
-      throw new ConflictException(
-        'MONTH_LOCKED',
-        `Месяц ${month.period} закрыт. Создание конвертов в закрытом месяце запрещено.`,
-      );
-    }
+        if (month !== null && month.status === 'closed') {
+          throw new ConflictException(
+            'MONTH_LOCKED',
+            `Месяц ${month.period} закрыт. Создание конвертов в закрытом месяце запрещено.`,
+          );
+        }
 
-    const initialBalanceMinor =
-      dto.initialBalance !== undefined ? parseMoneyMinor(dto.initialBalance) : 0;
+        const initialBalanceMinor =
+          dto.initialBalance !== undefined ? parseMoneyMinor(dto.initialBalance) : 0;
 
-    if (initialBalanceMinor > 0 && month === null) {
-      throw new ConflictException(
-        'MONTH_LOCKED',
-        'Нет открытого месяца для стартового остатка. Сначала создайте месяц.',
-      );
-    }
+        if (initialBalanceMinor > 0 && month === null) {
+          throw new ConflictException(
+            'MONTH_LOCKED',
+            'Нет открытого месяца для стартового остатка. Сначала создайте месяц.',
+          );
+        }
 
-    const name = dto.name.trim();
-    await this.assertNameAvailable(this.prisma, name);
+        const name = dto.name.trim();
+        await this.assertNameAvailable(tx, name);
 
-    const orderAggregate = await this.prisma.envelope.aggregate({
-      _max: { displayOrder: true },
-    });
-    const displayOrder = (orderAggregate._max.displayOrder ?? -1) + 1;
-    const createdPeriod = month?.period ?? currentCalendarPeriod();
-
-    const envelope = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.envelope.create({
-        data: { name, createdPeriod, displayOrder },
-      });
-
-      if (initialBalanceMinor > 0 && month !== null) {
-        const seqAggregate = await tx.operation.aggregate({
-          where: { monthId: month.id },
-          _max: { sequenceNo: true },
+        const orderAggregate = await tx.envelope.aggregate({
+          _max: { displayOrder: true },
         });
-        await tx.operation.create({
-          data: {
-            monthId: month.id,
-            sequenceNo: (seqAggregate._max.sequenceNo ?? 0) + 1,
-            type: 'initial_balance',
-            sourceEnvelopeId: created.id,
-            requestedMinor: initialBalanceMinor,
-            isInitial: true,
-          },
+        const displayOrder = (orderAggregate._max.displayOrder ?? -1) + 1;
+        const createdPeriod = month?.period ?? currentCalendarPeriod();
+
+        const created = await tx.envelope.create({
+          data: { name, createdPeriod, displayOrder },
         });
-        // CALC-04 / FIN-14: the balance only exists once the month is replayed
-        // (OperationResult + EnvelopeMonthSnapshot); same transaction as the insert.
-        await this.engine.recalculateMonthAtomically(month.id, tx);
-      }
 
-      return created;
-    });
+        if (initialBalanceMinor > 0 && month !== null) {
+          const seqAggregate = await tx.operation.aggregate({
+            where: { monthId: month.id },
+            _max: { sequenceNo: true },
+          });
+          await tx.operation.create({
+            data: {
+              monthId: month.id,
+              sequenceNo: (seqAggregate._max.sequenceNo ?? 0) + 1,
+              type: 'initial_balance',
+              sourceEnvelopeId: created.id,
+              requestedMinor: initialBalanceMinor,
+              isInitial: true,
+            },
+          });
+          // CALC-04 / FIN-14: the balance only exists once the month is replayed
+          // (OperationResult + EnvelopeMonthSnapshot); same transaction as the insert.
+          await this.engine.recalculateMonthAtomically(month.id, tx);
+        }
 
-    return { envelope: { ...envelope, balanceMinor: initialBalanceMinor } };
+        return { ...created, balanceMinor: initialBalanceMinor };
+      })
+      .catch(rethrowDuplicateName(dto.name.trim()));
+
+    return { envelope };
   }
 
   /**
@@ -156,7 +178,9 @@ export class EnvelopesService {
       data.displayOrder = dto.displayOrder;
     }
 
-    const updated = await this.prisma.envelope.update({ where: { id }, data });
+    const updated = await this.prisma.envelope
+      .update({ where: { id }, data })
+      .catch(rethrowDuplicateName(data.name ?? ''));
     return { envelope: updated };
   }
 
@@ -169,59 +193,54 @@ export class EnvelopesService {
    * (0 when none exists — the same source list() displays).
    */
   async archive(id: string): Promise<{ envelope: Envelope }> {
-    const envelope = await this.prisma.envelope.findUnique({ where: { id } });
-    if (envelope === null) {
+    const existing = await this.prisma.envelope.findUnique({ where: { id } });
+    if (existing === null) {
       throw new NotFoundException('ENVELOPE_NOT_FOUND', `Конверт не найден: ${id}`);
     }
-
-    if (envelope.status === 'archived') {
-      return { envelope };
+    // Archiving is irreversible, so this early exit needs no lock (and touches no month).
+    if (existing.status === 'archived') {
+      return { envelope: existing };
     }
 
-    const month = await this.findCurrentMonth(this.prisma);
-    if (month !== null && month.status === 'closed') {
-      throw new ConflictException(
-        'MONTH_LOCKED',
-        `Месяц ${month.period} закрыт. Архивирование конвертов в закрытом месяце запрещено.`,
-      );
-    }
+    return this.prisma.$transaction(async (tx) => {
+      // DATA-12 / MON-03: the working month is locked before status and balance are read, so no
+      // operation can change the balance (or close the month) between the check and the update.
+      const month = await lockWorkingMonth(tx, { rejectClosed: false });
 
-    const closingByEnvelope = await this.findLatestClosingBalances(this.prisma, [id]);
-    const balanceMinor = closingByEnvelope.get(id) ?? 0;
-    if (balanceMinor !== 0) {
-      throw new ConflictException(
-        'ENVELOPE_NOT_EMPTY',
-        `Невозможно архивировать конверт «${envelope.name}»: баланс ${formatMoneyMinor(balanceMinor)} ₽. Переведите остаток или сделайте отрицательную корректировку.`,
-      );
-    }
+      // Re-read under the lock: a concurrent archive of the same envelope has committed by now.
+      const envelope = await tx.envelope.findUnique({ where: { id } });
+      if (envelope === null) {
+        throw new NotFoundException('ENVELOPE_NOT_FOUND', `Конверт не найден: ${id}`);
+      }
 
-    const archivedPeriod = month?.period ?? currentCalendarPeriod();
-    const archived = await this.prisma.envelope.update({
-      where: { id },
-      data: { status: 'archived', archivedPeriod },
+      if (envelope.status === 'archived') {
+        return { envelope };
+      }
+
+      if (month !== null && month.status === 'closed') {
+        throw new ConflictException(
+          'MONTH_LOCKED',
+          `Месяц ${month.period} закрыт. Архивирование конвертов в закрытом месяце запрещено.`,
+        );
+      }
+
+      const closingByEnvelope = await this.findLatestClosingBalances(tx, [id]);
+      const balanceMinor = closingByEnvelope.get(id) ?? 0;
+      if (balanceMinor !== 0) {
+        throw new ConflictException(
+          'ENVELOPE_NOT_EMPTY',
+          `Невозможно архивировать конверт «${envelope.name}»: баланс ${formatMoneyMinor(balanceMinor)} ₽. Переведите остаток или сделайте отрицательную корректировку.`,
+        );
+      }
+
+      const archivedPeriod = month?.period ?? currentCalendarPeriod();
+      const archived = await tx.envelope.update({
+        where: { id },
+        data: { status: 'archived', archivedPeriod },
+      });
+
+      return { envelope: archived };
     });
-
-    return { envelope: archived };
-  }
-
-  /**
-   * Current working month: prefer 'open', then 'reopened', then 'draft'
-   * (MON-01..MON-04, ENV-05). When no mutable month exists, falls back to the
-   * latest month overall so the caller can reject closed-month mutations;
-   * returns null only when no budget month exists at all.
-   */
-  private async findCurrentMonth(db: DbClient): Promise<BudgetMonth | null> {
-    const mutableMonths = await db.budgetMonth.findMany({
-      where: { status: { in: ['open', 'reopened', 'draft'] } },
-      orderBy: { period: 'desc' },
-    });
-
-    return (
-      mutableMonths.find((m) => m.status === 'open') ??
-      mutableMonths.find((m) => m.status === 'reopened') ??
-      mutableMonths.find((m) => m.status === 'draft') ??
-      db.budgetMonth.findFirst({ orderBy: { period: 'desc' } })
-    );
   }
 
   /** Case-insensitive name uniqueness across all envelopes, including archived. */

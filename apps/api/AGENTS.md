@@ -9,7 +9,7 @@ Global rules (money, periods, types, language, spec references) are in the root 
 | Path | Responsibility | State |
 | --- | --- | --- |
 | `main.ts` | Fastify bootstrap, prefix `api`, URI versioning (default `v1`), Swagger UI at `/api`, JSON at `/api/swagger.json` (`src/openapi.ts` dumps `openapi.json` without a DB), `DomainExceptionFilter`, open CORS | done |
-| `common/` | `ZodValidationPipe`, domain exceptions (422/409/404), `DomainExceptionFilter`, `zodOpenApiSchema` | done |
+| `common/` | `ZodValidationPipe`, domain exceptions (422/409/404), `DomainExceptionFilter`, `zodOpenApiSchema`, `month-lock.ts` (`lockMonthForMutation`, `lockWorkingMonth`, `lockAllMonths`) | done |
 | `prisma/` | `PrismaService` (global client) | done |
 | `health/` | `GET /api/v1/health` | done |
 | `modules/calculation-engine/` | stateless cascade recalculation (`recalculateFrom`, `recalculateMonthAtomically`) | done, unit + integration tests |
@@ -32,6 +32,10 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
 - Errors: throw `ValidationException` (422), `ConflictException` (409) or `NotFoundException` (404) with a code from
   `ApiErrorCode` in `@family-budget/types`. Add new codes there, not locally.
 - Order of checks for month-scoped mutations (as in allocations): existence → `version` (`VERSION_CONFLICT`) → month status (`MONTH_LOCKED`) → business rules.
+  Every one of them runs inside the `$transaction`, right after `lockMonthForMutation(tx, { period } | { id }, { expectedVersion })`
+  (`common/month-lock.ts`): it takes `FOR UPDATE` on the month and all later months in ascending period order and does the first
+  three checks. Never read or check `version`/`status` outside the transaction or without the lock (DATA-12 race), never lock months
+  in another order (deadlock), and use `lockWorkingMonth` when the request has no period (operations create, envelope create/archive).
 - User-facing error messages are Russian and must match the spec `MSG-*` texts where one exists.
 - Prisma: UUID primary keys (`@id @default(uuid()) @db.Uuid`), money columns `Int` mapped to `*_minor`. Change the schema only
   together with a migration (`pnpm db:migrate`).
@@ -45,7 +49,7 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
   and assert `toHaveBeenCalledWith(id, tx)` on the engine (same-transaction proof); for cascades also assert the BudgetMonth
   `version` bump (ADR 0005). Name new files by feature: `<module>.<feature>.int-spec.ts`.
 - Integration: `*.int-spec.ts` (`jest.int.config.js`), real PostgreSQL test DB `family_budget_test` with a schema per jest worker
-  (`pnpm db:up`, `apps/api/.env.test`); factories in `test/db.ts`, HTTP-level app helper `createTestApp(modules)` in `test/http.ts`. Details: `docs/testing.md`.
+  (`pnpm db:up`, `apps/api/.env.test`); factories in `test/db.ts`, HTTP-level app helper `createTestApp(modules)` in `test/http.ts`. Concurrent requests need `await t.listen()` (base URL), see `test/races.ts`. Details: `docs/testing.md`.
 - Engine formulas must be covered by DB-free unit tests (`calculation-engine.service.spec.ts`).
 
 ## Commands
