@@ -270,7 +270,7 @@ describe('OperationsService', () => {
       await expect(service.create(EXPENSE)).rejects.toMatchObject({ code: 'MONTH_NOT_FOUND' });
     });
 
-    it('OP-05 / OP-06: expense beyond balance is saved in full and warns about the uncovered part', async () => {
+    it('OP-05 / OP-06 / MSG-02 / MSG-07: expense beyond balance is saved in full and warns about the uncovered part in ru-RU amounts', async () => {
       tx.operationResult.findUnique.mockResolvedValue(
         makeResult({
           coveredMinor: 1_000_000,
@@ -291,7 +291,8 @@ describe('OperationsService', () => {
       expect(response.warnings).toEqual([
         {
           code: 'EXPENSE_EXCEEDS_BALANCE',
-          message: expect.stringContaining('5000.00'),
+          message:
+            'В конверте доступно 10\u00A0000,00 ₽. 5\u00A0000,00 ₽ будут отмечены как непокрытые.',
         },
       ]);
     });
@@ -307,7 +308,7 @@ describe('OperationsService', () => {
       expect(response.warnings).toEqual([{ code: 'ARCHIVED_ENVELOPE_WITH_BALANCE', message: 'x' }]);
     });
 
-    it('OP-12 / OP-14: negative adjustment beyond balance warns; positive one does not', async () => {
+    it('OP-12 / OP-14 / MSG-04 / MSG-07: negative adjustment beyond balance warns; positive one does not', async () => {
       tx.operationResult.findUnique.mockResolvedValue(
         makeResult({ coveredMinor: 1_000_000, uncoveredMinor: 500_000, sourceBalanceAfter: 0 }),
       );
@@ -318,7 +319,12 @@ describe('OperationsService', () => {
         sign: '-',
         version: 1,
       });
-      expect(negative.warnings.map((w) => w.code)).toEqual(['ADJUSTMENT_EXCEEDS_BALANCE']);
+      expect(negative.warnings).toEqual([
+        {
+          code: 'ADJUSTMENT_EXCEEDS_BALANCE',
+          message: 'Баланс станет 0 ₽, 5\u00A0000,00 ₽ будут отмечены как непокрытые.',
+        },
+      ]);
       expect(tx.operation.create).toHaveBeenLastCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ sign: '-' }) }),
       );
@@ -357,7 +363,7 @@ describe('OperationsService', () => {
       });
     });
 
-    it('OP-07 / AC-07: transfer above the available balance → TRANSFER_EXCEEDS_BALANCE offering the balance', async () => {
+    it('OP-07 / AC-07 / MSG-03 / MSG-07: transfer above the available balance → TRANSFER_EXCEEDS_BALANCE offering the balance', async () => {
       tx.envelopeMonthSnapshot.findUnique.mockResolvedValue({ closing: 600_000 });
 
       const promise = service.create({
@@ -371,7 +377,7 @@ describe('OperationsService', () => {
       await expect(promise).rejects.toBeInstanceOf(ConflictException);
       await expect(promise).rejects.toMatchObject({
         code: 'TRANSFER_EXCEEDS_BALANCE',
-        message: 'Доступно 6000.00 ₽. Перевести только 6000.00 ₽?',
+        message: 'Доступно 6\u00A0000,00 ₽. Перевести только 6\u00A0000,00 ₽?',
       });
       expect(tx.operation.create).not.toHaveBeenCalled();
     });
@@ -587,7 +593,7 @@ describe('OperationsService', () => {
       await expect(service.update('op-1', { amount: '500.00', version: 1 })).rejects.toMatchObject({
         statusCode: 409,
         code: 'TRANSFER_EXCEEDS_BALANCE',
-        message: 'Доступно 100.00 ₽. Перевести только 100.00 ₽?',
+        message: 'Доступно 100,00 ₽. Перевести только 100,00 ₽?',
       });
     });
 

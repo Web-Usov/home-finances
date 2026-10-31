@@ -82,7 +82,7 @@ describe('MVP acceptance scenarios (integration)', () => {
 
     expect(response.status).toBe(422);
     expect(response.body.error).toBe('ALLOCATION_EXCEEDS_INCOME');
-    expect(response.body.message).toContain('0.01 ₽');
+    expect(response.body.message).toContain('0,01 ₽');
     const saved = await t.prisma.allocation.findMany({ where: { monthId: month.id }, orderBy: { amountMinor: 'asc' } });
     expect(saved.map((a) => a.amountMinor)).toEqual([4_000_000, 6_000_000]);
     expect(await versionOf('2026-01')).toBe(before);

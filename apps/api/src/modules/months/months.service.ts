@@ -5,7 +5,7 @@ import {
   CreateMonthRequestSchema,
   ReopenMonthRequestSchema,
   UpdateIncomeRequestSchema,
-  formatMoneyMinor,
+  formatMoneyMinorRu,
   parseMoneyMinor,
 } from '@family-budget/types';
 import type {
@@ -200,7 +200,7 @@ export class MonthsService {
       if (incomeMinor < allocatedMinor) {
         throw new ValidationException(
           'ALLOCATION_EXCEEDS_INCOME',
-          `Распределено на ${formatMoneyMinor(allocatedMinor - incomeMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
+          `Распределено на ${formatMoneyMinorRu(allocatedMinor - incomeMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
         );
       }
       await tx.budgetMonth.update({ where: { id: month.id }, data: { incomeMinor } });
@@ -247,7 +247,7 @@ export class MonthsService {
       if (allocatedMinor > month.incomeMinor) {
         throw new ValidationException(
           'ALLOCATION_EXCEEDS_INCOME',
-          `Распределено на ${formatMoneyMinor(allocatedMinor - month.incomeMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
+          `Распределено на ${formatMoneyMinorRu(allocatedMinor - month.incomeMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
         );
       }
 

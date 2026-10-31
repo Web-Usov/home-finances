@@ -113,7 +113,7 @@ describe('Operations list and create (integration)', () => {
 
     expect(response.body).toEqual({
       error: 'TRANSFER_EXCEEDS_BALANCE',
-      message: 'Доступно 6000.00 ₽. Перевести только 6000.00 ₽?',
+      message: 'Доступно 6\u00A0000,00 ₽. Перевести только 6\u00A0000,00 ₽?',
     });
     expect(await t.prisma.operation.count()).toBe(0);
     expect((await t.prisma.budgetMonth.findUniqueOrThrow({ where: { id: month.id } })).version).toBe(month.version);

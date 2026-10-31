@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Allocation, BudgetMonth, Envelope, Operation, Prisma } from '@prisma/client';
-import { formatMoneyMinor, type ApiWarning, type OperationType } from '@family-budget/types';
+import { formatMoneyMinorRu, type ApiWarning, type OperationType } from '@family-budget/types';
 import { NotFoundException } from '../../common/exceptions';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -377,7 +377,7 @@ export class CalculationEngineService {
           code: 'ARCHIVED_ENVELOPE_WITH_BALANCE',
           message:
             `Конверт «${envelope.name}» архивирован, но после пересчёта в месяце ` +
-            `${month.period} его остаток равен ${formatMoneyMinor(closingBalance)} ₽. ` +
+            `${month.period} его остаток равен ${formatMoneyMinorRu(closingBalance)} ₽. ` +
             'Верните конверт из архива, обнулите его и архивируйте заново.',
         });
       }
