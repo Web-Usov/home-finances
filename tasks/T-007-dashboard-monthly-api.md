@@ -1,7 +1,7 @@
 ---
 id: T-007
 title: Reporting: monthly dashboard endpoint
-status: in_progress
+status: done
 epic: E-02
 depends: [T-004, T-006]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-02, AC-19]
 area: api
 size: M
 branch: task/T-007-dashboard-monthly-api
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/14
 ---
 
 # T-007. Reporting: monthly dashboard endpoint
