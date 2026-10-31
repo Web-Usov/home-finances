@@ -1,7 +1,7 @@
 ---
 id: T-002
 title: Replace "SPECIFICATION.md line NNN" comments with rule IDs
-status: in_progress
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: docs
 size: S
 branch: task/T-002-spec-rule-ids-in-code
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/21
 ---
 
 # T-002. Replace "SPECIFICATION.md line NNN" comments with rule IDs
