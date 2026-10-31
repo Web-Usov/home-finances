@@ -128,22 +128,24 @@ describe('MVP acceptance scenarios (integration)', () => {
     const operationsBefore = await t.prisma.operation.count();
 
     const attempts = [
-      http().patch('/api/v1/months/2026-01').send({ income: '1.00', version }),
-      allocate('2026-01', { [food.id]: '1.00' }),
-      operate('2026-01', { type: 'expense', sourceEnvelopeId: food.id, amount: '1.00' }),
-      operate('2026-01', {
+      () => http().patch('/api/v1/months/2026-01').send({ income: '1.00', version }),
+      () => allocate('2026-01', { [food.id]: '1.00' }),
+      () => operate('2026-01', { type: 'expense', sourceEnvelopeId: food.id, amount: '1.00' }),
+      () => operate('2026-01', {
         type: 'transfer',
         sourceEnvelopeId: food.id,
         destinationEnvelopeId: home.id,
         amount: '1.00',
       }),
-      operate('2026-01', { type: 'adjustment', sign: '+', sourceEnvelopeId: food.id, amount: '1.00' }),
-      http().post('/api/v1/envelopes').send({ name: 'New', initialBalance: '10.00' }),
-      http().post(`/api/v1/envelopes/${home.id}/archive`).send({}),
+      () => operate('2026-01', { type: 'adjustment', sign: '+', sourceEnvelopeId: food.id, amount: '1.00' }),
+      () => http().post('/api/v1/envelopes').send({ name: 'New', initialBalance: '10.00' }),
+      () => http().post(`/api/v1/envelopes/${home.id}/archive`).send({}),
     ];
-    const responses = await Promise.all(attempts);
+    const responses = [];
+    for (const attempt of attempts) responses.push(await attempt()); // sequential: each request is its own transaction
 
-    expect(responses.map((r) => [r.status, r.body.error])).toEqual(attempts.map(() => [409, 'MONTH_LOCKED']));
+    expect(responses.map((r) => [r.status, r.body.error])).toEqual(responses.map(() => [409, 'MONTH_LOCKED']));
+    expect(responses).toHaveLength(7);
     expect(await t.prisma.operation.count()).toBe(operationsBefore);
     expect(await t.prisma.envelope.count()).toBe(2);
     expect((await t.prisma.envelope.findUniqueOrThrow({ where: { id: home.id } })).status).toBe('active');
