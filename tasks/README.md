@@ -2,9 +2,9 @@
 
 > Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`.
 
-Всего задач: 21 — todo: 15, in_progress: 0, review: 0, blocked: 0, done: 6.
+Всего задач: 22 — todo: 15, in_progress: 1, review: 0, blocked: 0, done: 6.
 
-## E-00. Технический долг и соответствие спеке — planned (5/7)
+## E-00. Технический долг и соответствие спеке — planned (5/8)
 
 Эпик: [E-00-tech-debt.md](../epics/E-00-tech-debt.md)
 
@@ -17,6 +17,7 @@
 | [T-019](T-019-remove-class-validator-deps.md) | Remove unused class-validator and class-transformer dependencies | done | api | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/8) |
 | [T-020](T-020-spec-gaps-validation-error-month-not-found.md) | Spec gaps from pilot reviews (API-18 VALIDATION_ERROR, initial balance without a month) | todo | docs | S | — | — |
 | [T-021](T-021-harden-process-scripts.md) | Harden process scripts (with-lock, task-start, task-clean) | done | infra | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/6) |
+| [T-022](T-022-process-stability-conflict-free-board.md) | Process stability: conflict-free board, robust script tests | in_progress | infra | S | — | — |
 
 ## E-01. Ядро API: месяцы и операции — planned (1/4)
 
