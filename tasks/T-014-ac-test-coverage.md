@@ -1,7 +1,7 @@
 ---
 id: T-014
 title: Acceptance: tests for AC-01..AC-22 and strict spec coverage
-status: todo
+status: in_progress
 epic: E-06
 depends: [T-005, T-006, T-007, T-008]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [DOD-02, DOD-03, NFR-25, NFR-26, NFR-28]
 acceptance: [AC-01, AC-02, AC-03, AC-04, AC-05, AC-06, AC-07, AC-08, AC-09, AC-10, AC-11, AC-12, AC-13, AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-20, AC-22]
 area: api
 size: M
-branch: null
+branch: task/T-014-ac-test-coverage
 pr: null
 ---
 
