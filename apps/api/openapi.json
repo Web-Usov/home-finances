@@ -1712,7 +1712,7 @@
                         },
                         "free": {
                           "type": "string",
-                          "pattern": "^\\d+(\\.\\d{1,2})?$"
+                          "pattern": "^-?\\d+(\\.\\d{1,2})?$"
                         },
                         "replenished": {
                           "type": "string",
@@ -1920,10 +1920,465 @@
     "/api/v1/analytics/yearly": {
       "get": {
         "operationId": "ReportingController_yearlyAnalytics_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "year",
+            "required": true,
+            "in": "query",
+            "description": "YYYY, calendar year",
+            "schema": {}
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Three required reports"
+            "description": "Three required reports: income/allocation/free, envelope balances, uncovered operations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "year": {
+                      "type": "string"
+                    },
+                    "incomeReport": {
+                      "type": "object",
+                      "properties": {
+                        "months": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "period": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}$"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "draft",
+                                  "open",
+                                  "closed",
+                                  "reopened"
+                                ],
+                                "nullable": true
+                              },
+                              "income": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$",
+                                "nullable": true
+                              },
+                              "allocated": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$",
+                                "nullable": true
+                              },
+                              "free": {
+                                "type": "string",
+                                "pattern": "^-?\\d+(\\.\\d{1,2})?$",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "period",
+                              "status",
+                              "income",
+                              "allocated",
+                              "free"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "totals": {
+                          "type": "object",
+                          "properties": {
+                            "income": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            },
+                            "allocated": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            },
+                            "free": {
+                              "type": "string",
+                              "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                            }
+                          },
+                          "required": [
+                            "income",
+                            "allocated",
+                            "free"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "months",
+                        "totals"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "envelopeBalances": {
+                      "type": "object",
+                      "properties": {
+                        "periods": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}$"
+                          }
+                        },
+                        "envelopes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "envelopeId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "active",
+                                  "archived"
+                                ]
+                              },
+                              "displayOrder": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "createdPeriod": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}$"
+                              },
+                              "archivedPeriod": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "months": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "period": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}$"
+                                    },
+                                    "closing": {
+                                      "type": "string",
+                                      "pattern": "^\\d+(\\.\\d{1,2})?$",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": [
+                                    "period",
+                                    "closing"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "envelopeId",
+                              "name",
+                              "status",
+                              "displayOrder",
+                              "createdPeriod",
+                              "archivedPeriod",
+                              "months"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "periods",
+                        "envelopes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "uncoveredOperations": {
+                      "type": "object",
+                      "properties": {
+                        "months": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "total": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$"
+                              },
+                              "expense": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$"
+                              },
+                              "transfer": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$"
+                              },
+                              "adjustment": {
+                                "type": "string",
+                                "pattern": "^\\d+(\\.\\d{1,2})?$"
+                              },
+                              "period": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}$"
+                              },
+                              "exists": {
+                                "type": "boolean"
+                              },
+                              "drillDown": {
+                                "type": "object",
+                                "properties": {
+                                  "period": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}$"
+                                  },
+                                  "envelopeId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "expense",
+                                      "transfer",
+                                      "adjustment",
+                                      "initial_balance"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "period"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "drillDownByType": {
+                                "type": "object",
+                                "properties": {
+                                  "expense": {
+                                    "type": "object",
+                                    "properties": {
+                                      "period": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}$"
+                                      },
+                                      "envelopeId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "expense",
+                                          "transfer",
+                                          "adjustment",
+                                          "initial_balance"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "period"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "transfer": {
+                                    "type": "object",
+                                    "properties": {
+                                      "period": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}$"
+                                      },
+                                      "envelopeId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "expense",
+                                          "transfer",
+                                          "adjustment",
+                                          "initial_balance"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "period"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "adjustment": {
+                                    "type": "object",
+                                    "properties": {
+                                      "period": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}$"
+                                      },
+                                      "envelopeId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "expense",
+                                          "transfer",
+                                          "adjustment",
+                                          "initial_balance"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "period"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "expense",
+                                  "transfer",
+                                  "adjustment"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "envelopes": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "total": {
+                                      "type": "string",
+                                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    "expense": {
+                                      "type": "string",
+                                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    "transfer": {
+                                      "type": "string",
+                                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    "adjustment": {
+                                      "type": "string",
+                                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    "envelopeId": {
+                                      "type": "string",
+                                      "format": "uuid"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "drillDown": {
+                                      "type": "object",
+                                      "properties": {
+                                        "period": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}-\\d{2}$"
+                                        },
+                                        "envelopeId": {
+                                          "type": "string",
+                                          "format": "uuid"
+                                        },
+                                        "type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "expense",
+                                            "transfer",
+                                            "adjustment",
+                                            "initial_balance"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "period"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "total",
+                                    "expense",
+                                    "transfer",
+                                    "adjustment",
+                                    "envelopeId",
+                                    "name",
+                                    "drillDown"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "total",
+                              "expense",
+                              "transfer",
+                              "adjustment",
+                              "period",
+                              "exists",
+                              "drillDown",
+                              "drillDownByType",
+                              "envelopes"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "totals": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            },
+                            "expense": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            },
+                            "transfer": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            },
+                            "adjustment": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,2})?$"
+                            }
+                          },
+                          "required": [
+                            "total",
+                            "expense",
+                            "transfer",
+                            "adjustment"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "months",
+                        "totals"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "year",
+                    "incomeReport",
+                    "envelopeBalances",
+                    "uncoveredOperations"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (missing or invalid year)"
           }
         },
         "summary": "Yearly analytics",

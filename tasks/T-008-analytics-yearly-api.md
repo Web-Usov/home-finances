@@ -28,15 +28,16 @@ pr: null
 
 ## Definition of Done
 
-- [ ] `it('REP-01 / AC-20: response contains all three reports with 12 months')`
-- [ ] `it('REP-04: free funds are historical and not added to envelope balances')`
-- [ ] `it('REP-08 / REP-09: uncovered amounts split by expense, transfer and negative adjustment')`
-- [ ] `it('REP-06: archived envelopes are included and flagged')`
-- [ ] `it('REP-11: uncovered amounts do not appear in later months')`
-- [ ] Invalid year returns 422
-- [ ] OpenAPI contract regenerated, `pnpm api:contract` clean
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('REP-01 / AC-20: response contains all three reports with 12 months')`
+- [x] `it('REP-04: free funds are historical and not added to envelope balances')`
+- [x] `it('REP-08 / REP-09: uncovered amounts split by expense, transfer and negative adjustment')`
+- [x] `it('REP-06: archived envelopes are included and flagged')`
+- [x] `it('REP-11: uncovered amounts do not appear in later months')`
+- [x] Invalid year returns 422
+- [x] OpenAPI contract regenerated, `pnpm api:contract` clean
+- [x] `pnpm verify` is green
+- [x] Review finding (PR #14): `DashboardSummarySchema.free` is signed (`SignedMoneyStringSchema`) + test `FIN-11: free is signed...`
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -49,4 +50,21 @@ pr: null
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+`GET /api/v1/analytics/yearly?year=YYYY` (query validated, 422 on missing/invalid year). Response (`YearlyAnalyticsResponseSchema`
+in `@family-budget/types`), all values read from `BudgetMonth`, `Allocation` and `EnvelopeMonthSnapshot`, decimal strings:
+
+- `incomeReport`: `months[12]` `{period, status|null, income|null, allocated|null, free|null}` (free signed) + `totals` (REP-02..04).
+- `envelopeBalances`: `periods[12]` + `envelopes[]` `{envelopeId, name, status, displayOrder, createdPeriod, archivedPeriod, months[12] {period, closing|null}}`;
+  archived envelopes stay in with `status: 'archived'` (REP-05, REP-06, ENV-12). `closing` is null where the month does not exist
+  or the envelope is not listed in it.
+- `uncoveredOperations`: `months[12]` `{period, exists, total, expense, transfer, adjustment, drillDown, drillDownByType, envelopes[]}` + `totals`;
+  per-envelope rows carry `drillDown {period, envelopeId}`. Drill-down keys equal the `GET /operations` filters (REP-10, HIST-11).
+
+Also: review finding from PR #14 fixed - `DashboardSummarySchema.free` is now `SignedMoneyStringSchema` (+ test).
+
+Deviations / follow-ups:
+- Missing months give null values (income report, balances) or zero amounts with `exists: false` (uncovered).
+- The duplicated "working month" selection (open > reopened > draft > latest) in reporting/envelopes/operations was NOT extracted:
+  the three copies take different db clients and the envelopes/operations unit tests mock their exact Prisma calls, so a shared helper
+  is not a small safe change here. Proposed follow-up task: shared pure `pickWorkingMonth(months)` in `common/`.
+- Pre-existing defect (separate task): a new month has no snapshots until a mutation recalculates; yearly balances for such a month are 0 until then.

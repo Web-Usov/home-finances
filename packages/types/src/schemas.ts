@@ -316,8 +316,8 @@ export const DashboardUncoveredSchema = z.object({
 export const DashboardSummarySchema = z.object({
   income: MoneyStringSchema,
   allocated: MoneyStringSchema,
-  /** FIN-11 / FIN-12: income minus allocated, independent of operations. */
-  free: MoneyStringSchema,
+  /** FIN-11 / FIN-12: income minus allocated, independent of operations; negative when allocations exceed income. */
+  free: SignedMoneyStringSchema,
   /** "Пополнено": sum of allocations; transfers are excluded (HIST-12). */
   replenished: MoneyStringSchema,
   /** "Списано": full requested expenses, covered and uncovered part (OP-01); transfers are excluded (HIST-12). */
@@ -354,6 +354,103 @@ export const DashboardMonthlyResponseSchema = z.object({
   summary: DashboardSummarySchema,
   envelopes: z.array(DashboardEnvelopeSchema),
   warnings: z.array(ApiWarningSchema),
+});
+
+// ---------------------------------------------------------------------------
+// Reporting: yearly analytics (API-13, REP-01..REP-11)
+// ---------------------------------------------------------------------------
+
+/** API-13: calendar year, four digits. */
+export const YearlyAnalyticsQuerySchema = z.object({
+  year: z.string().regex(/^\d{4}$/, 'Year must be YYYY format'),
+});
+
+/**
+ * REP-10: history deep link for a report value. Same keys as `OperationListQuerySchema`
+ * (`GET /operations?period&envelopeId&type`), so the client opens the history rows behind the number.
+ */
+export const AnalyticsDrillDownSchema = OperationListQuerySchema.required({ period: true });
+
+/** REP-02 / REP-03: income, allocation and free funds of one month; every value is null when the month does not exist. */
+export const YearlyIncomeMonthSchema = z.object({
+  period: PeriodSchema,
+  status: MonthStatusSchema.nullable(),
+  income: MoneyStringSchema.nullable(),
+  allocated: MoneyStringSchema.nullable(),
+  /** FIN-11: income minus allocated; negative when allocations exceed income. REP-04: never added to envelope balances. */
+  free: SignedMoneyStringSchema.nullable(),
+});
+
+/** REP-03: yearly totals over the months that exist. */
+export const YearlyIncomeTotalsSchema = z.object({
+  income: MoneyStringSchema,
+  allocated: MoneyStringSchema,
+  free: SignedMoneyStringSchema,
+});
+
+/** REP-05: closing balance of one envelope in one month; null when the envelope does not exist in that month. */
+export const YearlyEnvelopeBalanceSchema = z.object({
+  period: PeriodSchema,
+  closing: MoneyStringSchema.nullable(),
+});
+
+/** REP-05 / REP-06: one row of the "envelope x month" table; archived envelopes stay in the report (ENV-12). */
+export const YearlyEnvelopeRowSchema = z.object({
+  envelopeId: z.string().uuid(),
+  name: z.string(),
+  status: EnvelopeStatusSchema,
+  displayOrder: z.number().int().nonnegative(),
+  createdPeriod: PeriodSchema,
+  archivedPeriod: PeriodSchema.nullable(),
+  /** Always 12 entries, January to December. */
+  months: z.array(YearlyEnvelopeBalanceSchema),
+});
+
+/** REP-08 / REP-09: uncovered amounts by type, with the history link (REP-10). Never carried over (REP-11). */
+export const YearlyUncoveredValueSchema = z.object({
+  total: MoneyStringSchema,
+  expense: MoneyStringSchema,
+  transfer: MoneyStringSchema,
+  adjustment: MoneyStringSchema,
+});
+
+/** REP-10: uncovered amount of one envelope in one month, with one drill-down key per non-zero type. */
+export const YearlyUncoveredEnvelopeSchema = YearlyUncoveredValueSchema.extend({
+  envelopeId: z.string().uuid(),
+  name: z.string(),
+  drillDown: AnalyticsDrillDownSchema,
+});
+
+export const YearlyUncoveredMonthSchema = YearlyUncoveredValueSchema.extend({
+  period: PeriodSchema,
+  /** False when the month does not exist (all amounts are zero). */
+  exists: z.boolean(),
+  /** REP-10: month-level link (period only); per type see `drillDown`. */
+  drillDown: AnalyticsDrillDownSchema,
+  /** REP-10: links for the type columns: expense, transfer (OP-09) and negative adjustment (OP-14). */
+  drillDownByType: z.object({
+    expense: AnalyticsDrillDownSchema,
+    transfer: AnalyticsDrillDownSchema,
+    adjustment: AnalyticsDrillDownSchema,
+  }),
+  envelopes: z.array(YearlyUncoveredEnvelopeSchema),
+});
+
+/** API-13: the three mandatory reports for a calendar year (REP-01). */
+export const YearlyAnalyticsResponseSchema = z.object({
+  year: z.string(),
+  incomeReport: z.object({
+    months: z.array(YearlyIncomeMonthSchema),
+    totals: YearlyIncomeTotalsSchema,
+  }),
+  envelopeBalances: z.object({
+    periods: z.array(PeriodSchema),
+    envelopes: z.array(YearlyEnvelopeRowSchema),
+  }),
+  uncoveredOperations: z.object({
+    months: z.array(YearlyUncoveredMonthSchema),
+    totals: YearlyUncoveredValueSchema,
+  }),
 });
 
 // ---------------------------------------------------------------------------
