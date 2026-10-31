@@ -22,6 +22,11 @@ export const MoneyStringSchema = z
   .string()
   .regex(/^\d+(\.\d{1,2})?$/, 'Money string must be a decimal with up to 2 fractional digits');
 
+/** Decimal string that may be negative (net adjustments): "-150.50". */
+export const SignedMoneyStringSchema = z
+  .string()
+  .regex(/^-?\d+(\.\d{1,2})?$/, 'Signed money string must be a decimal with up to 2 fractional digits');
+
 // ---------------------------------------------------------------------------
 // Enum schemas
 // ---------------------------------------------------------------------------
@@ -291,6 +296,67 @@ export const ReopenMonthResultSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Reporting: monthly dashboard (API-12, UI-06..09)
+// ---------------------------------------------------------------------------
+
+/** API-12: `period` defaults to the working month (open, then reopened, then draft). */
+export const DashboardMonthlyQuerySchema = z.object({
+  period: PeriodSchema.optional(),
+});
+
+/** Uncovered amounts by operation type (OP-05, OP-09, OP-14); amounts are decimal strings. */
+export const DashboardUncoveredSchema = z.object({
+  total: MoneyStringSchema,
+  expense: MoneyStringSchema,
+  transfer: MoneyStringSchema,
+  adjustment: MoneyStringSchema,
+});
+
+/** UI-07: summary indicators of the month. Adjustments are a separate indicator (UI-09). */
+export const DashboardSummarySchema = z.object({
+  income: MoneyStringSchema,
+  allocated: MoneyStringSchema,
+  /** FIN-11 / FIN-12: income minus allocated, independent of operations. */
+  free: MoneyStringSchema,
+  /** "Пополнено": sum of allocations; transfers are excluded (HIST-12). */
+  replenished: MoneyStringSchema,
+  /** "Списано": full requested expenses, covered and uncovered part (OP-01); transfers are excluded (HIST-12). */
+  spent: MoneyStringSchema,
+  /** UI-09: net applied adjustments (signed). */
+  adjustmentsApplied: SignedMoneyStringSchema,
+  uncovered: DashboardUncoveredSchema,
+});
+
+/** UI-08: per-envelope figures of the month, read from `EnvelopeMonthSnapshot` (DATA-06). */
+export const DashboardEnvelopeSchema = z.object({
+  envelopeId: z.string().uuid(),
+  name: z.string(),
+  status: EnvelopeStatusSchema,
+  displayOrder: z.number().int().nonnegative(),
+  opening: MoneyStringSchema,
+  initial: MoneyStringSchema,
+  /** Balance at the end of the month (the current balance while the month is open). */
+  closing: MoneyStringSchema,
+  /** Allocation inflow of the month (not transfers, HIST-12). */
+  replenished: MoneyStringSchema,
+  /** Full expenses of the month, including the uncovered part (OP-01). */
+  spent: MoneyStringSchema,
+  expensesCovered: MoneyStringSchema,
+  adjustmentApplied: SignedMoneyStringSchema,
+  transfersIn: MoneyStringSchema,
+  transfersOut: MoneyStringSchema,
+  uncovered: DashboardUncoveredSchema,
+});
+
+/** API-12: month dashboard — summary, envelopes, warnings. */
+export const DashboardMonthlyResponseSchema = z.object({
+  month: MonthSummarySchema.pick({ id: true, period: true, status: true, version: true }),
+  summary: DashboardSummarySchema,
+  envelopes: z.array(DashboardEnvelopeSchema),
+  warnings: z.array(ApiWarningSchema),
+});
+
+// ---------------------------------------------------------------------------
 // Cross-field validation helpers
 // ---------------------------------------------------------------------------
 
@@ -326,4 +392,9 @@ export function formatMoneyMinor(minor: number): string {
   const rubles = Math.floor(minor / 100);
   const kopecks = minor % 100;
   return `${rubles}.${String(kopecks).padStart(2, '0')}`;
+}
+
+/** Like `formatMoneyMinor` but accepts negative amounts: -150 -> "-1.50". */
+export function formatSignedMoneyMinor(minor: number): string {
+  return minor < 0 ? `-${formatMoneyMinor(-minor)}` : formatMoneyMinor(minor);
 }

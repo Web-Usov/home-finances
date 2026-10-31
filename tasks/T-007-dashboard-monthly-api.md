@@ -28,15 +28,15 @@ pr: null
 
 ## Definition of Done
 
-- [ ] `it('FIN-11 / AC-02: income 100000, allocated 75000 gives free 25000')`
-- [ ] `it('FIN-12: expenses, transfers and adjustments do not change free funds')`
-- [ ] `it('HIST-12 / AC-19: a transfer changes two balances but not replenished and spent')`
-- [ ] `it('UI-09: adjustments are reported as a separate indicator')`
-- [ ] `it('OP-01: spent includes the uncovered part of an expense')`
-- [ ] Unknown period returns 404 `MONTH_NOT_FOUND`; invalid period 422
-- [ ] OpenAPI contract regenerated, `pnpm api:contract` clean
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('FIN-11 / AC-02: income 100000, allocated 75000 gives free 25000')`
+- [x] `it('FIN-12: expenses, transfers and adjustments do not change free funds')`
+- [x] `it('HIST-12 / AC-19: a transfer changes two balances but not replenished and spent')`
+- [x] `it('UI-09: adjustments are reported as a separate indicator')`
+- [x] `it('OP-01: spent includes the uncovered part of an expense')`
+- [x] Unknown period returns 404 `MONTH_NOT_FOUND`; invalid period 422
+- [x] OpenAPI contract regenerated, `pnpm api:contract` clean
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -49,4 +49,16 @@ pr: null
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+`GET /api/v1/dashboard/monthly?period=YYYY-MM` (period optional; default = working month open > reopened > draft, else latest).
+Response `{ month: {id, period, status, version}, summary, envelopes[], warnings[] }`; all money as decimal strings
+(adjustments signed). `summary`: income, allocated, free, replenished, spent, adjustmentsApplied, uncovered{total,expense,transfer,adjustment}.
+Per envelope: opening, initial, closing, replenished (allocation only), spent (full requested expenses), expensesCovered,
+adjustmentApplied, transfersIn/Out, uncovered{...}. Envelopes without a snapshot are listed with zeros. Values are read from
+`EnvelopeMonthSnapshot`; nothing is recalculated. `warnings` re-derives `ARCHIVED_ENVELOPE_WITH_BALANCE` at read time (engine warnings are not persisted).
+
+Deviations / follow-ups for the planner:
+- `month` reuses `MonthSummarySchema.pick(id, period, status, version)`; the kopeck-integer fields of `MonthSummarySchema` are not repeated because the dashboard transports decimal strings (API-14).
+- Creating a month (draft/auto-open) copies allocations but writes no snapshots, so the dashboard of a fresh month shows zeros (opening, replenished) until a mutation triggers the cascade. Proposed follow-up: recalculate on month creation.
+- The open question on sourcing envelope balances from the dashboard (PR #12) is covered: the response carries per-envelope closing and flows.
+- Added `SignedMoneyStringSchema` and `formatSignedMoneyMinor` to `@family-budget/types` (net adjustments can be negative).
+- `ReportingService` keeps one public method per report; T-008 adds `yearlyAnalytics` next to `monthlyDashboard` (stub still returns empty shape).
