@@ -1,7 +1,7 @@
 ---
 id: T-009
 title: Mobile: month dashboard screen, period switcher and month actions
-status: in_progress
+status: done
 epic: E-03
 depends: [T-006, T-007]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-01, AC-14, AC-15, AC-16]
 area: mobile
 size: M
 branch: task/T-009-month-dashboard-screen
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/23
 ---
 
 # T-009. Mobile: month dashboard screen, period switcher and month actions
