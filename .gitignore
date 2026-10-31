@@ -58,3 +58,6 @@ postgres_data/
 **/.turbo/
 **/coverage/
 .codegraph
+
+# Preview environment runtime state (scripts/preview)
+.preview/

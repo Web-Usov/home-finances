@@ -50,9 +50,9 @@
 
 - [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
 
-- [T-024](T-024-reopen-preview-endpoint.md) Reopen preview endpoint GET /months/:period/reopen-preview — **todo** · api · S · depends: T-006, T-020 · —
+- [T-024](T-024-reopen-preview-endpoint.md) Reopen preview endpoint GET /months/:period/reopen-preview — **done** · api · S · depends: T-006, T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/30)
 
-- [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **todo** · api · M · depends: T-005, T-020 · —
+- [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **done** · api · M · depends: T-005, T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/31)
 
 - [T-027](T-027-unify-mutation-summary.md) Unify month mutation response shape (data.summary) — **done** · api · M · depends: T-020, T-029 · [PR](https://github.com/Web-Usov/home-finances/pull/27)
 
@@ -103,3 +103,5 @@
 - [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **todo** · mobile · M · depends: T-010, T-012, T-013 · —
 
 - [T-016](T-016-docker-compose-e2e.md) Delivery: docker compose from scratch and persistence after restart — **todo** · infra · S · depends: T-014 · —
+
+- [T-038](T-038-preview-environment-auto-deploy-master.md) Preview environment: auto-deploy master for the owner — **done** · infra · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/28)

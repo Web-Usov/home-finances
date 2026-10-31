@@ -25,7 +25,8 @@ async function bootstrap() {
   });
 
   const port = process.env.API_PORT ? parseInt(process.env.API_PORT, 10) : 3000;
-  await app.listen(port, '0.0.0.0');
+  // API_HOST lets the preview environment bind the API to loopback behind its reverse proxy.
+  await app.listen(port, process.env.API_HOST ?? '0.0.0.0');
 
   // eslint-disable-next-line no-console
   console.log(`Application is running on: http://localhost:${port}/api`);

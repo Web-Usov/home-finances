@@ -55,7 +55,7 @@ export class OperationsController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create an operation in the current working month' })
+  @ApiOperation({ summary: 'Create an operation in the given period (default: the working month)' })
   @ApiBody({ schema: zodOpenApiSchema(CreateOperationRequestSchema) })
   @ApiCreatedResponse({
     description: 'Operation, its result, the new month summary and warnings',

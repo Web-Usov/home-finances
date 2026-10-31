@@ -30,7 +30,7 @@ Check `tasks/` before building a screen.
 - Styling: `className` only; theme colors (`primary-*`, `success`, `warning`, `danger`, `info`) live in `tailwind.config.js`.
 - Server state: generated React Query hooks from `src/api/**`. Local UI state only: Zustand. Do not mirror server data in stores.
 - Forms: React Hook Form + `@hookform/resolvers/zod` with schemas from `@family-budget/types`; never redefine schemas locally.
-- API base URL: `process.env.EXPO_PUBLIC_API_URL` = API **origin** without `/api` (default `http://localhost:3000`; generated paths already start with `/api/v1`); never hardcode.
+- API base URL: `process.env.EXPO_PUBLIC_API_URL` = API **origin** without `/api` (default `http://localhost:3000`; `same-origin` or `/` = the page's own origin, see `src/lib/apiBaseUrl.ts`; generated paths already start with `/api/v1`); never hardcode.
 - Never edit `src/api/**` (except `axios-instance.ts`) by hand — run `pnpm api:generate` from the repo root after API changes (`pnpm api:contract` fails on drift).
 - Money: display API decimal strings with `formatRubles` (`src/lib/money.ts`, ru-RU) or kopecks with `formatMoneyMinor`; never show negative balances (NFR-24); send amounts as
   decimal strings. Never compute balances client-side — the server returns derived values.

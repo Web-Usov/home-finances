@@ -170,7 +170,9 @@ export const CreateOperationRequestSchema = z
     amount: MoneyStringSchema,
     sign: z.enum(['+', '-']).optional(),
     comment: z.string().max(500).optional(),
-    /** Optimistic-lock counter of the working month (ADR 0005). */
+    /** Target month (API-21); absent = the working month (MON-16). */
+    period: PeriodSchema.optional(),
+    /** Optimistic-lock counter of the target month (ADR 0005). */
     version: z.number().int().nonnegative(),
   })
   .superRefine((value, ctx) => {
@@ -300,6 +302,9 @@ export const ReopenMonthResultSchema = z.object({
   month: MonthSummarySchema,
   recalcRange: z.object({ from: PeriodSchema, to: PeriodSchema }),
 });
+
+/** API-20 / MON-12: read-only preview of a reopen; same `recalcRange` as `ReopenMonthResultSchema`, no version. */
+export const ReopenPreviewSchema = ReopenMonthResultSchema;
 
 // ---------------------------------------------------------------------------
 // Reporting: monthly dashboard (API-12, UI-06..09)
