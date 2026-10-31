@@ -23,7 +23,7 @@ A read-only endpoint returns the recalculation range that reopening a closed mon
 
 - Spec: API-20, MON-12. Reuse the range computation used by `POST /months/:period/reopen` in `apps/api/src/modules/months/months.service.ts` (extract a shared private function; one source of truth).
 - Response schema `ReopenPreviewSchema = { month: MonthSummary, recalcRange: { from, to } }` in `packages/types`; no `version`, no mutation envelope, nothing is written.
-- Mobile part: `apps/mobile/src/components/month/ReopenConfirm.tsx` (T-009) already accepts an optional `recalcRange` prop. T-024 is api-only; the mobile wiring (call the generated preview hook before showing the confirm, pass `recalcRange`) is filed as T-036 (mobile, depends on T-024).
+- Mobile part: `apps/mobile/src/components/month/ReopenConfirm.tsx` (T-009) already accepts an optional `recalcRange` prop. T-024 is api-only; the mobile wiring (call the generated preview hook before showing the confirm, pass `recalcRange`) is filed as T-037 (mobile, depends on T-024).
 - Errors identical to reopen: 404 `MONTH_NOT_FOUND`, 409 `INVALID_STATUS_TRANSITION` (not closed, or another month is already reopened, MON-13).
 
 ## Definition of Done

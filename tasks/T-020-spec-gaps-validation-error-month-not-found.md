@@ -27,7 +27,7 @@ Close the spec gaps collected from the T-001..T-017 reviews so code and spec agr
 - Extended with the orchestrator's follow-up list: INVALID_STATUS_TRANSITION (T-006), unified mutation response shape (T-003, Q-04), MSG amount format (T-003), reopen preview (T-006, needed by T-009), `period` on `POST /operations` (T-004 review, needed by T-011), tech-debt items.
 - T-006 hygiene note: its DoD cited MON-02 for "draft cannot be closed" (should be MON-01); it is already merged, so no edit.
 - Rules added: API-19, API-20, API-21, API-22, MON-16, ENV-14, UI-16, MSG-07; modified in place: API-18, MON-12; Q-04 resolved (option B, 2026-10-31) as API-22.
-- Follow-up tasks: T-023 (MONTH_NOT_FOUND), T-024 (reopen preview), T-025 (`period`), T-026 (ru-RU messages), T-027 (summary shape, API-22), T-036 (mobile reopen preview), T-028 (reopen race), T-029 (version in tx), T-030 (openapi uuid keys), T-031 (int test for MON-10/11). UI tasks T-009, T-010, T-011 now depend on the matching api tasks.
+- Follow-up tasks: T-023 (MONTH_NOT_FOUND), T-024 (reopen preview), T-025 (`period`), T-026 (ru-RU messages), T-027 (summary shape, API-22), T-037 (mobile reopen preview), T-028 (reopen race), T-029 (version in tx), T-030 (openapi uuid keys), T-031 (int test for MON-10/11). UI tasks T-009, T-010, T-011 now depend on the matching api tasks.
 
 ## Definition of Done
 

@@ -1,5 +1,5 @@
 ---
-id: T-036
+id: T-037
 title: Mobile: show the recalculation range before reopening (reopen preview)
 status: todo
 epic: E-03
@@ -13,7 +13,7 @@ branch: null
 pr: null
 ---
 
-# T-036. Mobile: show the recalculation range before reopening (reopen preview)
+# T-037. Mobile: show the recalculation range before reopening (reopen preview)
 
 ## Goal
 
