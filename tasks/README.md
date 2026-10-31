@@ -2,7 +2,7 @@
 
 > Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`.
 
-Всего задач: 21 — todo: 16, in_progress: 0, review: 0, blocked: 0, done: 5.
+Всего задач: 21 — todo: 15, in_progress: 1, review: 0, blocked: 0, done: 5.
 
 ## E-00. Технический долг и соответствие спеке — planned (4/7)
 
@@ -27,7 +27,7 @@
 | [T-003](T-003-months-income-update.md) | Months: update income with cascade recalculation | done | api | M | T-001 | [PR](https://github.com/Web-Usov/home-finances/pull/7) |
 | [T-004](T-004-operations-list-create.md) | Operations: history list and create (expense, transfer, adjustment) | todo | api | M | T-003 | — |
 | [T-005](T-005-operations-update-delete.md) | Operations: update and delete with stable sequence and recalculation | todo | api | M | T-004 | — |
-| [T-006](T-006-month-close-reopen.md) | Months: close, reopen and draft promotion | todo | api | M | T-003 | — |
+| [T-006](T-006-month-close-reopen.md) | Months: close, reopen and draft promotion | in_progress | api | M | T-003 | — |
 
 ## E-02. Отчётность API — planned (0/2)
 

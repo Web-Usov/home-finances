@@ -1,7 +1,7 @@
 ---
 id: T-006
 title: Months: close, reopen and draft promotion
-status: todo
+status: in_progress
 epic: E-01
 depends: [T-003]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-05, API-06, MON-01, MON-02, MON-03, MON-04, MON-07, MON-08, MON-09, M
 acceptance: [AC-14, AC-15, AC-16, AC-17]
 area: api
 size: M
-branch: null
+branch: task/T-006-month-close-reopen
 pr: null
 ---
 
