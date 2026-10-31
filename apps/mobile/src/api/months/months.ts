@@ -27,6 +27,7 @@ import type {
 import type {
   MonthsControllerCloseV1200,
   MonthsControllerCloseV1Body,
+  MonthsControllerReopenPreviewV1200,
   MonthsControllerReopenV1200,
   MonthsControllerReopenV1Body,
   MonthsControllerUpdateIncomeV1200,
@@ -322,6 +323,99 @@ export const useMonthsControllerCloseV1 = <TError = void,
       return useMutation(mutationOptions, queryClient);
     }
     /**
+ * MON-12 / API-20. Same checks and same range function as POST reopen, but writes nothing, takes no version and no locks. Advisory: the state may change before the reopen request.
+ * @summary Preview the recalculation range of reopening a closed month (read-only)
+ */
+export const monthsControllerReopenPreviewV1 = (
+    period: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customAxiosInstance<MonthsControllerReopenPreviewV1200>(
+      {url: `/api/v1/months/${period}/reopen-preview`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getMonthsControllerReopenPreviewV1QueryKey = (period?: string,) => {
+    return [
+    `/api/v1/months/${period}/reopen-preview`
+    ] as const;
+    }
+
+    
+export const getMonthsControllerReopenPreviewV1QueryOptions = <TData = Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError = void>(period: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMonthsControllerReopenPreviewV1QueryKey(period);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>> = ({ signal }) => monthsControllerReopenPreviewV1(period, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(period), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MonthsControllerReopenPreviewV1QueryResult = NonNullable<Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>>
+export type MonthsControllerReopenPreviewV1QueryError = void
+
+
+export function useMonthsControllerReopenPreviewV1<TData = Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError = void>(
+ period: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>,
+          TError,
+          Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMonthsControllerReopenPreviewV1<TData = Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError = void>(
+ period: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>,
+          TError,
+          Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMonthsControllerReopenPreviewV1<TData = Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError = void>(
+ period: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Preview the recalculation range of reopening a closed month (read-only)
+ */
+
+export function useMonthsControllerReopenPreviewV1<TData = Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError = void>(
+ period: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getMonthsControllerReopenPreviewV1QueryOptions(period,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
  * @summary Reopen a closed month and recalculate later months
  */
 export const monthsControllerReopenV1 = (

@@ -303,6 +303,9 @@ export const ReopenMonthResultSchema = z.object({
   recalcRange: z.object({ from: PeriodSchema, to: PeriodSchema }),
 });
 
+/** API-20 / MON-12: read-only preview of a reopen; same `recalcRange` as `ReopenMonthResultSchema`, no version. */
+export const ReopenPreviewSchema = ReopenMonthResultSchema;
+
 // ---------------------------------------------------------------------------
 // Reporting: monthly dashboard (API-12, UI-06..09)
 // ---------------------------------------------------------------------------
