@@ -28,10 +28,10 @@ cites its ID (existing test renamed only if it truly asserts the rule, otherwise
 
 ## Definition of Done
 
-- [ ] Each of the 13 rules is cited by a test that asserts it
-- [ ] `pnpm spec:check` shows every rule of `epics/E-01-*.md` referenced from tests
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Each of the 13 rules is cited by a test that asserts it
+- [x] `pnpm spec:check` shows every rule of `epics/E-01-*.md` referenced from tests
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -40,4 +40,23 @@ cites its ID (existing test renamed only if it truly asserts the rule, otherwise
 ## Handoff log
 
 ## Result
+
+Added `months.create-rules.int-spec.ts` (MON-02, 05, 06, 07), `operations.balance-rules.int-spec.ts` (OP-04, 09, 11, 13, 15, 16,
+FIN-06) and `months.error-codes.int-spec.ts` (API-18: ALLOCATION_EXCEEDS_INCOME 422; MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE,
+ENVELOPE_NOT_EMPTY, VERSION_CONFLICT 409, each typed against `ApiErrorCode`). Existing tests renamed because they already assert the
+rule: FIN-05 (AC-12 edit keeps sequence_no) and FIN-06 (AC-13 delete recalculates the later month). No defect found, no production code changed.
+
+`pnpm spec:check --verbose` after the change (none of the 50 rules of `epics/E-01-*.md` is in the "not referenced" list):
+
+```
+prefix   rules  referenced  covered-by-tests
+API         18          15                12
+FIN         14          11                 7
+HIST        12          11                 7
+MON         15          15                15
+OP          18          18                18
+CALC        14          11                 3
+```
+
+Note: the uncovered API/FIN/CALC/HIST rules are outside E-01's `spec:` list (e.g. API-01, API-02, API-04, API-07..09).
 
