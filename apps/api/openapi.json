@@ -682,6 +682,9 @@
                     "additionalProperties": {
                       "type": "string",
                       "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "x-propertyNames": {
+                      "format": "uuid"
                     }
                   },
                   "version": {
