@@ -568,6 +568,9 @@
           "201": {
             "description": "Created envelope with calculated balance"
           },
+          "404": {
+            "description": "MONTH_NOT_FOUND (initial balance without any month)"
+          },
           "409": {
             "description": "ENVELOPE_NAME_DUPLICATE or MONTH_LOCKED"
           }

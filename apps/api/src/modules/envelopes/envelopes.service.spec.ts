@@ -1,4 +1,4 @@
-import type { BudgetMonth, Envelope } from '@prisma/client';
+import { Prisma, type BudgetMonth, type Envelope } from '@prisma/client';
 import { ConflictException, NotFoundException } from '../../common/exceptions';
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
@@ -107,6 +107,14 @@ function stubCreateDefaults(mock: MockPrisma, month: BudgetMonth = makeMonth()):
   );
   mock.operation.aggregate.mockResolvedValue({ _max: { sequenceNo: null } });
   mock.operation.create.mockResolvedValue({});
+}
+
+function p2002(target: string[]): Prisma.PrismaClientKnownRequestError {
+  return new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+    code: 'P2002',
+    clientVersion: 'test',
+    meta: { target },
+  });
 }
 
 describe('EnvelopesService', () => {
@@ -269,14 +277,32 @@ describe('EnvelopesService', () => {
       expect(result.envelope.balanceMinor).toBe(0);
     });
 
-    it('rejects initial balance when no budget month exists (MONTH_LOCKED)', async () => {
+    it('ENV-14 / API-19: rejects initial balance when no budget month exists (MONTH_NOT_FOUND)', async () => {
       mock.budgetMonth.findMany.mockResolvedValue([]);
       mock.budgetMonth.findFirst.mockResolvedValue(null);
 
-      await expect(service.create({ name: 'Еда', initialBalance: '100.00' })).rejects.toMatchObject(
-        { code: 'MONTH_LOCKED', statusCode: 409 },
-      );
+      const attempt = service.create({ name: 'Еда', initialBalance: '100.00' });
+      await expect(attempt).rejects.toBeInstanceOf(NotFoundException);
+      await expect(attempt).rejects.toMatchObject({ code: 'MONTH_NOT_FOUND', statusCode: 404 });
       expect(mock.envelope.create).not.toHaveBeenCalled();
+    });
+
+    it('ENV-06: a P2002 on the name index becomes ENVELOPE_NAME_DUPLICATE', async () => {
+      stubCreateDefaults(mock);
+      mock.envelope.create.mockRejectedValue(p2002(['name']));
+
+      await expect(service.create({ name: 'Еда' })).rejects.toMatchObject({
+        code: 'ENVELOPE_NAME_DUPLICATE',
+        statusCode: 409,
+      });
+    });
+
+    it('a P2002 on another unique target is rethrown, not reported as a duplicate name', async () => {
+      stubCreateDefaults(mock);
+      const foreign = p2002(['monthId', 'sequenceNo']);
+      mock.envelope.create.mockRejectedValue(foreign);
+
+      await expect(service.create({ name: 'Еда' })).rejects.toBe(foreign);
     });
 
     it('creates without a month using the current calendar period when no initial balance', async () => {
@@ -375,6 +401,24 @@ describe('EnvelopesService', () => {
         statusCode: 409,
       });
       expect(mock.envelope.update).not.toHaveBeenCalled();
+    });
+
+    it('a P2002 on another unique target during update is rethrown', async () => {
+      mock.envelope.findUnique.mockResolvedValue(makeEnvelope());
+      const foreign = p2002(['id']);
+      mock.envelope.update.mockRejectedValue(foreign);
+
+      await expect(service.update('env-1', { displayOrder: 3 })).rejects.toBe(foreign);
+    });
+
+    it('ENV-06: duplicate-name message names the envelope when only displayOrder is patched', async () => {
+      mock.envelope.findUnique.mockResolvedValue(makeEnvelope({ name: 'Еда' }));
+      mock.envelope.update.mockRejectedValue(p2002(['name']));
+
+      await expect(service.update('env-1', { displayOrder: 3 })).rejects.toMatchObject({
+        code: 'ENVELOPE_NAME_DUPLICATE',
+        message: 'Конверт с названием «Еда» уже существует.',
+      });
     });
 
     it('changes displayOrder without touching the name', async () => {

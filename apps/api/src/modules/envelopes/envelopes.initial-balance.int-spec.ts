@@ -48,6 +48,31 @@ describe('EnvelopesService.create initial balance (integration)', () => {
     expect(result[0]?.sourceBalanceAfter).toBe(150_000);
   });
 
+  it('ENV-14 / API-19: initial balance without any month answers 404 MONTH_NOT_FOUND', async () => {
+    await expect(service.create({ name: 'Еда', initialBalance: '100.00' })).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'MONTH_NOT_FOUND',
+    });
+    expect(await prisma.envelope.count()).toBe(0);
+  });
+
+  it('ENV-14: envelope without initial balance is created when no month exists', async () => {
+    const { envelope } = await service.create({ name: 'Еда' });
+    expect(envelope.balanceMinor).toBe(0);
+    expect(await prisma.envelope.count()).toBe(1);
+  });
+
+  it('ENV-05 / MON-03: initial balance in a closed month still answers 409 MONTH_LOCKED', async () => {
+    await prisma.budgetMonth.create({
+      data: { period: '2026-01', status: 'closed', incomeMinor: 1_000_000, version: 1 },
+    });
+
+    await expect(service.create({ name: 'Еда', initialBalance: '100.00' })).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'MONTH_LOCKED',
+    });
+  });
+
   it('FIN-14 / OP-10: initial balance is not counted in the monthly adjustments indicator', async () => {
     const month = await prisma.budgetMonth.create({
       data: { period: '2026-01', status: 'open', incomeMinor: 1_000_000, version: 1 },
