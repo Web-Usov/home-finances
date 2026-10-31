@@ -1,7 +1,7 @@
 ---
 id: T-034
 title: "E-01: tests citing every epic rule"
-status: in_progress
+status: done
 epic: E-01
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: M
 branch: task/T-034-e01-rule-coverage
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/19
 ---
 
 # T-034. E-01: tests citing every epic rule
