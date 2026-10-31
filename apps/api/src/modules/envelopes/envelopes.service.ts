@@ -29,12 +29,27 @@ function currentCalendarPeriod(now: Date = new Date()): string {
 }
 
 /**
+ * P2002 on the envelope name unique index only: `meta.target` is the list of fields (or, with some
+ * drivers, the index name `envelope_name_key`); any other unique violation is not a duplicate name.
+ */
+function isEnvelopeNameViolation(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+    return false;
+  }
+  const target: unknown = error.meta?.target;
+  if (Array.isArray(target)) {
+    return target.includes('name');
+  }
+  return typeof target === 'string' && target.includes('name');
+}
+
+/**
  * A unique-name violation of a concurrent writer that slipped past `assertNameAvailable`
  * (no month row to serialise on, or a rename) is the same domain error as the pre-check (ENV-06).
  */
 function rethrowDuplicateName(name: string): (error: unknown) => never {
   return (error) => {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (isEnvelopeNameViolation(error)) {
       throw new ConflictException(
         'ENVELOPE_NAME_DUPLICATE',
         `Конверт с названием «${name}» уже существует.`,
@@ -108,9 +123,10 @@ export class EnvelopesService {
           dto.initialBalance !== undefined ? parseMoneyMinor(dto.initialBalance) : 0;
 
         if (initialBalanceMinor > 0 && month === null) {
-          throw new ConflictException(
-            'MONTH_LOCKED',
-            'Нет открытого месяца для стартового остатка. Сначала создайте месяц.',
+          // ENV-14 / API-19: no month at all is "not found"; MONTH_LOCKED is reserved for a closed month.
+          throw new NotFoundException(
+            'MONTH_NOT_FOUND',
+            'Нет месяца для стартового остатка. Сначала создайте месяц.',
           );
         }
 
@@ -180,7 +196,7 @@ export class EnvelopesService {
 
     const updated = await this.prisma.envelope
       .update({ where: { id }, data })
-      .catch(rethrowDuplicateName(data.name ?? ''));
+      .catch(rethrowDuplicateName(data.name ?? envelope.name));
     return { envelope: updated };
   }
 

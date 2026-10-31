@@ -22,7 +22,7 @@
 
 - [T-022](T-022-process-stability-conflict-free-board.md) Process stability: conflict-free board, robust script tests — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/11)
 
-- [T-023](T-023-initial-balance-month-not-found.md) Envelope with an initial balance and no month returns MONTH_NOT_FOUND — **todo** · api · S · depends: T-020 · —
+- [T-023](T-023-initial-balance-month-not-found.md) Envelope with an initial balance and no month returns MONTH_NOT_FOUND — **done** · api · S · depends: T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/26)
 
 - [T-026](T-026-money-ru-messages.md) ru-RU money formatting in server messages — **todo** · api · S · depends: T-005, T-025, T-020 · —
 
