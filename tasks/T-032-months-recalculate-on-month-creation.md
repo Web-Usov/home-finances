@@ -1,5 +1,5 @@
 ---
-id: T-023
+id: T-032
 title: "Months: recalculate on month creation and draft promotion"
 status: done          # todo | in_progress | review | done | blocked
 epic: E-01            # epics/E-xx-*.md
@@ -13,7 +13,7 @@ branch: task/T-023-months-recalculate-on-month-creation          # set when work
 pr: https://github.com/Web-Usov/home-finances/pull/16              # PR URL once opened
 ---
 
-# T-023. Months: recalculate on month creation and draft promotion
+# T-032. Months: recalculate on month creation and draft promotion
 
 <!--
 Format rules (checked by `node scripts/tasks.mjs check`):
