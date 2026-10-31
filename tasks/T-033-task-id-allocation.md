@@ -26,28 +26,27 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+`pnpm task:start --new` never hands out an id already used by a task file of an unmerged PR branch, and `tasks:check` fails
+when a branch's task id collides with a different task file on `origin/master`.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- Bug: `--new` took ids from task files on `origin/master` plus task branch names only; PR #12 (branch `task/T-020-...`)
+  carries T-023..T-031, so T-023 was issued twice.
+- `scripts/task-start.mjs` (`collectTaskIds`), `scripts/tasks.mjs` (`check`), `docs/workflow.md` section 2 and 5.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `collectTaskIds` reads task files from `origin/master`, every `refs/remotes/origin/*` and local branch, plus branch names (`scripts/__tests__/task-start.test.mjs`)
+- [x] `--new` skips ids held by task files of unmerged branches (test with a throwaway origin)
+- [x] `tasks:check` fails on an id used by a different file on `origin/master`, skips without the ref (`scripts/__tests__/tasks.test.mjs`)
+- [x] CI `verify` job fetches `origin/master` so the rule runs there
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Renumbering existing tasks; reserving ids on a shared registry.
 
 ## Handoff log
 
@@ -55,4 +54,6 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Id allocation now scans task files on all remote/local refs; `tasks:check` reports cross-branch id collisions with
+`origin/master`. Note: on PR CI the merge ref already makes a clash a "duplicate task id"; the new rule catches it locally
+and when the merge is textually clean. Not covered: two branches that both allocate the same id before either is pushed.

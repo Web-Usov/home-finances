@@ -52,8 +52,8 @@ Follow-up work discovered during implementation or review is filed as its own ta
 pnpm task:start --new "Short imperative title" --epic E-00 --area infra --size S
 ```
 
-It creates `tasks/T-NNN-slug.md` from `tasks/_template.md` (next free id: highest id on `origin/master` or in any local/remote
-task branch, plus one; the epic must exist on `origin/master`), then claims it exactly like a normal task, in a worktree of
+It creates `tasks/T-NNN-slug.md` from `tasks/_template.md` (next free id: highest id among task files on `origin/master`, task files in any
+local/remote ref (unmerged PRs) and task branch names, plus one; the epic must exist on `origin/master`), then claims it exactly like a normal task, in a worktree of
 its own, with the task file as the first commit (`chore(tasks): add and start T-NNN [T-NNN]`). Fill in Goal / Context / DoD there.
 Alternatives: add the task as `status: todo` in the current PR (the task file is part of the diff), or, if it needs a planner
 decision, propose it in `## Result` as before. Do not start a second task inside the current session unless it blocks the
@@ -142,6 +142,8 @@ Branch protection forbids a post-merge commit on `master`, so `done` cannot be s
   (`node scripts/tasks.mjs set`), regenerates the board, and only then the PR goes to review. Auto-merge is enabled by the reviewer after LGTM.
 - `pnpm tasks:check` enforces the done contract: a `done` task has `pr`, no unchecked `- [ ]` in "Definition of Done" and a
   non-empty "Result" section (HTML comments are ignored).
+- `pnpm tasks:check` also fails when a task id of the branch is used on `origin/master` by a different file (id collision
+  between two branches); it needs the `origin/master` ref and is skipped without it (CI fetches it).
 - Squash-merge therefore lands the code and the `done` status atomically. `pnpm tasks:check --gh` (run by the
   orchestrator on `master` periodically) warns if a task is `done` but its PR is not merged — that flags PRs closed
   without merge; the fix is a new task-status PR.
