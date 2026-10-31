@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { BudgetMonth, Envelope, EnvelopeMonthSnapshot, Prisma } from '@prisma/client';
-import { formatMoneyMinor, formatSignedMoneyMinor } from '@family-budget/types';
+import { formatMoneyMinor, formatMoneyMinorRu, formatSignedMoneyMinor } from '@family-budget/types';
 import type {
   ApiWarning,
   DashboardEnvelopeSchema,
@@ -301,7 +301,7 @@ export class ReportingService {
         code: 'ARCHIVED_ENVELOPE_WITH_BALANCE',
         message:
           `Конверт «${r.envelope.name}» архивирован, но в месяце ${period} его остаток равен ` +
-          `${formatSignedMoneyMinor(r.closing)} ₽. Верните конверт из архива, обнулите его и архивируйте заново.`,
+          `${formatMoneyMinorRu(r.closing)} ₽. Верните конверт из архива, обнулите его и архивируйте заново.`,
       }));
   }
 }

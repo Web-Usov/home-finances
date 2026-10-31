@@ -19,6 +19,7 @@ src/
 | Add an entity | interface in `entities.ts` + Zod schema in `schemas.ts` |
 | Add API request validation | `schemas.ts`, naming `Create*RequestSchema` / `Update*RequestSchema` |
 | Convert money | `parseMoneyMinor("15000.00")` → `1500000`; `formatMoneyMinor(1500000)` → `"15000.00"` |
+| Amount inside a server message | `formatMoneyMinorRu(123450)` → `"1\u00A0234,50"` (MSG-07; transport fields keep `formatMoneyMinor`) |
 | Add an error code | extend the `ApiErrorCode` union in `entities.ts` |
 
 ## Conventions

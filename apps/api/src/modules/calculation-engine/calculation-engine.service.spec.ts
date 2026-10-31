@@ -562,7 +562,7 @@ describe('CalculationEngineService.recalculateFrom', () => {
     expect(warning?.code).toBe('ARCHIVED_ENVELOPE_WITH_BALANCE');
     expect(warning?.message).toContain('Ремонт');
     expect(warning?.message).toContain('2026-08');
-    expect(warning?.message).toContain('5000.00');
+    expect(warning?.message).toContain('остаток равен 5\u00A0000,00 ₽.'); // MSG-07
 
     // The balance carries into September but must not warn twice.
     const septemberSnapshots = mock.envelopeMonthSnapshot.createMany.mock.calls[1][0].data;

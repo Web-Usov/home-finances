@@ -456,7 +456,7 @@ describe('MonthsService', () => {
       expect(result.data.summary.freeFundsMinor).toBe(25_000_00);
     });
 
-    it('FIN-02 / AC-03: income below allocated sum is rejected with ALLOCATION_EXCEEDS_INCOME', async () => {
+    it('MSG-01 / AC-03 / FIN-02: overflow of 0.01 renders Распределено на 0,01 ₽ больше дохода. Уменьшите суммы по конвертам.', async () => {
       stub(makeMonth({ status: 'open', version: 1 }), 10_000_001);
 
       const attempt = service.updateIncome('2026-08', { income: '100000.00', version: 1 });
@@ -467,7 +467,7 @@ describe('MonthsService', () => {
         statusCode: 422,
       });
       await expect(attempt).rejects.toThrow(
-        'Распределено на 0.01 ₽ больше дохода. Уменьшите суммы по конвертам.',
+        'Распределено на 0,01 ₽ больше дохода. Уменьшите суммы по конвертам.',
       );
       expect(tx.budgetMonth.update).not.toHaveBeenCalled();
       expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
