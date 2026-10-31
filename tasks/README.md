@@ -38,6 +38,8 @@
 
 - [T-036](T-036-lock-month-row-in-every-month-scoped.md) Lock month row in every month-scoped mutation (optimistic lock race) — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
 
+- [T-047](T-047-auto-update-behind-prs-with-auto-merge.md) Auto-update BEHIND PRs with auto-merge (host timer) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/38)
+
 ## E-01. Ядро API: месяцы и операции — planned
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
@@ -78,7 +80,7 @@
 
 - [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **done** · mobile · M · depends: T-009, T-027 · [PR](https://github.com/Web-Usov/home-finances/pull/24)
 
-- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **todo** · mobile · S · depends: T-009, T-024 · —
+- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **done** · mobile · S · depends: T-009, T-024 · [PR](https://github.com/Web-Usov/home-finances/pull/37)
 
 ## E-04. Операции и история (UI) — planned
 
