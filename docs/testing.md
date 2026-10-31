@@ -55,6 +55,11 @@ dependencies) for `with-lock`, `task-start` and `task-clean`; it is a step of bo
 `<script>.test.mjs` there when you change a script; keep decision logic in exported pure functions and spawn the script
 against a temp dir / throwaway git repo for the rest.
 
+Rules for these tests (`scripts/__tests__/helpers.mjs`): call `installGuards()` at the top of the file; create temp dirs only with
+`makeTmp()` (removed in an `after` hook, worktrees included); build git environments with `gitEnv()` (sets
+`GIT_CEILING_DIRECTORIES` to the tmp root; a guard asserts after every test that the real repo's `core.bare` is not `true`);
+synchronise with `waitFor(cond)` (generous deadline), never with fixed sleeps. `test:scripts` runs with `--test-timeout=300000`.
+
 `verify` runs steps one after another and stops at the first failure. The list of
 steps lives in `scripts/verify.mjs`; add new gates there.
 

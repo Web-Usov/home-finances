@@ -1,13 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { installGuards, makeTmp, gitEnv, repoRoot } from './helpers.mjs';
 import { nextTaskId, slugify, renderNewTask, parseArgs } from '../task-start.mjs';
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+installGuards();
 
 test('nextTaskId is max+1, zero padded, ignores junk', () => {
   assert.equal(nextTaskId([]), 'T-001');
@@ -47,10 +46,8 @@ test('parseArgs reads --new options and rejects unknown ones', () => {
 // ---- integration against a throwaway origin + clone ----
 
 function fixture() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'task-start-test-'));
-  // git hooks export GIT_DIR/GIT_INDEX_FILE...; they must not leak into the throwaway repos
-  const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
-  const env = { ...clean, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
+  const dir = makeTmp('task-start-test-');
+  const env = gitEnv();
   const sh = (cwd, ...args) => execFileSync('git', args, { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   const origin = path.join(dir, 'origin.git');
   const main = path.join(dir, 'main', 'finance');
