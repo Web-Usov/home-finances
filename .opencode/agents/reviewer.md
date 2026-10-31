@@ -57,6 +57,9 @@ permissions:
     resource: "gh pr comment*"
     effect: allow
   - action: shell
+    resource: "gh pr update-branch*"
+    effect: allow
+  - action: shell
     resource: "gh pr merge * --squash --auto"
     effect: allow
   - action: shell
@@ -156,7 +159,12 @@ Blockers/majors => `CHANGES REQUESTED`: post the comment; do not enable auto-mer
 Only minors => `LGTM` with the notes. Then decide about merging (you are the only agent allowed to):
 
 1. List the changed files: `gh pr diff <n> --name-only`.
-2. If none is under `docs/spec/`, `docs/decisions/` or `epics/` and the verdict is LGTM: run
+2. If none is under `docs/spec/`, `docs/decisions/` or `epics/` and the verdict is LGTM: branch protection requires the
+   branch to be up to date with master. Check `gh pr view <n> --json mergeStateStatus`; if it is `BEHIND`, run
+   `gh pr update-branch <n>` (GitHub merges master in and re-runs CI). Do NOT update and instead send the PR back to the
+   author (verdict stays LGTM, add "merge origin/master locally, run `pnpm tasks:board` and `pnpm verify`, push") when the
+   update reports conflicts, or when master changed generated files or the board (`tasks/README.md`, `apps/api/openapi.json`,
+   `apps/mobile/src/api`) that the PR also touches, so a textual merge could change their semantics. Then run
    `gh pr merge <n> --squash --auto` (GitHub merges once the required checks `verify`, `contract`, `e2e` are green), then run
    `gh pr view <n> --json state,autoMergeRequest` and report "merged" (state `MERGED`) or "auto-merge enabled"
    (`autoMergeRequest` not null); if neither holds, report that the merge request failed and why.
