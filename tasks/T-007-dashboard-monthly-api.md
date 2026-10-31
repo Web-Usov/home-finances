@@ -1,7 +1,7 @@
 ---
 id: T-007
 title: Reporting: monthly dashboard endpoint
-status: todo
+status: in_progress
 epic: E-02
 depends: [T-004, T-006]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-12, UI-06, UI-07, UI-08, UI-09, FIN-11, FIN-12, HIST-12, OP-01, OP-02
 acceptance: [AC-02, AC-19]
 area: api
 size: M
-branch: null
+branch: task/T-007-dashboard-monthly-api
 pr: null
 ---
 
