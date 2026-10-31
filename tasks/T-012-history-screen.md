@@ -1,7 +1,7 @@
 ---
 id: T-012
 title: Mobile: history screen with filters, edit and delete
-status: in_progress
+status: done
 epic: E-04
 depends: [T-005, T-011]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-12, AC-13, AC-14]
 area: mobile
 size: M
 branch: task/T-012-history-screen
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/39
 ---
 
 # T-012. Mobile: history screen with filters, edit and delete
