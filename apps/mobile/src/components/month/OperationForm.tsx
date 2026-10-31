@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { parseMoneyMinor } from '@family-budget/types';
+import { formatMoneyMinor, parseMoneyMinor } from '@family-budget/types';
 import { FormInput } from '../FormInput';
 import type { OperationsControllerCreateV1201 } from '../../api/model';
 import { amountToApiString, amountToMinor } from '../../lib/allocation';
@@ -12,6 +12,8 @@ import { formatRubles, isNonZeroMoney, toInputMoney } from '../../lib/money';
 import { formatPeriodLabel } from '../../lib/period';
 import { invalidateMonthData } from './useMonthMutations';
 import { useCreateOperation } from './useCreateOperation';
+import { useUpdateOperation } from '../history/useOperationMutations';
+import type { HistoryOperation } from '../history/types';
 import type { QuickActionKind } from './QuickActions';
 import type { Dashboard } from './types';
 import { useQueryClient } from '@tanstack/react-query';
@@ -112,6 +114,8 @@ interface OperationFormProps {
   dashboard: Dashboard;
   onSaved: (saved: OperationSaved) => void;
   onCancel: () => void;
+  /** Edit mode (HIST-07): amount, envelopes and comment of this operation; the type (`kind`) stays fixed. */
+  editing?: HistoryOperation;
 }
 
 /**
@@ -122,16 +126,26 @@ interface OperationFormProps {
  * A transfer above the available balance is refused by the API (OP-07); the form then offers one click to
  * transfer the available amount (MSG-03).
  */
-export function OperationForm({ kind, dashboard, onSaved, onCancel }: OperationFormProps) {
+export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: OperationFormProps) {
   const { month, envelopes } = dashboard;
   const queryClient = useQueryClient();
   const locked = month.status === 'closed';
   const active = envelopes.filter((envelope) => envelope.status === 'active');
   const create = useCreateOperation();
+  const update = useUpdateOperation();
+  const pending = create.isPending || update.isPending;
 
   const methods = useForm<OperationFormValues>({
     resolver: zodResolver(buildSchema(kind)),
-    defaultValues: { sourceEnvelopeId: '', destinationEnvelopeId: '', sign: '+', amount: '', comment: '' },
+    defaultValues: editing
+      ? {
+          sourceEnvelopeId: editing.sourceEnvelopeId,
+          destinationEnvelopeId: editing.destinationEnvelopeId ?? '',
+          sign: editing.sign === '-' ? '-' : '+',
+          amount: toInputMoney(formatMoneyMinor(editing.requestedMinor)),
+          comment: editing.comment ?? '',
+        }
+      : { sourceEnvelopeId: '', destinationEnvelopeId: '', sign: '+', amount: '', comment: '' },
   });
   const { control, handleSubmit, setValue, setError, clearErrors, formState } = methods;
 
@@ -145,12 +159,39 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel }: OperationF
   const amountMinor = amountToMinor(amount);
   // Only a comparison against the balance the API returned decides whether the warning is shown (OP-06, OP-12).
   const reducesBalance = kind === 'expense' || (kind === 'adjustment' && sign === '-');
+  // In edit mode the dashboard `closing` already includes this operation, so no pre-check: the API answers (OP-04..OP-07).
   const exceedsBalance =
+    editing === undefined &&
     reducesBalance && source !== undefined && amountMinor !== null && amountMinor > parseMoneyMinor(source.closing);
 
   const send = (values: OperationFormValues, amountOverride?: string) => {
     clearErrors('root');
     setExceedsOffer(null);
+    const amountString = amountOverride ?? amountToApiString(values.amount);
+    const onSuccess = (response: { warnings: { message: string }[] }) =>
+      onSaved({ kind, warnings: response.warnings.map((warning) => warning.message) });
+    const onError = (error: unknown) => {
+      const { code, message } = describeMonthError(error, 'Не удалось сохранить операцию');
+      if (code === 'TRANSFER_EXCEEDS_BALANCE') setExceedsOffer({ message });
+      else setError('root', { message });
+      if (code === 'VERSION_CONFLICT') void invalidateMonthData(queryClient);
+    };
+    if (editing) {
+      update.mutate(
+        {
+          id: editing.id,
+          data: {
+            amount: amountString,
+            sourceEnvelopeId: values.sourceEnvelopeId,
+            ...(kind === 'transfer' ? { destinationEnvelopeId: values.destinationEnvelopeId } : {}),
+            comment: values.comment.trim(),
+            version: month.version,
+          },
+        },
+        { onSuccess, onError },
+      );
+      return;
+    }
     create.mutate(
       {
         data: {
@@ -158,28 +199,24 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel }: OperationF
           sourceEnvelopeId: values.sourceEnvelopeId,
           ...(kind === 'transfer' ? { destinationEnvelopeId: values.destinationEnvelopeId } : {}),
           ...(kind === 'adjustment' ? { sign: values.sign } : {}),
-          amount: amountOverride ?? amountToApiString(values.amount),
+          amount: amountString,
           ...(values.comment.trim() !== '' ? { comment: values.comment.trim() } : {}),
           period: month.period,
           version: month.version,
         },
       },
-      {
-        onSuccess: (response: OperationsControllerCreateV1201) =>
-          onSaved({ kind, warnings: response.warnings.map((warning) => warning.message) }),
-        onError: (error) => {
-          const { code, message } = describeMonthError(error, 'Не удалось сохранить операцию');
-          if (code === 'TRANSFER_EXCEEDS_BALANCE') setExceedsOffer({ message });
-          else setError('root', { message });
-          if (code === 'VERSION_CONFLICT') void invalidateMonthData(queryClient);
-        },
-      },
+      { onSuccess: (response: OperationsControllerCreateV1201) => onSuccess(response), onError },
     );
   };
 
-  const availableForTransfer = source?.closing;
+  // Editing: the balance the transfer met at its own position (server value), only valid for the unchanged source.
+  const availableForTransfer = editing
+    ? editing.result !== null && sourceId === editing.sourceEnvelopeId
+      ? formatMoneyMinor(editing.result.sourceBalanceBefore)
+      : undefined
+    : source?.closing;
   const canOfferAvailable = exceedsOffer !== null && availableForTransfer !== undefined && isNonZeroMoney(availableForTransfer);
-  const blocked = locked || create.isPending;
+  const blocked = locked || pending;
 
   const onTransferAvailable = () => {
     if (availableForTransfer === undefined) return;
@@ -187,13 +224,13 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel }: OperationF
     void handleSubmit((values) => send(values, availableForTransfer))();
   };
 
-  const saveLabel = exceedsBalance ? 'Всё равно сохранить' : SAVE_LABELS[kind];
+  const saveLabel = editing ? 'Сохранить изменения' : exceedsBalance ? 'Всё равно сохранить' : SAVE_LABELS[kind];
 
   return (
     <FormProvider {...methods}>
       <View className="mt-3 rounded-lg border border-gray-200 p-3">
         <Text accessibilityRole="header" className="text-base font-semibold text-gray-800 mb-1">
-          {TITLES[kind]}
+          {editing ? `Изменить: ${TITLES[kind].toLowerCase()}` : TITLES[kind]}
         </Text>
         <Text className="text-sm text-gray-600 mb-3">Месяц: {formatPeriodLabel(month.period)}</Text>
         {locked && <Text className="mb-3 text-sm text-gray-700">{MONTH_LOCKED_MESSAGE}</Text>}
@@ -226,7 +263,7 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel }: OperationF
           </>
         )}
 
-        {kind === 'adjustment' && (
+        {kind === 'adjustment' && !editing && (
           <View className="mb-4 flex-row gap-2" accessibilityRole="radiogroup" accessibilityLabel="Знак корректировки">
             {(['+', '-'] as const).map((value) => (
               <Pressable
@@ -310,12 +347,12 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel }: OperationF
             onPress={handleSubmit((values) => send(values))}
             className="flex-1 rounded-lg bg-primary-600 py-3 active:bg-primary-700 disabled:opacity-50"
           >
-            <Text className="text-center font-semibold text-white">{create.isPending ? 'Сохранение…' : saveLabel}</Text>
+            <Text className="text-center font-semibold text-white">{pending ? 'Сохранение…' : saveLabel}</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Закрыть форму операции"
-            disabled={create.isPending}
+            disabled={pending}
             onPress={onCancel}
             className="flex-1 rounded-lg bg-gray-200 py-3 active:bg-gray-300"
           >
