@@ -1,0 +1,6 @@
+{
+  "AC-21": {
+    "task": "T-011",
+    "reason": "UI-only: no day field in any user form. Needs the operation/income/allocation forms (T-011, T-009..T-013) and a component or e2e test (T-015)."
+  }
+}
