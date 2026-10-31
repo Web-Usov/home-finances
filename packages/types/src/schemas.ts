@@ -502,6 +502,19 @@ export function formatMoneyMinor(minor: number): string {
   return `${rubles}.${String(kopecks).padStart(2, '0')}`;
 }
 
+/**
+ * Kopecks to ru-RU text for server messages (MSG-07): comma decimal separator, always two kopeck digits, thousands
+ * separated by U+00A0, no currency sign (the message template adds " ₽"). Negative amounts keep a U+2212 minus.
+ * Not a transport format: API amount fields stay decimal strings ("15000.00", API-14) via `formatMoneyMinor`.
+ */
+export function formatMoneyMinorRu(minor: number): string {
+  const negative = minor < 0;
+  const abs = Math.abs(minor);
+  const rubles = String(Math.floor(abs / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+  const kopecks = String(abs % 100).padStart(2, '0');
+  return `${negative ? '\u2212' : ''}${rubles},${kopecks}`;
+}
+
 /** Like `formatMoneyMinor` but accepts negative amounts: -150 -> "-1.50". */
 export function formatSignedMoneyMinor(minor: number): string {
   return minor < 0 ? `-${formatMoneyMinor(-minor)}` : formatMoneyMinor(minor);

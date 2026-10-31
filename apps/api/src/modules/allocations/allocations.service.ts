@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Allocation, Prisma } from '@prisma/client';
 import {
   SaveAllocationsRequestSchema,
-  formatMoneyMinor,
+  formatMoneyMinorRu,
   parseMoneyMinor,
   validateAllocations,
   type MutationResponse,
@@ -75,7 +75,7 @@ export class AllocationsService {
       if (!valid) {
         throw new ValidationException(
           'ALLOCATION_EXCEEDS_INCOME',
-          `Распределено на ${formatMoneyMinor(excessMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
+          `Распределено на ${formatMoneyMinorRu(excessMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
         );
       }
 

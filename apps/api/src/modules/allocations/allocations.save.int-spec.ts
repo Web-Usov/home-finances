@@ -160,7 +160,7 @@ describe('Allocations save and month mutation response shape (integration)', () 
 
     expect(response.body).toEqual({
       error: 'ALLOCATION_EXCEEDS_INCOME',
-      message: 'Распределено на 1000.01 ₽ больше дохода. Уменьшите суммы по конвертам.',
+      message: 'Распределено на 1\u00A0000,01 ₽ больше дохода. Уменьшите суммы по конвертам.',
     });
     expect(await monthRow(month.id)).toMatchObject({ incomeMinor: 1_000_000, version: month.version });
     const stored = await t.prisma.allocation.findMany({ where: { monthId: month.id } });
