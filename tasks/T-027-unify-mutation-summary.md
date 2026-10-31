@@ -1,7 +1,7 @@
 ---
 id: T-027
 title: Unify month mutation response shape (data.summary)
-status: todo
+status: in_progress
 epic: E-01
 depends: [T-020, T-029]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-03, API-04, API-10, API-11, API-16, API-22]
 acceptance: [AC-02]
 area: api
 size: M
-branch: null
+branch: task/T-027-unify-mutation-summary
 pr: null
 ---
 

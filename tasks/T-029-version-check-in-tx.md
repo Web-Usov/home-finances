@@ -1,7 +1,7 @@
 ---
 id: T-029
 title: Re-check month version inside the transaction in allocations.save and other mutations
-status: todo
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: null
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/25
 ---
 
 # T-029. Re-check month version inside the transaction in allocations.save and other mutations
@@ -26,11 +26,11 @@ Every month-scoped mutation checks `version` and status on the row locked inside
 
 ## Definition of Done
 
-- [ ] `it('ADR 0005: concurrent PUT allocations with the same version: one succeeds, the other answers 409 VERSION_CONFLICT')` (int-spec) passes
-- [ ] Same kind of test for `PATCH /months/:period` income
-- [ ] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('ADR 0005: concurrent PUT allocations with the same version: one succeeds, the other answers 409 VERSION_CONFLICT')` (int-spec) passes
+- [x] Same kind of test for `PATCH /months/:period` income
+- [x] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -42,4 +42,8 @@ Every month-scoped mutation checks `version` and status on the row locked inside
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Superseded by T-036 (PR #25).
+
+- Both concurrency DoD items are covered by `apps/api/src/common/month-lock.concurrency.same-kind.int-spec.ts` (`PUT allocations vs PUT allocations`, `PATCH income vs PATCH income`: exactly one winner, loser 409 VERSION_CONFLICT) on the real-concurrency harness.
+- `allocations.save`, `months.updateIncome/close/reopen/create` and the envelopes service all check `version` and status under `lockMonthForMutation`, inside the transaction.
+- No controller/DTO change, so `api:contract` is unaffected.
