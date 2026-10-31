@@ -1,7 +1,7 @@
 ---
 id: T-002
 title: Replace "SPECIFICATION.md line NNN" comments with rule IDs
-status: todo
+status: in_progress
 epic: E-00
 depends: []
 blocked_by: []
@@ -9,7 +9,7 @@ spec: []
 acceptance: []
 area: docs
 size: S
-branch: null
+branch: task/T-002-spec-rule-ids-in-code
 pr: null
 ---
 
