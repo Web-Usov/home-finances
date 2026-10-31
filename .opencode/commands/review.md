@@ -13,7 +13,7 @@ Follow your checklist, post the verdict as a PR comment: write the body to a tem
 account; if writing temp files is not permitted use `gh pr comment <n> --body "..."`). Read PR files without a worktree via
 `git fetch origin <head>` + `git show origin/<head>:<path>`. Return the verdict block (`VERDICT: LGTM | CHANGES REQUESTED`,
 findings with file:line, checks) as your final answer. On LGTM, if the diff touches no `docs/spec/**`, `docs/decisions/**`,
-`epics/**`, first, if `gh pr view <n> --json mergeStateStatus` is `BEHIND`, run `gh pr update-branch <n>` (return the PR to the author instead when the update conflicts or master changed generated files/the board that the PR also touches: author merges master locally, regenerates, re-verifies), then enable auto-merge with `gh pr merge <n> --squash --auto`, then check
+`epics/**`, first, if `gh pr view <n> --json mergeStateStatus` is `BEHIND`, run `gh api -X PUT repos/Web-Usov/home-finances/pulls/<n>/update-branch` (merge only, the API default; never `update_method=rebase`; if GitHub reports a conflict, return the PR to the author instead: author merges master locally, runs `pnpm tasks:board`, re-verifies; otherwise CI re-runs on the updated head and detects stale generated files/board), then enable auto-merge with `gh pr merge <n> --squash --auto`, then check
 `gh pr view <n> --json state,autoMergeRequest` and report "merged" (state MERGED) or "auto-merge enabled"
 (autoMergeRequest set); otherwise state that the PR waits for the human. On CHANGES REQUESTED do not enable
 auto-merge (safety: `gh pr merge <n> --disable-auto`).

@@ -67,7 +67,7 @@ pnpm task:clean T-xxx --remote   # also deletes origin/task/T-xxx-slug (skip if 
 ```
 
 `task:clean` also refuses to delete the local branch when it would lose work: the branch HEAD must equal the PR's
-`headRefOid` or be fully contained in `origin/master`; otherwise it lists the commits that were never pushed.
+`headRefOid`, or be an ancestor of that head (the reviewer's server-side update-branch adds a merge commit the local branch lacks) or fully contained in `origin/master`; otherwise it lists the commits that were never pushed.
 
 Manual equivalent (if the scripts are unavailable): `git worktree add ../finance-wt/t-xxx-slug -b task/T-xxx-slug origin/master`,
 copy the env files, `pnpm install --frozen-lockfile`, `node scripts/tasks.mjs set T-xxx in_progress --branch task/T-xxx-slug`,
@@ -170,10 +170,12 @@ does not allow approving your own PR. So:
   the reviewer runs `gh pr merge <n> --squash --auto` (GitHub merges as soon as `verify`, `contract`, `e2e` are green) and
   then reports "merged" or "auto-merge enabled" based on `gh pr view <n> --json state,autoMergeRequest`.
   Branch protection is strict (the branch must be up to date with master): if `gh pr view <n> --json mergeStateStatus` is
-  `BEHIND`, the reviewer first runs `gh pr update-branch <n>` (GitHub merges master in and re-runs CI), then enables
-  auto-merge. It sends the PR back to the author only when the update conflicts or master changed generated files / the
-  board that the PR also touches; the author then merges `origin/master` locally, runs `pnpm tasks:board`, `pnpm verify`
-  and pushes.
+  `BEHIND`, the reviewer first runs `gh api -X PUT repos/Web-Usov/home-finances/pulls/<n>/update-branch` (merge only, the API default; `update_method` is denied; gh v2.45 has no `pr update-branch`; this is the reviewer's one
+  permitted branch modification). GitHub merges master in and re-runs CI on the new head. If GitHub reports a conflict, the
+  reviewer sends the PR back to the author, who merges `origin/master` locally, runs `pnpm tasks:board`, `pnpm verify` and
+  pushes. Otherwise the reviewer enables auto-merge without comparing files: `verify` (`tasks:check`, board `--check`) and
+  `contract` (`api:contract`) detect stale generated files on the updated head; if they fail, auto-merge does not happen and
+  the PR goes back to the author.
   On `CHANGES REQUESTED` the reviewer only posts the comment (as a safety step it may run `gh pr merge <n> --disable-auto`);
   the implementer fixes the findings with new commits, runs `pnpm verify`, pushes, and `/review` runs again.
 - **Branch protection reality:** required approving reviews = 0, because agents and the owner share the GitHub account

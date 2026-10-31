@@ -107,6 +107,7 @@ test('check fails when a task id is used on origin/master by a different task fi
   const r = tasksCli(dir, 'check');
   assert.equal(r.status, 1);
   assert.match(r.stderr, new RegExp(`${id}-other-slug\\.md: task id ${id} is already used on origin/master by ${file}`));
+  assert.match(r.stderr, /git merge origin\/master/);
 });
 
 test('check skips the collision rule without an origin/master ref', () => {
