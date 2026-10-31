@@ -1,7 +1,7 @@
 ---
 id: T-037
 title: Mobile: show the recalculation range before reopening (reopen preview)
-status: todo
+status: in_progress
 epic: E-03
 depends: [T-009, T-024]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [MON-12, API-20, SCOPE-32]
 acceptance: [AC-15]
 area: mobile
 size: S
-branch: null
+branch: task/T-037-mobile-reopen-preview
 pr: null
 ---
 

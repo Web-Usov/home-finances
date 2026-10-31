@@ -78,7 +78,7 @@
 
 - [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **done** · mobile · M · depends: T-009, T-027 · [PR](https://github.com/Web-Usov/home-finances/pull/24)
 
-- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **todo** · mobile · S · depends: T-009, T-024 · —
+- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **in_progress** · mobile · S · depends: T-009, T-024 · —
 
 ## E-04. Операции и история (UI) — planned
 
