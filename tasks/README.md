@@ -54,7 +54,7 @@
 
 - [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **todo** · api · M · depends: T-005, T-020 · —
 
-- [T-027](T-027-unify-mutation-summary.md) Unify month mutation response shape (data.summary) — **in_progress** · api · M · depends: T-020, T-029 · —
+- [T-027](T-027-unify-mutation-summary.md) Unify month mutation response shape (data.summary) — **done** · api · M · depends: T-020, T-029 · [PR](https://github.com/Web-Usov/home-finances/pull/27)
 
 - [T-031](T-031-int-uncovered-does-not-block-close.md) Int test: uncovered operations do not block closing a month — **done** · api · S · depends: T-004, T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/13)
 

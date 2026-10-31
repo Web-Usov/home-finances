@@ -1,7 +1,7 @@
 ---
 id: T-027
 title: Unify month mutation response shape (data.summary)
-status: in_progress
+status: done
 epic: E-01
 depends: [T-020, T-029]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-02]
 area: api
 size: M
 branch: task/T-027-unify-mutation-summary
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/27
 ---
 
 # T-027. Unify month mutation response shape (data.summary)
