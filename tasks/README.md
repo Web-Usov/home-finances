@@ -86,7 +86,7 @@
 
 - [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **done** · mobile · M · depends: T-004, T-009, T-025, T-026 · [PR](https://github.com/Web-Usov/home-finances/pull/35)
 
-- [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **todo** · mobile · M · depends: T-005, T-011 · —
+- [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **in_progress** · mobile · M · depends: T-005, T-011 · —
 
 ## E-05. Годовая аналитика (UI) — planned
 

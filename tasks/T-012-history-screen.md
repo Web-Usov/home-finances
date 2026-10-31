@@ -1,7 +1,7 @@
 ---
 id: T-012
 title: Mobile: history screen with filters, edit and delete
-status: todo
+status: in_progress
 epic: E-04
 depends: [T-005, T-011]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [UI-03, HIST-01, HIST-02, HIST-03, HIST-04, HIST-07, HIST-08, HIST-10, HIS
 acceptance: [AC-12, AC-13, AC-14]
 area: mobile
 size: M
-branch: null
+branch: task/T-012-history-screen
 pr: null
 ---
 
