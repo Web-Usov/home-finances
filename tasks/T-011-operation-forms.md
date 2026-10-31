@@ -1,7 +1,7 @@
 ---
 id: T-011
 title: Mobile: expense, transfer and adjustment forms
-status: todo
+status: in_progress
 epic: E-04
 depends: [T-004, T-009, T-025, T-026]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [UI-10, OP-06, OP-07, OP-12, OP-13, HIST-05, MSG-02, MSG-03, MSG-04, MSG-0
 acceptance: [AC-05, AC-06, AC-07, AC-09, AC-10, AC-21]
 area: mobile
 size: M
-branch: null
+branch: task/T-011-operation-forms
 pr: null
 ---
 
