@@ -177,6 +177,13 @@ IDs come from `docs/spec/*.md` (`**[OP-04]**`, `AC-08`). `pnpm spec:check` (`scr
 reports spec rules and AC that no test covers (warnings; `--verbose` lists them). Without a spec
 ID use a plain behaviour description.
 
+`pnpm spec:check --strict-coverage` additionally fails when an AC-* is not referenced from a test file (any mention in a
+`*.spec.ts`, `*.int-spec.ts`, `*.e2e.ts` or `*.test.tsx` counts, so cite an AC only in a test that really asserts it).
+ACs whose test must wait for a later UI task are listed in `scripts/spec-coverage-deferred.json`
+(`{ "AC-21": { "task": "T-xxx", "reason": "..." } }`). The allowlist only shrinks: once the AC is covered the entry
+makes the check fail until it is removed. API-level acceptance scenarios live in
+`apps/api/src/acceptance/acceptance.mvp-scenarios.int-spec.ts`.
+
 ## Mobile tests
 
 - Stack: `jest-expo` preset + `@testing-library/react-native`; config in
