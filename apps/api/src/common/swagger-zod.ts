@@ -7,8 +7,7 @@ type JsonSchemaObject = Record<string, unknown> & { $schema?: string };
 /**
  * Convert a Zod request schema into an OpenAPI SchemaObject for `@ApiBody`.
  * Keeps `@family-budget/types` Zod schemas the single source of truth —
- * swagger request schemas are derived, never hand-written. Target is OpenAPI 3 (`nullable`, no `type: null`); refs are inlined (`$refStrategy: 'none'`):
- * relative `#/properties/...` pointers emitted for repeated sub-schemas are not resolvable in OpenAPI.
+ * swagger request schemas are derived, never hand-written.
  */
 export function zodOpenApiSchema(schema: ZodTypeAny): SchemaObject {
   const { $schema: _drop, ...rest } = zodToJsonSchema(schema, { $refStrategy: 'none', target: 'openApi3' }) as JsonSchemaObject;

@@ -12,11 +12,8 @@ export type OperationsControllerCreateV1201DataSummary = {
   /** @pattern ^\d{4}-\d{2}$ */
   period: string;
   status: OperationsControllerCreateV1201DataSummaryStatus;
-  /** @minimum 0 */
   incomeMinor: number;
-  /** @minimum 0 */
   version: number;
-  /** @minimum 0 */
   totalAllocatedMinor: number;
   freeFundsMinor: number;
 };

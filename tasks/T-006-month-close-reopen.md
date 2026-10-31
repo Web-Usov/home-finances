@@ -1,7 +1,7 @@
 ---
 id: T-006
 title: Months: close, reopen and draft promotion
-status: todo
+status: done
 epic: E-01
 depends: [T-003]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [API-05, API-06, MON-01, MON-02, MON-03, MON-04, MON-07, MON-08, MON-09, M
 acceptance: [AC-14, AC-15, AC-16, AC-17]
 area: api
 size: M
-branch: null
-pr: null
+branch: task/T-006-month-close-reopen
+pr: https://github.com/Web-Usov/home-finances/pull/9
 ---
 
 # T-006. Months: close, reopen and draft promotion
@@ -29,15 +29,15 @@ pr: null
 
 ## Definition of Done
 
-- [ ] `it('MON-08 / AC-17: closing the current month promotes the existing draft to open')`
-- [ ] `it('MON-02 / AC-16: a draft accepts operations but cannot be closed')`
-- [ ] `it('MON-13: a second month cannot be reopened while one is reopened')`
-- [ ] `it('MON-15: closing a reopened month does not promote the draft')`
-- [ ] `it('MON-14 / AC-15: reopen recalculates later closed months and keeps their statuses')`
-- [ ] `it('MON-03 / AC-14: mutations in a closed month return MONTH_LOCKED')`
-- [ ] Controller uses Zod schemas; no `unknown` DTOs
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('MON-08 / AC-17: closing the current month promotes the existing draft to open')`
+- [x] `it('MON-02 / AC-16: a draft accepts operations but cannot be closed')`
+- [x] `it('MON-13: a second month cannot be reopened while one is reopened')`
+- [x] `it('MON-15: closing a reopened month does not promote the draft')`
+- [x] `it('MON-14 / AC-15: reopen recalculates later closed months and keeps their statuses')`
+- [x] `it('MON-03 / AC-14: mutations in a closed month return MONTH_LOCKED')`
+- [x] Controller uses Zod schemas; no `unknown` DTOs
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -50,4 +50,14 @@ pr: null
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Implemented `POST /months/:period/close` and `/reopen` (both body `{ version }`, HTTP 200, response `{ data, warnings }`).
+
+- **close** (API-05): open/reopened -> closed; draft and closed -> 409 `INVALID_STATUS_TRANSITION`; allocations above income -> 422 `ALLOCATION_EXCEEDS_INCOME` (MON-11); free funds / uncovered ops never block (MON-10). Closing an `open` month promotes the existing draft (MON-08); closing a `reopened` one does not (MON-15). Changed months get a `version` bump. No engine run (only statuses change). Response data: `{ month, promotedDraft | null }`.
+- **reopen** (API-06): closed -> reopened, second reopened month -> 409 `INVALID_STATUS_TRANSITION` (MON-13), then `recalculateMonthAtomically(id, tx)` in the same transaction (engine bumps versions >= period; later statuses untouched, MON-14). Response data: `{ month, recalcRange: { from, to } }` (to = latest month).
+- T-003 review lessons: month read + `version` check now happen inside the transaction (also in `updateIncome`); response schemas declared in Swagger via new Zod schemas in `@family-budget/types` (`MonthSummarySchema`, `mutationResponseSchema`, `CloseMonthResultSchema`, `ReopenMonthResultSchema`, `CloseMonthRequestSchema`), including the existing PATCH income endpoint; generated client is typed. `zodOpenApiSchema` now emits `$refStrategy: 'none'` + `target: 'openApi3'` (inlined schemas, `nullable`), needed for valid OpenAPI when a schema is reused or nullable.
+
+Spec/task notes for the planner:
+- The DoD names cite `MON-02` for "a draft cannot be closed", but in the spec draft is `MON-01` (MON-02 is the open status); tests cite MON-01 / AC-16.
+- MON-12 asks to show the range *before* reopening, but API-06 only has the reopen call; the range is returned in the response. A preview (GET/dry-run) endpoint would be needed for a pre-confirmation warning in the UI (T-009).
+- Spec does not define the error code for a second reopen or closing a draft; `INVALID_STATUS_TRANSITION` used.
+- Close ignores operations/negative balances (only FIN-02 checked as the hard invariant).

@@ -1,10 +1,23 @@
-import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Patch, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
-import { UpdateIncomeRequestSchema } from '@family-budget/types';
+import {
+  CloseMonthRequestSchema,
+  CloseMonthResultSchema,
+  MonthSummarySchema,
+  ReopenMonthRequestSchema,
+  ReopenMonthResultSchema,
+  UpdateIncomeRequestSchema,
+  mutationResponseSchema,
+} from '@family-budget/types';
 import { ZodValidationPipe } from '../../common/pipes';
 import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { MonthsService } from './months.service';
-import type { CreateMonthRequest, UpdateIncomeRequest } from './months.service';
+import type {
+  CloseMonthRequest,
+  CreateMonthRequest,
+  ReopenMonthRequest,
+  UpdateIncomeRequest,
+} from './months.service';
 
 @ApiTags('Months')
 @Controller('months')
@@ -28,7 +41,11 @@ export class MonthsController {
   @Patch(':period')
   @ApiOperation({ summary: 'Change income for a month' })
   @ApiBody({ schema: zodOpenApiSchema(UpdateIncomeRequestSchema) })
-  @ApiResponse({ status: 200, description: 'Updated month summary and warnings' })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated month summary and warnings',
+    schema: zodOpenApiSchema(mutationResponseSchema(MonthSummarySchema)),
+  })
   @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND' })
   @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or MONTH_LOCKED' })
   @ApiResponse({ status: 422, description: 'ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR' })
@@ -40,16 +57,40 @@ export class MonthsController {
   }
 
   @Post(':period/close')
-  @ApiOperation({ summary: 'Close an open month' })
-  @ApiResponse({ status: 200, description: 'New statuses of current and draft months' })
-  close(@Param('period') period: string) {
-    return this.monthsService.close(period);
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Close an open or reopened month; promotes the draft when closing an open month' })
+  @ApiBody({ schema: zodOpenApiSchema(CloseMonthRequestSchema) })
+  @ApiResponse({
+    status: 200,
+    description: 'Closed month and the draft promoted to open (null if none)',
+    schema: zodOpenApiSchema(mutationResponseSchema(CloseMonthResultSchema)),
+  })
+  @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or INVALID_STATUS_TRANSITION' })
+  @ApiResponse({ status: 422, description: 'ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR' })
+  close(
+    @Param('period') period: string,
+    @Body(new ZodValidationPipe(CloseMonthRequestSchema)) dto: CloseMonthRequest,
+  ) {
+    return this.monthsService.close(period, dto);
   }
 
   @Post(':period/reopen')
-  @ApiOperation({ summary: 'Reopen a closed month' })
-  @ApiResponse({ status: 200, description: 'Recalculation range and status' })
-  reopen(@Param('period') period: string, @Body() dto: unknown) {
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Reopen a closed month and recalculate later months' })
+  @ApiBody({ schema: zodOpenApiSchema(ReopenMonthRequestSchema) })
+  @ApiResponse({
+    status: 200,
+    description: 'Reopened month and the recalculated period range',
+    schema: zodOpenApiSchema(mutationResponseSchema(ReopenMonthResultSchema)),
+  })
+  @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or INVALID_STATUS_TRANSITION' })
+  @ApiResponse({ status: 422, description: 'VALIDATION_ERROR' })
+  reopen(
+    @Param('period') period: string,
+    @Body(new ZodValidationPipe(ReopenMonthRequestSchema)) dto: ReopenMonthRequest,
+  ) {
     return this.monthsService.reopen(period, dto);
   }
 }

@@ -84,7 +84,84 @@
         },
         "responses": {
           "200": {
-            "description": "Updated month summary and warnings"
+            "description": "Updated month summary and warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "period": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}$"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "draft",
+                            "open",
+                            "closed",
+                            "reopened"
+                          ]
+                        },
+                        "incomeMinor": {
+                          "type": "integer"
+                        },
+                        "version": {
+                          "type": "integer"
+                        },
+                        "totalAllocatedMinor": {
+                          "type": "integer"
+                        },
+                        "freeFundsMinor": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "period",
+                        "status",
+                        "incomeMinor",
+                        "version",
+                        "totalAllocatedMinor",
+                        "freeFundsMinor"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           },
           "404": {
             "description": "MONTH_NOT_FOUND"
@@ -115,12 +192,173 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "New statuses of current and draft months"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
           }
         },
-        "summary": "Close an open month",
+        "responses": {
+          "200": {
+            "description": "Closed month and the draft promoted to open (null if none)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "month": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "promotedDraft": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "month",
+                        "promotedDraft"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MONTH_NOT_FOUND"
+          },
+          "409": {
+            "description": "VERSION_CONFLICT or INVALID_STATUS_TRANSITION"
+          },
+          "422": {
+            "description": "ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR"
+          }
+        },
+        "summary": "Close an open or reopened month; promotes the draft when closing an open month",
         "tags": [
           "Months"
         ]
@@ -139,12 +377,146 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Recalculation range and status"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
           }
         },
-        "summary": "Reopen a closed month",
+        "responses": {
+          "200": {
+            "description": "Reopened month and the recalculated period range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "month": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "recalcRange": {
+                          "type": "object",
+                          "properties": {
+                            "from": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "to": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "month",
+                        "recalcRange"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MONTH_NOT_FOUND"
+          },
+          "409": {
+            "description": "VERSION_CONFLICT or INVALID_STATUS_TRANSITION"
+          },
+          "422": {
+            "description": "VALIDATION_ERROR"
+          }
+        },
+        "summary": "Reopen a closed month and recalculate later months",
         "tags": [
           "Months"
         ]
@@ -778,16 +1150,13 @@
                               ]
                             },
                             "incomeMinor": {
-                              "type": "integer",
-                              "minimum": 0
+                              "type": "integer"
                             },
                             "version": {
-                              "type": "integer",
-                              "minimum": 0
+                              "type": "integer"
                             },
                             "totalAllocatedMinor": {
-                              "type": "integer",
-                              "minimum": 0
+                              "type": "integer"
                             },
                             "freeFundsMinor": {
                               "type": "integer"

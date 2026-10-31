@@ -216,7 +216,38 @@ export const OperationListQuerySchema = z.object({
   type: OperationTypeSchema.optional(),
 });
 
-const ApiWarningSchema = z.object({ code: z.string(), message: z.string() });
+export const ReopenMonthRequestSchema = z.object({
+  version: z.number().int().nonnegative(),
+});
+
+export const CloseMonthRequestSchema = z.object({
+  version: z.number().int().nonnegative(),
+});
+
+// ---------------------------------------------------------------------------
+// Response schemas (declared in Swagger so the generated client is typed)
+// ---------------------------------------------------------------------------
+
+export const ApiWarningSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+});
+
+/** Brief per-month totals returned by the months API. */
+export const MonthSummarySchema = z.object({
+  id: z.string().uuid(),
+  period: PeriodSchema,
+  status: MonthStatusSchema,
+  incomeMinor: z.number().int(),
+  version: z.number().int(),
+  totalAllocatedMinor: z.number().int(),
+  freeFundsMinor: z.number().int(),
+});
+
+/** Envelope `{ data, warnings }` of every mutation response (API-16). */
+export function mutationResponseSchema<T extends z.ZodTypeAny>(data: T) {
+  return z.object({ data, warnings: z.array(ApiWarningSchema) });
+}
 
 export const OperationHistoryItemSchema = OperationSchema.extend({
   period: PeriodSchema,
@@ -228,26 +259,25 @@ export const OperationListResponseSchema = z.object({
   operations: z.array(OperationHistoryItemSchema),
 });
 
-/** API-10 / API-16: operation, its result, the affected month summary and warnings. */
-export const OperationMutationResponseSchema = z.object({
-  data: z.object({
+/** API-10 / API-16: operation, its result and the affected month summary, with warnings. */
+export const OperationMutationResponseSchema = mutationResponseSchema(
+  z.object({
     operation: OperationSchema,
     result: OperationResultSchema,
-    summary: z.object({
-      id: z.string().uuid(),
-      period: PeriodSchema,
-      status: MonthStatusSchema,
-      incomeMinor: MoneyMinorSchema,
-      version: z.number().int().nonnegative(),
-      totalAllocatedMinor: MoneyMinorSchema,
-      freeFundsMinor: z.number().int(),
-    }),
+    summary: MonthSummarySchema,
   }),
-  warnings: z.array(ApiWarningSchema),
+);
+
+/** API-05: the closed month and the draft promoted to open (null when none or MON-15). */
+export const CloseMonthResultSchema = z.object({
+  month: MonthSummarySchema,
+  promotedDraft: MonthSummarySchema.nullable(),
 });
 
-export const ReopenMonthRequestSchema = z.object({
-  version: z.number().int().nonnegative(),
+/** API-06 / MON-12: the reopened month and the inclusive range of months recalculated. */
+export const ReopenMonthResultSchema = z.object({
+  month: MonthSummarySchema,
+  recalcRange: z.object({ from: PeriodSchema, to: PeriodSchema }),
 });
 
 // ---------------------------------------------------------------------------
