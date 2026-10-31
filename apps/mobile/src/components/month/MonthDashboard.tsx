@@ -6,7 +6,7 @@ import { EnvelopeRow } from './EnvelopeRow';
 import { MonthActions } from './MonthActions';
 import { MonthStatusBadge } from './MonthStatusBadge';
 import { PeriodSwitcher } from './PeriodSwitcher';
-import { QuickActions } from './QuickActions';
+import { QuickActionsPanel } from './QuickActionsPanel';
 import { SummaryCard } from './SummaryCard';
 import type { Dashboard, MonthSummary } from './types';
 
@@ -88,7 +88,7 @@ export function MonthDashboard({ dashboard, months, onPeriodChange }: MonthDashb
         {editingAllocation && <AllocationEditor key={month.period} dashboard={dashboard} onDone={() => setEditingAllocation(false)} />}
       </View>
 
-      <QuickActions status={month.status} />
+      <QuickActionsPanel key={month.period} dashboard={dashboard} />
 
       <View className="bg-white rounded-xl p-4 shadow-sm mb-4">
         <Text className="text-lg font-semibold text-gray-800 mb-1">Конверты</Text>
