@@ -5,13 +5,12 @@ import {
   formatMoneyMinor,
   parseMoneyMinor,
   validateAllocations,
-  type EnvelopeSnapshot,
-  type MonthSummary,
   type MutationResponse,
 } from '@family-budget/types';
 import { z } from 'zod';
 import { NotFoundException, ValidationException } from '../../common/exceptions';
-import { lockMonthForMutation, type LockedMonth } from '../../common/month-lock';
+import { lockMonthForMutation } from '../../common/month-lock';
+import { buildMonthSummary, type MonthSummaryDto } from '../../common/month-summary';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 
@@ -19,24 +18,6 @@ export type SaveAllocationsRequest = z.infer<typeof SaveAllocationsRequestSchema
 
 /** Satisfied by both PrismaService and an interactive transaction client. */
 type DbClient = Prisma.TransactionClient;
-
-/** Sum of all per-type uncovered parts stored as JSON on a snapshot row. */
-function sumUncoveredByType(uncoveredByType: Prisma.JsonValue): number {
-  if (
-    uncoveredByType === null ||
-    typeof uncoveredByType !== 'object' ||
-    Array.isArray(uncoveredByType)
-  ) {
-    return 0;
-  }
-  let total = 0;
-  for (const value of Object.values(uncoveredByType)) {
-    if (typeof value === 'number') {
-      total += value;
-    }
-  }
-  return total;
-}
 
 /**
  * Allocations service — saves the full monthly distribution table.
@@ -46,6 +27,8 @@ function sumUncoveredByType(uncoveredByType: Prisma.JsonValue): number {
  * Notes:
  * - All monetary values are integer kopecks; API strings are converted exactly
  *   once at the boundary via parseMoneyMinor (never float).
+ * - An optional `income` in the request is saved together with the allocations (one transaction, one
+ *   version check, one cascade); FIN-02 is validated against the NEW income (UI-11, API-04).
  * - Check order is lock month → version → status → Σ ≤ income → envelopes, all inside the
  *   transaction under `lockMonthForMutation` (DATA-12): a stale tab reports VERSION_CONFLICT even when the month closed meanwhile.
  * - Archived envelopes are rejected (ENV-12): they are excluded from new
@@ -63,12 +46,12 @@ export class AllocationsService {
 
   /**
    * Replace the whole allocation table of a month and recalculate.
-   * Returns the updated month summary plus cascade warnings.
+   * Returns `data.summary` (short month summary, API-22) plus cascade warnings.
    */
   async save(
     period: string,
     dto: SaveAllocationsRequest,
-  ): Promise<MutationResponse<MonthSummary>> {
+  ): Promise<MutationResponse<{ summary: MonthSummaryDto }>> {
     const { summary, warnings } = await this.prisma.$transaction(async (tx) => {
       // DATA-12 / MON-03: existence → version → status, checked under FOR UPDATE inside the
       // transaction, so a concurrent writer cannot slip between the check and the write.
@@ -83,8 +66,10 @@ export class AllocationsService {
         amountByEnvelopeId.set(envelopeId, parseMoneyMinor(amount));
       }
 
+      // FIN-02: the limit is the income that will be stored, i.e. the new one when it comes with the request.
+      const incomeMinor = dto.income !== undefined ? parseMoneyMinor(dto.income) : month.incomeMinor;
       const { valid, excessMinor } = validateAllocations(
-        month.incomeMinor,
+        incomeMinor,
         Object.fromEntries(amountByEnvelopeId),
       );
       if (!valid) {
@@ -98,6 +83,9 @@ export class AllocationsService {
         await this.assertEnvelopesAvailable(tx, amountByEnvelopeId);
       }
 
+      if (dto.income !== undefined) {
+        await tx.budgetMonth.update({ where: { id: month.id }, data: { incomeMinor } });
+      }
       await tx.allocation.deleteMany({ where: { monthId: month.id } });
       if (amountByEnvelopeId.size > 0) {
         await tx.allocation.createMany({
@@ -110,12 +98,12 @@ export class AllocationsService {
       }
       const result = await this.engine.recalculateMonthAtomically(month.id, tx);
       return {
-        summary: await this.buildSummary(tx, month, amountByEnvelopeId),
+        summary: await buildMonthSummary(tx, month.id),
         warnings: result.warnings,
       };
     });
 
-    return { data: summary, warnings };
+    return { data: { summary }, warnings };
   }
 
   /**
@@ -152,49 +140,5 @@ export class AllocationsService {
         );
       }
     }
-  }
-
-  /** Month summary from the just-recalculated snapshots plus the saved totals. */
-  private async buildSummary(
-    db: DbClient,
-    month: LockedMonth,
-    amountByEnvelopeId: Map<string, number>,
-  ): Promise<MonthSummary> {
-    const snapshots = await db.envelopeMonthSnapshot.findMany({
-      where: { monthId: month.id },
-      include: { envelope: { select: { name: true } } },
-    });
-
-    const envelopes: EnvelopeSnapshot[] = snapshots.map((snapshot) => ({
-      envelopeId: snapshot.envelopeId,
-      envelopeName: snapshot.envelope.name,
-      opening: snapshot.opening,
-      allocation: snapshot.allocation,
-      expensesRequested: snapshot.expensesRequested,
-      expensesCovered: snapshot.expensesCovered,
-      adjustmentApplied: snapshot.adjustmentApplied,
-      transfersIn: snapshot.transfersIn,
-      transfersOut: snapshot.transfersOut,
-      closing: snapshot.closing,
-      uncovered: sumUncoveredByType(snapshot.uncoveredByType),
-    }));
-
-    let totalAllocatedMinor = 0;
-    for (const amountMinor of amountByEnvelopeId.values()) {
-      totalAllocatedMinor += amountMinor;
-    }
-
-    return {
-      period: month.period,
-      status: month.status,
-      incomeMinor: month.incomeMinor,
-      totalAllocatedMinor,
-      freeFundsMinor: month.incomeMinor - totalAllocatedMinor,
-      totalExpensesRequestedMinor: envelopes.reduce((sum, e) => sum + e.expensesRequested, 0),
-      totalExpensesCoveredMinor: envelopes.reduce((sum, e) => sum + e.expensesCovered, 0),
-      totalAdjustmentsAppliedMinor: envelopes.reduce((sum, e) => sum + e.adjustmentApplied, 0),
-      totalUncoveredMinor: envelopes.reduce((sum, e) => sum + e.uncovered, 0),
-      envelopes,
-    };
   }
 }

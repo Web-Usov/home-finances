@@ -28,7 +28,7 @@
 
 - [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **todo** · api · S · depends: T-006 · —
 
-- [T-029](T-029-version-check-in-tx.md) Re-check month version inside the transaction in allocations.save and other mutations — **todo** · api · S · depends: — · —
+- [T-029](T-029-version-check-in-tx.md) Re-check month version inside the transaction in allocations.save and other mutations — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
 
 - [T-030](T-030-openapi-allocations-uuid-keys.md) Keep propertyNames uuid for the allocations map in openapi.json — **in_progress** · api · S · depends: — · —
 
@@ -54,9 +54,9 @@
 
 - [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **todo** · api · M · depends: T-005, T-020 · —
 
-- [T-027](T-027-unify-mutation-summary.md) Unify month mutation response shape (data.summary) — **todo** · api · M · depends: T-020, T-029 · —
+- [T-027](T-027-unify-mutation-summary.md) Unify month mutation response shape (data.summary) — **done** · api · M · depends: T-020, T-029 · [PR](https://github.com/Web-Usov/home-finances/pull/27)
 
-- [T-031](T-031-int-uncovered-does-not-block-close.md) Int test: uncovered operations do not block closing a month — **todo** · api · S · depends: T-004, T-006 · —
+- [T-031](T-031-int-uncovered-does-not-block-close.md) Int test: uncovered operations do not block closing a month — **done** · api · S · depends: T-004, T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/13)
 
 - [T-032](T-032-months-recalculate-on-month-creation.md) Months: recalculate on month creation and draft promotion — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/16)
 
