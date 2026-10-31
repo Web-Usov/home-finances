@@ -24,7 +24,7 @@
 
 - [T-033](T-033-task-id-allocation.md) Task id allocation sees task files of all remote branches — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/18)
 
-## E-01. Ядро API: месяцы и операции — planned
+## E-01. Ядро API: месяцы и операции — done
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
 
