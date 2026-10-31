@@ -1,7 +1,7 @@
 ---
 id: T-014
 title: Acceptance: tests for AC-01..AC-22 and strict spec coverage
-status: in_progress
+status: done
 epic: E-06
 depends: [T-005, T-006, T-007, T-008]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-01, AC-02, AC-03, AC-04, AC-05, AC-06, AC-07, AC-08, AC-09, AC-1
 area: api
 size: M
 branch: task/T-014-ac-test-coverage
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/22
 ---
 
 # T-014. Acceptance: tests for AC-01..AC-22 and strict spec coverage
