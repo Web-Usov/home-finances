@@ -225,7 +225,7 @@ describe('AllocationsService', () => {
       await expect(promise).rejects.toMatchObject({
         code: 'ALLOCATION_EXCEEDS_INCOME',
         statusCode: 422,
-        message: 'Распределено на 1.00 ₽ больше дохода. Уменьшите суммы по конвертам.',
+        message: 'Распределено на 1,00 ₽ больше дохода. Уменьшите суммы по конвертам.',
       });
       expect(mock.allocation.deleteMany).not.toHaveBeenCalled();
       expect(mock.allocation.createMany).not.toHaveBeenCalled();
@@ -375,7 +375,7 @@ describe('AllocationsService', () => {
       expect(result.data.summary).toMatchObject({ incomeMinor: 8_000_000, freeFundsMinor: 500_000 });
     });
 
-    it('FIN-02 / MSG-01: the sum is checked against the NEW income and nothing is written on overflow', async () => {
+    it('FIN-02 / MSG-01 / MSG-07: the sum is checked against the NEW income and nothing is written on overflow', async () => {
       stubSaveDefaults(mock, engine); // stored income 100 000.00 ₽
 
       const promise = service.save('2026-08', {
@@ -387,7 +387,7 @@ describe('AllocationsService', () => {
       await expect(promise).rejects.toMatchObject({
         code: 'ALLOCATION_EXCEEDS_INCOME',
         statusCode: 422,
-        message: 'Распределено на 5000.00 ₽ больше дохода. Уменьшите суммы по конвертам.',
+        message: 'Распределено на 5\u00A0000,00 ₽ больше дохода. Уменьшите суммы по конвертам.',
       });
       expect(mock.budgetMonth.update).not.toHaveBeenCalled();
       expect(mock.allocation.deleteMany).not.toHaveBeenCalled();

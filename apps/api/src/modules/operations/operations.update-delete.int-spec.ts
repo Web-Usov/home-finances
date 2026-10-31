@@ -152,7 +152,7 @@ describe('Operations update and delete (integration)', () => {
     const rejected = await patch(transfer.id, { amount: '10000.01', version }).expect(409);
     expect(rejected.body).toEqual({
       error: 'TRANSFER_EXCEEDS_BALANCE',
-      message: 'Доступно 10000.00 ₽. Перевести только 10000.00 ₽?',
+      message: 'Доступно 10\u00A0000,00 ₽. Перевести только 10\u00A0000,00 ₽?',
     });
     // the whole edit rolled back
     expect((await t.prisma.operation.findUniqueOrThrow({ where: { id: transfer.id } })).requestedMinor).toBe(600_000);
