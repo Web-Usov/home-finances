@@ -419,7 +419,7 @@ describe('MonthsService', () => {
       });
     });
 
-    it('API-03 / API-15 / API-16 / DATA-12: updates income and cascade in one tx, bumps version, returns summary + warnings', async () => {
+    it('API-03 / API-15 / API-16 / API-22 / DATA-12: updates income and cascade in one tx, bumps version, returns summary + warnings', async () => {
       const month = makeMonth({ id: 'month-1', period: '2026-08', status: 'open', version: 3 });
       stub(month, 600_000);
       const warnings = [{ code: 'ARCHIVED_ENVELOPE_WITH_BALANCE', message: 'w' }];
@@ -438,7 +438,7 @@ describe('MonthsService', () => {
       expect(mock.$transaction).toHaveBeenCalledTimes(1);
       // same-transaction proof + version bump (the engine owns the increment, ADR 0005)
       expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', tx);
-      expect(result.data).toMatchObject({
+      expect(result.data.summary).toMatchObject({
         period: '2026-08',
         incomeMinor: 2_000_000,
         version: 4,
@@ -453,7 +453,7 @@ describe('MonthsService', () => {
 
       const result = await service.updateIncome('2026-08', { income: '100000.00', version: 1 });
 
-      expect(result.data.freeFundsMinor).toBe(25_000_00);
+      expect(result.data.summary.freeFundsMinor).toBe(25_000_00);
     });
 
     it('FIN-02 / AC-03: income below allocated sum is rejected with ALLOCATION_EXCEEDS_INCOME', async () => {
@@ -478,7 +478,7 @@ describe('MonthsService', () => {
 
       const result = await service.updateIncome('2026-08', { income: '100000.00', version: 1 });
 
-      expect(result.data.freeFundsMinor).toBe(0);
+      expect(result.data.summary.freeFundsMinor).toBe(0);
       expect(engine.recalculateMonthAtomically).toHaveBeenCalledTimes(1);
     });
 

@@ -11,15 +11,12 @@ import {
 import type {
   CloseMonthResultSchema,
   MonthStatus,
-  MonthSummarySchema,
   MutationResponse,
   ReopenMonthResultSchema,
 } from '@family-budget/types';
 import { z } from 'zod';
-import {
-  ConflictException,
-    ValidationException,
-} from '../../common/exceptions';
+import { ConflictException, ValidationException } from '../../common/exceptions';
+import type { MonthSummaryDto } from '../../common/month-summary';
 import { lockAllMonths, lockMonthForMutation } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
@@ -30,7 +27,7 @@ export type CloseMonthRequest = z.infer<typeof CloseMonthRequestSchema>;
 export type ReopenMonthRequest = z.infer<typeof ReopenMonthRequestSchema>;
 
 /** Brief per-month totals — the "краткие итоги" of the months API (API-01). */
-export type MonthSummaryDto = z.infer<typeof MonthSummarySchema>;
+export type { MonthSummaryDto };
 export type CloseMonthResultDto = z.infer<typeof CloseMonthResultSchema>;
 export type ReopenMonthResultDto = z.infer<typeof ReopenMonthResultSchema>;
 
@@ -181,7 +178,7 @@ export class MonthsService {
   }
 
   /**
-   * Change the income of a non-closed month (API-03). Optimistic
+   * Change the income of a non-closed month (API-03, API-22: `data.summary`). Optimistic
    * locking via `version` (DATA-12) is checked before the closed-month lock
    * (MON-03, NFR-18). The income update and the cascade recalculation commit in one
    * transaction (API-15); the engine increments `version` on all affected
@@ -190,7 +187,7 @@ export class MonthsService {
   async updateIncome(
     period: string,
     dto: UpdateIncomeRequest,
-  ): Promise<MutationResponse<MonthSummaryDto>> {
+  ): Promise<MutationResponse<{ summary: MonthSummaryDto }>> {
     const incomeMinor = parseMoneyMinor(dto.income);
     return this.prisma.$transaction(async (tx) => {
       // DATA-12 / MON-03: lock, then version and status under the lock (no window between check and write).
@@ -207,7 +204,10 @@ export class MonthsService {
       const recalc = await this.engine.recalculateMonthAtomically(month.id, tx);
       const refreshed = await this.refreshMonth(tx, month.id);
       const totalAllocatedMinor = await this.sumAllocations(tx, month.id);
-      return { data: toSummary(refreshed, totalAllocatedMinor), warnings: recalc.warnings };
+      return {
+        data: { summary: toSummary(refreshed, totalAllocatedMinor) },
+        warnings: recalc.warnings,
+      };
     });
   }
 

@@ -26,7 +26,7 @@ Expo web client (apps/mobile)  --HTTP/JSON-->  NestJS + Fastify API (apps/api)  
 | `health/` | `GET /api/v1/health` | — | done |
 | `months/` | month list/create, status transitions, income, close/reopen | MON-*, API-01…06 | list/create/income/close/reopen done |
 | `envelopes/` | list/create/rename/reorder/archive, balances | ENV-*, API-07…09 | done |
-| `allocations/` | save the whole allocation table of a month | UI-11…15, API-04 | done |
+| `allocations/` | save the whole allocation table of a month, optionally with the month income (one transaction) | UI-11…15, API-04, API-22 | done |
 | `operations/` | expenses, transfers, adjustments, history | OP-*, HIST-*, API-10…11 | done |
 | `calculation-engine/` | deterministic cascade recalculation | CALC-*, FIN-*, OP-* | done |
 | `reporting/` | monthly dashboard, yearly analytics | UI-06…10, REP-*, API-12…13 | monthly dashboard done (read-only over snapshots), yearly stub |
@@ -65,8 +65,16 @@ Rules:
   order (close: the month, then the draft; reopen: the target, then the later months; create: all months via `lockAllMonths`
   plus an advisory lock), so mutations never deadlock and any two mutations with overlapping cascades serialise (DATA-12). The
   single-reopened rule (MON-13) is checked under that lock. Mutations without a period (operations create, envelope
-  create/archive) lock the working month through `lockWorkingMonth`. A check outside the transaction or without the lock is a
-  race (two tabs with the same `version` both succeed).
+  create/archive) lock the working month through `lockWorkingMonth`: it resolves the working month, locks, and resolves it
+  again under the lock. If the working month changed in between to an EARLIER one (a concurrent reopen), locking it would break
+  the ascending lock order, so the mutation answers `409 VERSION_CONFLICT` and the client refetches and retries. A check outside
+  the transaction or without the lock is a race (two tabs with the same `version` both succeed).
+- Response shape of month mutations (API-22): `PATCH /months/{period}`, `PUT /months/{period}/allocations` and the operation
+  mutations return `{ data: { summary, ... }, warnings }` with the short `MonthSummary` (re-read after the cascade, see
+  `common/month-summary.ts`); envelope balances come only from `GET /dashboard/monthly`. `close`/`reopen` keep their `month` field.
+- `PUT /months/{period}/allocations` takes an optional `income`: the income update and the allocations replace commit in one
+  transaction under one lock and `version` check, with one cascade; FIN-02 is checked against the new income. Clients save the
+  month income and the allocation table with this one request instead of choosing an order for two calls.
 - `ZodValidationPipe` throws the domain `ValidationException` (HTTP 422, code `VALIDATION_ERROR`, message lists failing field
   paths; API-17), rendered by `DomainExceptionFilter` as `{ error, message }`.
 - Gap: only `EnvelopesController` and `AllocationsController` use `ZodValidationPipe`; other controllers still accept

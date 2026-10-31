@@ -16,6 +16,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AllocationsControllerSaveV1200,
   AllocationsControllerSaveV1Body
 } from '.././model';
 
@@ -25,7 +26,7 @@ import { customAxiosInstance } from '.././axios-instance';
 
 
 /**
- * @summary Save full allocation table for a month
+ * @summary Save full allocation table for a month, optionally together with the month income
  */
 export const allocationsControllerSaveV1 = (
     period: string,
@@ -33,7 +34,7 @@ export const allocationsControllerSaveV1 = (
  ) => {
       
       
-      return customAxiosInstance<void>(
+      return customAxiosInstance<AllocationsControllerSaveV1200>(
       {url: `/api/v1/months/${period}/allocations`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: allocationsControllerSaveV1Body
@@ -73,7 +74,7 @@ const {mutation: mutationOptions} = options ?
     export type AllocationsControllerSaveV1MutationError = void
 
     /**
- * @summary Save full allocation table for a month
+ * @summary Save full allocation table for a month, optionally together with the month income
  */
 export const useAllocationsControllerSaveV1 = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof allocationsControllerSaveV1>>, TError,{period: string;data: AllocationsControllerSaveV1Body}, TContext>, }

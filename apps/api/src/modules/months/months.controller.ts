@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import {
   CloseMonthRequestSchema,
   CloseMonthResultSchema,
-  MonthSummarySchema,
+  MonthSummaryResponseSchema,
   ReopenMonthRequestSchema,
   ReopenMonthResultSchema,
   UpdateIncomeRequestSchema,
@@ -43,8 +43,8 @@ export class MonthsController {
   @ApiBody({ schema: zodOpenApiSchema(UpdateIncomeRequestSchema) })
   @ApiResponse({
     status: 200,
-    description: 'Updated month summary and warnings',
-    schema: zodOpenApiSchema(mutationResponseSchema(MonthSummarySchema)),
+    description: 'data.summary (short month summary, API-22) and warnings',
+    schema: zodOpenApiSchema(MonthSummaryResponseSchema),
   })
   @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND' })
   @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or MONTH_LOCKED' })
