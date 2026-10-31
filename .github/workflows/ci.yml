@@ -38,6 +38,8 @@ jobs:
           - 5432:5432
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch origin/master (tasks:check id collision rule)
+        run: git fetch --no-tags --depth=1 origin +refs/heads/master:refs/remotes/origin/master
       - uses: ./.github/actions/setup
       - name: pnpm verify
         run: pnpm verify

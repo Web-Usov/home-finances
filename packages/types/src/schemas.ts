@@ -1,6 +1,6 @@
 /**
  * Zod validation schemas for all domain entities.
- * These schemas enforce the constraints from SPECIFICATION.md § Constraints (lines 449-459).
+ * These schemas enforce the constraints from DATA-08..DATA-13.
  */
 
 import { z } from 'zod';
@@ -21,6 +21,11 @@ export const MoneyMinorSchema = z
 export const MoneyStringSchema = z
   .string()
   .regex(/^\d+(\.\d{1,2})?$/, 'Money string must be a decimal with up to 2 fractional digits');
+
+/** Decimal string that may be negative (net adjustments): "-150.50". */
+export const SignedMoneyStringSchema = z
+  .string()
+  .regex(/^-?\d+(\.\d{1,2})?$/, 'Signed money string must be a decimal with up to 2 fractional digits');
 
 // ---------------------------------------------------------------------------
 // Enum schemas
@@ -209,6 +214,11 @@ export const UpdateOperationRequestSchema = z.object({
   version: z.number().int().nonnegative(),
 });
 
+/** API-11: DELETE /operations/:id carries the month `version` as a query parameter (ADR 0005). */
+export const DeleteOperationQuerySchema = z.object({
+  version: z.coerce.number().int().nonnegative(),
+});
+
 /** HIST-11: history filters (the month is selected by `period`). */
 export const OperationListQuerySchema = z.object({
   period: PeriodSchema.optional(),
@@ -268,6 +278,11 @@ export const OperationMutationResponseSchema = mutationResponseSchema(
   }),
 );
 
+/** API-11 / API-16: delete returns the recalculated month summary (the operation is gone). */
+export const DeleteOperationResponseSchema = mutationResponseSchema(
+  z.object({ summary: MonthSummarySchema }),
+);
+
 /** API-05: the closed month and the draft promoted to open (null when none or MON-15). */
 export const CloseMonthResultSchema = z.object({
   month: MonthSummarySchema,
@@ -281,12 +296,170 @@ export const ReopenMonthResultSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Reporting: monthly dashboard (API-12, UI-06..09)
+// ---------------------------------------------------------------------------
+
+/** API-12: `period` defaults to the working month (open, then reopened, then draft). */
+export const DashboardMonthlyQuerySchema = z.object({
+  period: PeriodSchema.optional(),
+});
+
+/** Uncovered amounts by operation type (OP-05, OP-09, OP-14); amounts are decimal strings. */
+export const DashboardUncoveredSchema = z.object({
+  total: MoneyStringSchema,
+  expense: MoneyStringSchema,
+  transfer: MoneyStringSchema,
+  adjustment: MoneyStringSchema,
+});
+
+/** UI-07: summary indicators of the month. Adjustments are a separate indicator (UI-09). */
+export const DashboardSummarySchema = z.object({
+  income: MoneyStringSchema,
+  allocated: MoneyStringSchema,
+  /** FIN-11 / FIN-12: income minus allocated, independent of operations; negative when allocations exceed income. */
+  free: SignedMoneyStringSchema,
+  /** "Пополнено": sum of allocations; transfers are excluded (HIST-12). */
+  replenished: MoneyStringSchema,
+  /** "Списано": full requested expenses, covered and uncovered part (OP-01); transfers are excluded (HIST-12). */
+  spent: MoneyStringSchema,
+  /** UI-09: net applied adjustments (signed). */
+  adjustmentsApplied: SignedMoneyStringSchema,
+  uncovered: DashboardUncoveredSchema,
+});
+
+/** UI-08: per-envelope figures of the month, read from `EnvelopeMonthSnapshot` (DATA-06). */
+export const DashboardEnvelopeSchema = z.object({
+  envelopeId: z.string().uuid(),
+  name: z.string(),
+  status: EnvelopeStatusSchema,
+  displayOrder: z.number().int().nonnegative(),
+  opening: MoneyStringSchema,
+  initial: MoneyStringSchema,
+  /** Balance at the end of the month (the current balance while the month is open). */
+  closing: MoneyStringSchema,
+  /** Allocation inflow of the month (not transfers, HIST-12). */
+  replenished: MoneyStringSchema,
+  /** Full expenses of the month, including the uncovered part (OP-01). */
+  spent: MoneyStringSchema,
+  expensesCovered: MoneyStringSchema,
+  adjustmentApplied: SignedMoneyStringSchema,
+  transfersIn: MoneyStringSchema,
+  transfersOut: MoneyStringSchema,
+  uncovered: DashboardUncoveredSchema,
+});
+
+/** API-12: month dashboard — summary, envelopes, warnings. */
+export const DashboardMonthlyResponseSchema = z.object({
+  month: MonthSummarySchema.pick({ id: true, period: true, status: true, version: true }),
+  summary: DashboardSummarySchema,
+  envelopes: z.array(DashboardEnvelopeSchema),
+  warnings: z.array(ApiWarningSchema),
+});
+
+// ---------------------------------------------------------------------------
+// Reporting: yearly analytics (API-13, REP-01..REP-11)
+// ---------------------------------------------------------------------------
+
+/** API-13: calendar year, four digits. */
+export const YearlyAnalyticsQuerySchema = z.object({
+  year: z.string().regex(/^\d{4}$/, 'Year must be YYYY format'),
+});
+
+/**
+ * REP-10: history deep link for a report value. Same keys as `OperationListQuerySchema`
+ * (`GET /operations?period&envelopeId&type`), so the client opens the history rows behind the number.
+ */
+export const AnalyticsDrillDownSchema = OperationListQuerySchema.required({ period: true });
+
+/** REP-02 / REP-03: income, allocation and free funds of one month; every value is null when the month does not exist. */
+export const YearlyIncomeMonthSchema = z.object({
+  period: PeriodSchema,
+  status: MonthStatusSchema.nullable(),
+  income: MoneyStringSchema.nullable(),
+  allocated: MoneyStringSchema.nullable(),
+  /** FIN-11: income minus allocated; negative when allocations exceed income. REP-04: never added to envelope balances. */
+  free: SignedMoneyStringSchema.nullable(),
+});
+
+/** REP-03: yearly totals over the months that exist. */
+export const YearlyIncomeTotalsSchema = z.object({
+  income: MoneyStringSchema,
+  allocated: MoneyStringSchema,
+  free: SignedMoneyStringSchema,
+});
+
+/** REP-05: closing balance of one envelope in one month; null when the envelope does not exist in that month. */
+export const YearlyEnvelopeBalanceSchema = z.object({
+  period: PeriodSchema,
+  closing: MoneyStringSchema.nullable(),
+});
+
+/** REP-05 / REP-06: one row of the "envelope x month" table; archived envelopes stay in the report (ENV-12). */
+export const YearlyEnvelopeRowSchema = z.object({
+  envelopeId: z.string().uuid(),
+  name: z.string(),
+  status: EnvelopeStatusSchema,
+  displayOrder: z.number().int().nonnegative(),
+  createdPeriod: PeriodSchema,
+  archivedPeriod: PeriodSchema.nullable(),
+  /** Always 12 entries, January to December. */
+  months: z.array(YearlyEnvelopeBalanceSchema),
+});
+
+/** REP-08 / REP-09: uncovered amounts by type, with the history link (REP-10). Never carried over (REP-11). */
+export const YearlyUncoveredValueSchema = z.object({
+  total: MoneyStringSchema,
+  expense: MoneyStringSchema,
+  transfer: MoneyStringSchema,
+  adjustment: MoneyStringSchema,
+});
+
+/** REP-10: uncovered amount of one envelope in one month, with one drill-down key per non-zero type. */
+export const YearlyUncoveredEnvelopeSchema = YearlyUncoveredValueSchema.extend({
+  envelopeId: z.string().uuid(),
+  name: z.string(),
+  drillDown: AnalyticsDrillDownSchema,
+});
+
+export const YearlyUncoveredMonthSchema = YearlyUncoveredValueSchema.extend({
+  period: PeriodSchema,
+  /** False when the month does not exist (all amounts are zero). */
+  exists: z.boolean(),
+  /** REP-10: month-level link (period only); per type see `drillDown`. */
+  drillDown: AnalyticsDrillDownSchema,
+  /** REP-10: links for the type columns: expense, transfer (OP-09) and negative adjustment (OP-14). */
+  drillDownByType: z.object({
+    expense: AnalyticsDrillDownSchema,
+    transfer: AnalyticsDrillDownSchema,
+    adjustment: AnalyticsDrillDownSchema,
+  }),
+  envelopes: z.array(YearlyUncoveredEnvelopeSchema),
+});
+
+/** API-13: the three mandatory reports for a calendar year (REP-01). */
+export const YearlyAnalyticsResponseSchema = z.object({
+  year: z.string(),
+  incomeReport: z.object({
+    months: z.array(YearlyIncomeMonthSchema),
+    totals: YearlyIncomeTotalsSchema,
+  }),
+  envelopeBalances: z.object({
+    periods: z.array(PeriodSchema),
+    envelopes: z.array(YearlyEnvelopeRowSchema),
+  }),
+  uncoveredOperations: z.object({
+    months: z.array(YearlyUncoveredMonthSchema),
+    totals: YearlyUncoveredValueSchema,
+  }),
+});
+
+// ---------------------------------------------------------------------------
 // Cross-field validation helpers
 // ---------------------------------------------------------------------------
 
 /**
  * Validate that the sum of allocations does not exceed income.
- * SPECIFICATION.md line 68: Σ allocation ≤ income
+ * FIN-02: Σ allocation ≤ income
  */
 export function validateAllocations(
   incomeMinor: number,
@@ -299,7 +472,7 @@ export function validateAllocations(
 
 /**
  * Convert decimal ruble string to integer kopecks.
- * SPECIFICATION.md line 82: sums stored as integer kopecks.
+ * FIN-08: sums stored as integer kopecks.
  */
 export function parseMoneyMinor(value: string): number {
   const parts = value.split('.');
@@ -316,4 +489,9 @@ export function formatMoneyMinor(minor: number): string {
   const rubles = Math.floor(minor / 100);
   const kopecks = minor % 100;
   return `${rubles}.${String(kopecks).padStart(2, '0')}`;
+}
+
+/** Like `formatMoneyMinor` but accepts negative amounts: -150 -> "-1.50". */
+export function formatSignedMoneyMinor(minor: number): string {
+  return minor < 0 ? `-${formatMoneyMinor(-minor)}` : formatMoneyMinor(minor);
 }

@@ -23,6 +23,7 @@ pr: null
 
 - Spec: API-21, MON-16, UI-16. `CreateOperationRequestSchema` in `packages/types/src/schemas.ts` (add `period: PeriodSchema.optional()`); `OperationsService.create` in `apps/api/src/modules/operations/operations.service.ts` (`findCurrentMonth` is the default when `period` is absent: open > reopened > draft).
 - With `period`: load that month (404 `MONTH_NOT_FOUND`), lock it, check `version` of that month, status closed -> 409 `MONTH_LOCKED`, then business rules. Cascade recalculation covers the target and later months.
+- Mobile: once this lands, the month screens (T-009 dashboard, T-010 allocation editor and any other caller creating operations) must send the displayed month's `period` with that month's `version` (UI-16); T-011 depends on this task already, T-009/T-010 code written earlier must be adapted by the task that wires the operation forms.
 - Depends on T-005 so that the two tasks do not edit `operations.service.ts` in parallel.
 
 ## Definition of Done

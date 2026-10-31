@@ -18,6 +18,8 @@
  * spec/acceptance ids are defined in docs/spec (via scripts/spec-check.mjs `loadSpecIds`),
  * status done => pr set, no unchecked `- [ ]` in "Definition of Done", non-empty "Result" (HTML comments ignored),
  * status in_progress|review => branch set. `review` is a valid but optional status (the ship flow goes straight to done).
+ * Id collisions with origin/master: a task id of this branch that origin/master already uses for a DIFFERENT file name (other
+ * slug) is an error (cheap `git ls-tree`; skipped silently without git or an `origin/master` ref).
  * `check --gh` additionally warns when a task is done but its PR is not merged (needs `gh`; skipped silently otherwise).
  */
 import fs from 'node:fs';
@@ -97,6 +99,16 @@ const taskNum = (id) => parseInt(id.slice(2), 10);
 
 // ---------- check ----------
 
+/** Task file names (tasks/T-*.md basenames) on origin/master; [] when git or the ref is unavailable. */
+function originMasterTaskFiles() {
+  try {
+    const out = execFileSync('git', ['ls-tree', '--name-only', 'origin/master', 'tasks/'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return out.split('\n').map((f) => path.basename(f)).filter((f) => /^T-\d+-.*\.md$/.test(f));
+  } catch {
+    return [];
+  }
+}
+
 function check({ gh }) {
   const errors = [];
   const warnings = [];
@@ -166,6 +178,13 @@ function check({ gh }) {
       if (!byId.has(dep)) err(t.rel, `depends on unknown task ${dep}`);
       else if (dep === t.data.id) err(t.rel, 'depends on itself');
     }
+  }
+
+  // id collision with a different task file on origin/master (two branches allocated the same id)
+  const masterFiles = originMasterTaskFiles();
+  for (const t of tasks) {
+    const clash = masterFiles.find((f) => f !== t.name && f.startsWith(`${t.data?.id}-`));
+    if (clash) err(t.rel, `task id ${t.data.id} is already used on origin/master by ${clash}; if the file was only renamed on master, run "git merge origin/master" first, otherwise renumber this task (new id, file name, branch)`);
   }
 
   // cycles (DFS)

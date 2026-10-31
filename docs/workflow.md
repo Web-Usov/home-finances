@@ -52,8 +52,8 @@ Follow-up work discovered during implementation or review is filed as its own ta
 pnpm task:start --new "Short imperative title" --epic E-00 --area infra --size S
 ```
 
-It creates `tasks/T-NNN-slug.md` from `tasks/_template.md` (next free id: highest id on `origin/master` or in any local/remote
-task branch, plus one; the epic must exist on `origin/master`), then claims it exactly like a normal task, in a worktree of
+It creates `tasks/T-NNN-slug.md` from `tasks/_template.md` (next free id: highest id among task files on `origin/master`, task files in any
+local/remote ref (unmerged PRs) and task branch names, plus one; the epic must exist on `origin/master`), then claims it exactly like a normal task, in a worktree of
 its own, with the task file as the first commit (`chore(tasks): add and start T-NNN [T-NNN]`). Fill in Goal / Context / DoD there.
 Alternatives: add the task as `status: todo` in the current PR (the task file is part of the diff), or, if it needs a planner
 decision, propose it in `## Result` as before. Do not start a second task inside the current session unless it blocks the
@@ -67,7 +67,7 @@ pnpm task:clean T-xxx --remote   # also deletes origin/task/T-xxx-slug (skip if 
 ```
 
 `task:clean` also refuses to delete the local branch when it would lose work: the branch HEAD must equal the PR's
-`headRefOid` or be fully contained in `origin/master`; otherwise it lists the commits that were never pushed.
+`headRefOid`, or be an ancestor of that head (the reviewer's server-side update-branch adds a merge commit the local branch lacks) or fully contained in `origin/master`; otherwise it lists the commits that were never pushed.
 
 Manual equivalent (if the scripts are unavailable): `git worktree add ../finance-wt/t-xxx-slug -b task/T-xxx-slug origin/master`,
 copy the env files, `pnpm install --frozen-lockfile`, `node scripts/tasks.mjs set T-xxx in_progress --branch task/T-xxx-slug`,
@@ -128,7 +128,8 @@ git commit -am "docs(tasks): mark T-xxx done [T-xxx]" && git push
    checks yet, sleep 15s and retry until they appear.
 
 `/ship` stops here and never merges or enables auto-merge. Next step: `/review <pr>` (section 6); the reviewer enables
-auto-merge after `VERDICT: LGTM`. After the merge run `pnpm task:clean T-xxx`.
+auto-merge after `VERDICT: LGTM`. After the merge run `pnpm task:clean T-xxx` (it finds the branch through the task file's `branch:` field, so renumbered
+tasks work too).
 
 PR title format equals the commit format (header max 100 chars), because the squash commit takes the PR title.
 
@@ -142,6 +143,8 @@ Branch protection forbids a post-merge commit on `master`, so `done` cannot be s
   (`node scripts/tasks.mjs set`), regenerates the board, and only then the PR goes to review. Auto-merge is enabled by the reviewer after LGTM.
 - `pnpm tasks:check` enforces the done contract: a `done` task has `pr`, no unchecked `- [ ]` in "Definition of Done" and a
   non-empty "Result" section (HTML comments are ignored).
+- `pnpm tasks:check` also fails when a task id of the branch is used on `origin/master` by a different file (id collision
+  between two branches); it needs the `origin/master` ref and is skipped without it (CI fetches it).
 - Squash-merge therefore lands the code and the `done` status atomically. `pnpm tasks:check --gh` (run by the
   orchestrator on `master` periodically) warns if a task is `done` but its PR is not merged — that flags PRs closed
   without merge; the fix is a new task-status PR.
@@ -166,6 +169,13 @@ does not allow approving your own PR. So:
   run `/review <pr>`. On `VERDICT: LGTM`, if the diff touches none of `docs/spec/**`, `docs/decisions/**`, `epics/**`,
   the reviewer runs `gh pr merge <n> --squash --auto` (GitHub merges as soon as `verify`, `contract`, `e2e` are green) and
   then reports "merged" or "auto-merge enabled" based on `gh pr view <n> --json state,autoMergeRequest`.
+  Branch protection is strict (the branch must be up to date with master): if `gh pr view <n> --json mergeStateStatus` is
+  `BEHIND`, the reviewer first runs `gh api -X PUT repos/Web-Usov/home-finances/pulls/<n>/update-branch` (merge only, the API default; `update_method` is denied; gh v2.45 has no `pr update-branch`; this is the reviewer's one
+  permitted branch modification). GitHub merges master in and re-runs CI on the new head. If GitHub reports a conflict, the
+  reviewer sends the PR back to the author, who merges `origin/master` locally, runs `pnpm tasks:board`, `pnpm verify` and
+  pushes. Otherwise the reviewer enables auto-merge without comparing files: `verify` (`tasks:check`, board `--check`) and
+  `contract` (`api:contract`) detect stale generated files on the updated head; if they fail, auto-merge does not happen and
+  the PR goes back to the author.
   On `CHANGES REQUESTED` the reviewer only posts the comment (as a safety step it may run `gh pr merge <n> --disable-auto`);
   the implementer fixes the findings with new commits, runs `pnpm verify`, pushes, and `/review` runs again.
 - **Branch protection reality:** required approving reviews = 0, because agents and the owner share the GitHub account

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { installGuards, makeTmp, gitEnv, repoRoot } from './helpers.mjs';
 
 installGuards();
@@ -91,4 +91,26 @@ test('two independent status changes in parallel PRs merge (git merge-file) to e
   });
   assert.equal(r.status, 0, `textual conflict in the board:\n${r.stdout}`);
   assert.equal(r.stdout, want);
+});
+
+test('check fails when a task id is used on origin/master by a different task file (id collision)', () => {
+  const dir = project();
+  const sh = (...args) => execFileSync('git', args, { cwd: dir, env: gitEnv(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  sh('init', '-q', '-b', 'master');
+  sh('add', '-A');
+  sh('commit', '-q', '-m', 'init');
+  sh('update-ref', 'refs/remotes/origin/master', 'HEAD');
+  assert.equal(tasksCli(dir, 'check').status, 0, 'same files on both sides: no collision');
+  const [id] = adjacentTasks(dir, 1);
+  const file = fs.readdirSync(path.join(dir, 'tasks')).find((f) => f.startsWith(`${id}-`));
+  fs.renameSync(path.join(dir, 'tasks', file), path.join(dir, 'tasks', `${id}-other-slug.md`));
+  const r = tasksCli(dir, 'check');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, new RegExp(`${id}-other-slug\\.md: task id ${id} is already used on origin/master by ${file}`));
+  assert.match(r.stderr, /git merge origin\/master/);
+});
+
+test('check skips the collision rule without an origin/master ref', () => {
+  const dir = project();
+  assert.equal(tasksCli(dir, 'check').status, 0);
 });

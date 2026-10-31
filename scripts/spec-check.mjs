@@ -4,7 +4,8 @@
  *
  * Usage:
  *   node scripts/spec-check.mjs                    # run checks, print coverage report
- *   node scripts/spec-check.mjs --strict-coverage  # additionally fail if any AC-* is not referenced from a test file
+ *   node scripts/spec-check.mjs --strict-coverage  # additionally fail if any AC-* is not referenced from a test file,
+ *                                                  # except the ACs deferred in scripts/spec-coverage-deferred.json
  *   node scripts/spec-check.mjs --verbose          # list every uncovered rule even when there are many
  *
  * What it does:
@@ -13,8 +14,15 @@
  *      apps/**\/src/**, apps/**\/test/**, e2e/** and fails if a referenced ID is not defined.
  *      Ignored: node_modules, dist, generated apps/mobile/src/api, docs/archive.
  *      Deprecated rules (`~~[XX-nn]~~`) still count as defined.
- *   3. Prints a coverage report: which rule IDs are referenced from test files
+ *   3. Fails if source code (apps/*\/src, apps/*\/test, packages/*\/src, e2e, scripts; not generated code, not
+ *      docs/archive) cites the spec by line number ("SPECIFICATION.md ... line 12", "spec line 12"): cite rule IDs.
+ *   4. Prints a coverage report: which rule IDs are referenced from test files
  *      (*.spec.ts, *.int-spec.ts, *.e2e.ts, *.test.tsx) and which are not (warning only).
+ *
+ * Deferred ACs (scripts/spec-coverage-deferred.json: `{ "AC-21": { "task": "T-xxx", "reason": "..." } }`): ACs whose test
+ * can only exist once a later (UI) task lands. Under --strict-coverage a deferred AC may stay uncovered, but an entry
+ * fails the check as soon as its AC is covered (remove it: the allowlist only shrinks), is not an AC-* of the spec, or
+ * lacks `task`/`reason`.
  *
  * Exit code: 0 on success; 1 on duplicates, dangling references, or (with --strict-coverage) uncovered AC-*.
  * Plain Node ESM, no dependencies.
@@ -72,6 +80,46 @@ export function loadSpecIds() {
   return { defs, specFiles, prefixes, ids: new Set(defs.keys()) };
 }
 
+const LINE_REF_PATTERNS = [/SPECIFICATION\.md.*\blines?\s*\d/i, /\bspec(?:ification)?\s+lines?\b/i];
+
+/** Find citations of the spec by line number in `text`. Returns [{ line, text }]. Exported for tests. */
+export function findLineReferences(text) {
+  const found = [];
+  text.split('\n').forEach((line, i) => {
+    if (LINE_REF_PATTERNS.some((re) => re.test(line))) found.push({ line: i + 1, text: line.trim() });
+  });
+  return found;
+}
+
+/** True for files whose spec-by-line references are checked (hand-written source code only). */
+export function isLineRefScanned(r) {
+  if (SKIP_PATHS.some((s) => r.startsWith(s)) || r.startsWith('scripts/__tests__/') || r === 'scripts/spec-check.mjs') return false;
+  return /^(apps\/[^/]+\/(src|test)|packages\/[^/]+\/src|e2e|scripts)\//.test(r);
+}
+
+/**
+ * Strict-coverage verdict. `uncoveredAc`: AC ids without a test reference; `deferred`: parsed allowlist;
+ * `acIds`: all AC ids of the spec. Returns error strings (empty = ok). Exported for tests.
+ */
+export function strictCoverageErrors(uncoveredAc, deferred, acIds) {
+  const errors = [];
+  for (const [id, entry] of Object.entries(deferred)) {
+    if (!acIds.includes(id)) errors.push(`spec-coverage-deferred.json: ${id} is not an AC-* defined in the spec`);
+    else if (!entry || typeof entry.task !== 'string' || typeof entry.reason !== 'string' || !entry.task || !entry.reason)
+      errors.push(`spec-coverage-deferred.json: ${id} needs non-empty "task" and "reason"`);
+    else if (!uncoveredAc.includes(id))
+      errors.push(`spec-coverage-deferred.json: ${id} is covered by a test now (${entry.task}); remove it from the allowlist`);
+  }
+  const missing = uncoveredAc.filter((id) => !(id in deferred));
+  if (missing.length) errors.push(`--strict-coverage: ${missing.length} AC-* not referenced from tests: ${missing.join(', ')}`);
+  return errors;
+}
+
+function loadDeferred() {
+  const file = path.join(root, 'scripts/spec-coverage-deferred.json');
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
+}
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) main();
 
@@ -107,7 +155,17 @@ for (const file of files) {
   });
 }
 
-// 3. coverage report
+// 3. source code must cite rule IDs, never spec line numbers
+const lineRefFiles = ['apps', 'packages', 'e2e', 'scripts'].flatMap((d) => walk(path.join(root, d)));
+for (const file of lineRefFiles) {
+  const r = rel(file);
+  if (!isLineRefScanned(r)) continue;
+  for (const { line, text } of findLineReferences(fs.readFileSync(file, 'utf8'))) {
+    errors.push(`${r}:${line}: cites the spec by line number (cite a rule ID instead): ${text}`);
+  }
+}
+
+// 4. coverage report
 const ids = [...defs.keys()].sort();
 const byPrefix = new Map();
 for (const id of ids) {
@@ -134,8 +192,11 @@ if (uncovered.length) {
   else console.log('  ' + uncovered.join(' '));
 }
 
-if (strictCoverage && uncoveredAc.length) {
-  errors.push(`--strict-coverage: ${uncoveredAc.length} AC-* not referenced from tests: ${uncoveredAc.join(', ')}`);
+if (strictCoverage) {
+  const deferred = loadDeferred();
+  const deferredIds = Object.keys(deferred);
+  if (deferredIds.length) console.log(`deferred AC (scripts/spec-coverage-deferred.json): ${deferredIds.join(', ')}`);
+  errors.push(...strictCoverageErrors(uncoveredAc, deferred, ids.filter((id) => id.startsWith('AC-'))));
 }
 
 if (errors.length) {

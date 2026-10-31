@@ -74,7 +74,14 @@ function createMockPrisma() {
     allocation: { aggregate: jest.fn() },
     envelope: { findUnique: jest.fn() },
     envelopeMonthSnapshot: { findUnique: jest.fn() },
-    operation: { findMany: jest.fn(), aggregate: jest.fn(), create: jest.fn() },
+    operation: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      aggregate: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
     operationResult: { findUnique: jest.fn() },
     $transaction: jest.fn(),
     $queryRaw: jest.fn(),
@@ -441,6 +448,209 @@ describe('OperationsService', () => {
       await service.create(EXPENSE);
 
       expect(order).toEqual(['lock', 'sequence']);
+    });
+  });
+
+  describe('update', () => {
+    const EDIT = { amount: '50.00', version: 1 };
+
+    /** Month 1 (version 1) holding op-1; the update returns the stored row merged with `data`. */
+    function stubExisting(operation: Operation = makeOperation()): void {
+      tx.operation.findUnique.mockResolvedValue(operation);
+      tx.operation.findUnique.mockImplementation((args: { select?: unknown }) =>
+        Promise.resolve(
+          args.select !== undefined ? { monthId: operation.monthId, month: { period: '2026-08' } } : operation,
+        ),
+      );
+      tx.operation.update.mockImplementation(({ data }: { data: Partial<Operation> }) =>
+        Promise.resolve({ ...operation, ...data }),
+      );
+    }
+
+    beforeEach(() => stubExisting());
+
+    it('HIST-08 / OP-17: edits in place (no sequence_no write), recalculates in the SAME tx and bumps the version', async () => {
+      const response = await service.update('op-1', EDIT);
+
+      expect(tx.operation.update).toHaveBeenCalledWith({
+        where: { id: 'op-1' },
+        data: { requestedMinor: 5_000, sourceEnvelopeId: 'env-src', destinationEnvelopeId: null },
+      });
+      expect(tx.operation.update.mock.calls[0][0].data).not.toHaveProperty('sequenceNo');
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', tx);
+      expect(db.operation.update).not.toHaveBeenCalled();
+      expect(db.operation.findUnique).not.toHaveBeenCalled();
+      expect(response.data.summary.version).toBe(2); // ADR 0005: 1 → 2
+      expect(response.data.operation.requestedMinor).toBe(5_000);
+    });
+
+    it('DATA-12: the version is checked inside the transaction under FOR UPDATE; stale → VERSION_CONFLICT, nothing written', async () => {
+      tx.$queryRaw.mockResolvedValue([{ status: 'open', version: 2 }]);
+
+      await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
+        statusCode: 409,
+        code: 'VERSION_CONFLICT',
+      });
+      expect(tx.$queryRaw).toHaveBeenCalled();
+      expect(db.$queryRaw).not.toHaveBeenCalled();
+      expect(tx.operation.update).not.toHaveBeenCalled();
+      expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+    });
+
+    it('HIST-10 / AC-14: a closed month returns MONTH_LOCKED without writing', async () => {
+      tx.$queryRaw.mockResolvedValue([{ status: 'closed', version: 1 }]);
+
+      await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
+        statusCode: 409,
+        code: 'MONTH_LOCKED',
+      });
+      expect(tx.operation.update).not.toHaveBeenCalled();
+    });
+
+    it.each(['open', 'reopened', 'draft'])('HIST-07: allowed in a %s month', async (status) => {
+      tx.$queryRaw.mockResolvedValue([{ status, version: 1 }]);
+
+      await expect(service.update('op-1', EDIT)).resolves.toBeDefined();
+    });
+
+    it('unknown operation → 404 OPERATION_NOT_FOUND', async () => {
+      tx.operation.findUnique.mockResolvedValue(null);
+
+      await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
+        statusCode: 404,
+        code: 'OPERATION_NOT_FOUND',
+      });
+    });
+
+    it('OP-10: the initial balance cannot be edited through the operations API', async () => {
+      stubExisting(makeOperation({ type: 'initial_balance', isInitial: true }));
+
+      await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
+        statusCode: 422,
+        code: 'VALIDATION_ERROR',
+      });
+      expect(tx.operation.update).not.toHaveBeenCalled();
+    });
+
+    it('DATA-11: a changed source envelope archived at or before the month is rejected; unknown → 404', async () => {
+      tx.envelope.findUnique.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
+        Promise.resolve(
+          id === 'env-old' ? makeEnvelope({ id, status: 'archived', archivedPeriod: '2026-08' }) : null,
+        ),
+      );
+
+      await expect(service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-old' })).rejects.toMatchObject({
+        code: 'INVALID_STATUS_TRANSITION',
+      });
+      await expect(service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-x' })).rejects.toMatchObject({
+        statusCode: 404,
+        code: 'ENVELOPE_NOT_FOUND',
+      });
+      expect(tx.operation.update).not.toHaveBeenCalled();
+    });
+
+    it('DATA-11: an unchanged archived envelope does not block a comment/amount edit', async () => {
+      tx.envelope.findUnique.mockResolvedValue(makeEnvelope({ status: 'archived', archivedPeriod: '2026-08' }));
+
+      await expect(service.update('op-1', EDIT)).resolves.toBeDefined();
+      expect(tx.envelope.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('DATA-09: destination is rejected for an expense, and must differ from the source for a transfer', async () => {
+      await expect(
+        service.update('op-1', { ...EDIT, destinationEnvelopeId: 'env-dst' }),
+      ).rejects.toMatchObject({ statusCode: 422, code: 'VALIDATION_ERROR' });
+
+      stubExisting(makeOperation({ type: 'transfer', destinationEnvelopeId: 'env-dst' }));
+      await expect(
+        service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-dst' }),
+      ).rejects.toMatchObject({ statusCode: 422, code: 'VALIDATION_ERROR' });
+    });
+
+    it('HIST-09 / OP-07: an edited transfer left uncovered throws TRANSFER_EXCEEDS_BALANCE (rolls the tx back)', async () => {
+      stubExisting(
+        makeOperation({ type: 'transfer', destinationEnvelopeId: 'env-dst', requestedMinor: 2_000 }),
+      );
+      tx.operationResult.findUnique.mockResolvedValue(
+        makeResult({ coveredMinor: 10_000, uncoveredMinor: 40_000, sourceBalanceBefore: 10_000 }),
+      );
+
+      await expect(service.update('op-1', { amount: '500.00', version: 1 })).rejects.toMatchObject({
+        statusCode: 409,
+        code: 'TRANSFER_EXCEEDS_BALANCE',
+        message: 'Доступно 100.00 ₽. Перевести только 100.00 ₽?',
+      });
+    });
+
+    it('OP-08: a comment-only edit of an already uncovered transfer is not rejected', async () => {
+      stubExisting(
+        makeOperation({ type: 'transfer', destinationEnvelopeId: 'env-dst', requestedMinor: 50_000 }),
+      );
+      tx.operationResult.findUnique.mockResolvedValue(
+        makeResult({ coveredMinor: 10_000, uncoveredMinor: 40_000 }),
+      );
+
+      await expect(service.update('op-1', { comment: 'note', version: 1 })).resolves.toBeDefined();
+      expect(tx.operation.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ comment: 'note', requestedMinor: 50_000 }) }),
+      );
+    });
+
+    it('OP-06: an edited expense above the balance is saved with an EXPENSE_EXCEEDS_BALANCE warning', async () => {
+      tx.operationResult.findUnique.mockResolvedValue(
+        makeResult({ coveredMinor: 10_000, uncoveredMinor: 5_000, sourceBalanceBefore: 10_000 }),
+      );
+
+      const response = await service.update('op-1', { amount: '150.00', version: 1 });
+
+      expect(response.warnings.map((w) => w.code)).toEqual(['EXPENSE_EXCEEDS_BALANCE']);
+    });
+  });
+
+  describe('remove', () => {
+    beforeEach(() => {
+      tx.operation.findUnique.mockImplementation((args: { select?: unknown }) =>
+        Promise.resolve(
+          args.select !== undefined ? { monthId: 'month-1', month: { period: '2026-08' } } : makeOperation(),
+        ),
+      );
+      tx.operation.delete.mockResolvedValue(makeOperation());
+    });
+
+    it('OP-18 / HIST-08: deletes and recalculates in the SAME tx, bumps the version, renumbers nothing', async () => {
+      const response = await service.remove('op-1', 1);
+
+      expect(tx.operation.delete).toHaveBeenCalledWith({ where: { id: 'op-1' } });
+      expect(db.operation.delete).not.toHaveBeenCalled();
+      expect(tx.operation.update).not.toHaveBeenCalled();
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', tx);
+      expect(response.data.summary.version).toBe(2);
+      expect(response.warnings).toEqual([]);
+    });
+
+    it('DATA-12: stale version → VERSION_CONFLICT; HIST-10: closed month → MONTH_LOCKED; nothing deleted', async () => {
+      tx.$queryRaw.mockResolvedValue([{ status: 'open', version: 5 }]);
+      await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+
+      tx.$queryRaw.mockResolvedValue([{ status: 'closed', version: 1 }]);
+      await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'MONTH_LOCKED' });
+
+      expect(tx.operation.delete).not.toHaveBeenCalled();
+    });
+
+    it('unknown operation → 404; initial balance → 422', async () => {
+      tx.operation.findUnique.mockResolvedValue(null);
+      await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'OPERATION_NOT_FOUND' });
+
+      tx.operation.findUnique.mockImplementation((args: { select?: unknown }) =>
+        Promise.resolve(
+          args.select !== undefined
+            ? { monthId: 'month-1', month: { period: '2026-08' } }
+            : makeOperation({ isInitial: true, type: 'initial_balance' }),
+        ),
+      );
+      await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      expect(tx.operation.delete).not.toHaveBeenCalled();
     });
   });
 

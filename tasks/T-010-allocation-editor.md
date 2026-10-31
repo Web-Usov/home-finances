@@ -25,7 +25,7 @@ The month screen has an editor for income and one amount row per active envelope
 - Shared schema `SaveAllocationsRequestSchema` in `packages/types`; forms use React Hook Form + Zod resolver (see `FormInput.tsx`).
 - New month: values are prefilled by the API copy from the previous month (UI-12); the editor must show them as editable.
 - Money math uses integer kopecks via `parseMoneyMinor`; no floats. Message MSG-01 verbatim with exact X.
-- Response shape follows Q-04 (T-027); overflow message amounts are ru-RU formatted by the server (MSG-07, T-026).
+- Response shape follows API-22 (T-027, Q-04 resolved); overflow message amounts are ru-RU formatted by the server (MSG-07, T-026).
 - Handle `VERSION_CONFLICT` (reload prompt) and `MONTH_LOCKED`.
 
 ## Definition of Done

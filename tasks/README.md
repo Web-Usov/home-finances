@@ -8,7 +8,7 @@
 
 - [T-001](T-001-zod-pipe-422.md) ZodValidationPipe returns 422 and drop legacy global ValidationPipe — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/3)
 
-- [T-002](T-002-spec-rule-ids-in-code.md) Replace "SPECIFICATION.md line NNN" comments with rule IDs — **todo** · docs · S · depends: — · —
+- [T-002](T-002-spec-rule-ids-in-code.md) Replace "SPECIFICATION.md line NNN" comments with rule IDs — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/21)
 
 - [T-017](T-017-envelope-initial-balance-recalc.md) Envelope created with an initial balance must show that balance (recalculate month) — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/4)
 
@@ -32,6 +32,10 @@
 
 - [T-030](T-030-openapi-allocations-uuid-keys.md) Keep propertyNames uuid for the allocations map in openapi.json — **todo** · api · S · depends: — · —
 
+- [T-033](T-033-task-id-allocation.md) Task id allocation sees task files of all remote branches — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/18)
+
+- [T-035](T-035-reviewer-update-branch-flow-fixes.md) Reviewer update-branch flow fixes — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/20)
+
 ## E-01. Ядро API: месяцы и операции — planned
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
@@ -40,7 +44,7 @@
 
 - [T-004](T-004-operations-list-create.md) Operations: history list and create (expense, transfer, adjustment) — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/10)
 
-- [T-005](T-005-operations-update-delete.md) Operations: update and delete with stable sequence and recalculation — **todo** · api · M · depends: T-004 · —
+- [T-005](T-005-operations-update-delete.md) Operations: update and delete with stable sequence and recalculation — **done** · api · M · depends: T-004 · [PR](https://github.com/Web-Usov/home-finances/pull/13)
 
 - [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
 
@@ -52,21 +56,27 @@
 
 - [T-031](T-031-int-uncovered-does-not-block-close.md) Int test: uncovered operations do not block closing a month — **todo** · api · S · depends: T-004, T-006 · —
 
+- [T-032](T-032-months-recalculate-on-month-creation.md) Months: recalculate on month creation and draft promotion — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/16)
+
+- [T-034](T-034-e01-rule-coverage.md) E-01: tests citing every epic rule — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/19)
+
 ## E-02. Отчётность API — planned
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)
 
-- [T-007](T-007-dashboard-monthly-api.md) Reporting: monthly dashboard endpoint — **todo** · api · M · depends: T-004, T-006 · —
+- [T-007](T-007-dashboard-monthly-api.md) Reporting: monthly dashboard endpoint — **done** · api · M · depends: T-004, T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/14)
 
-- [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **todo** · api · M · depends: T-004 · —
+- [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **done** · api · M · depends: T-004 · [PR](https://github.com/Web-Usov/home-finances/pull/17)
 
 ## E-03. Экран «Месяц» и редактор распределения — planned
 
 Эпик: [E-03-month-screen.md](../epics/E-03-month-screen.md)
 
-- [T-009](T-009-month-dashboard-screen.md) Mobile: month dashboard screen, period switcher and month actions — **todo** · mobile · M · depends: T-006, T-007, T-024 · —
+- [T-009](T-009-month-dashboard-screen.md) Mobile: month dashboard screen, period switcher and month actions — **done** · mobile · M · depends: T-006, T-007 · [PR](https://github.com/Web-Usov/home-finances/pull/23)
 
 - [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **todo** · mobile · M · depends: T-009, T-026, T-027 · —
+
+- [T-036](T-036-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **todo** · mobile · S · depends: T-009, T-024 · —
 
 ## E-04. Операции и история (UI) — planned
 
@@ -86,7 +96,7 @@
 
 Эпик: [E-06-mvp-release.md](../epics/E-06-mvp-release.md)
 
-- [T-014](T-014-ac-test-coverage.md) Acceptance: tests for AC-01..AC-22 and strict spec coverage — **todo** · api · M · depends: T-005, T-006, T-007, T-008 · —
+- [T-014](T-014-ac-test-coverage.md) Acceptance: tests for AC-01..AC-22 and strict spec coverage — **done** · api · M · depends: T-005, T-006, T-007, T-008 · [PR](https://github.com/Web-Usov/home-finances/pull/22)
 
 - [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **todo** · mobile · M · depends: T-010, T-012, T-013 · —
 

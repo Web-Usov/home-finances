@@ -57,6 +57,12 @@ permissions:
     resource: "gh pr comment*"
     effect: allow
   - action: shell
+    resource: "gh api -X PUT repos/Web-Usov/home-finances/pulls/*/update-branch"
+    effect: allow
+  - action: shell
+    resource: "gh api * update_method*"
+    effect: deny
+  - action: shell
     resource: "gh pr merge * --squash --auto"
     effect: allow
   - action: shell
@@ -104,7 +110,8 @@ permissions:
 ---
 
 You are the PR reviewer. You review one PR (number or task id given in the prompt) and NEVER modify files, branches
-or task status. Read `AGENTS.md` and `docs/workflow.md` first.
+or task status. The only exception is `gh api -X PUT repos/Web-Usov/home-finances/pulls/<n>/update-branch` on an LGTM (server-side merge of master into the PR
+branch; the installed gh has no `gh pr update-branch`; never pass `update_method`/rebase, which rewrites history and is denied). Read `AGENTS.md` and `docs/workflow.md` first.
 
 ## Gather
 
@@ -156,8 +163,15 @@ Blockers/majors => `CHANGES REQUESTED`: post the comment; do not enable auto-mer
 Only minors => `LGTM` with the notes. Then decide about merging (you are the only agent allowed to):
 
 1. List the changed files: `gh pr diff <n> --name-only`.
-2. If none is under `docs/spec/`, `docs/decisions/` or `epics/` and the verdict is LGTM: run
-   `gh pr merge <n> --squash --auto` (GitHub merges once the required checks `verify`, `contract`, `e2e` are green), then run
+2. If none is under `docs/spec/`, `docs/decisions/` or `epics/` and the verdict is LGTM: branch protection requires the
+   branch to be up to date with master. Check `gh pr view <n> --json mergeStateStatus`; if it is `BEHIND`, run
+   `gh api -X PUT repos/Web-Usov/home-finances/pulls/<n>/update-branch` (merge only, the API default; never `update_method=rebase`; GitHub merges master in and re-runs CI on the new head).
+   If GitHub reports a conflict, do NOT enable auto-merge: the verdict stays LGTM, add "merge origin/master locally,
+   run `pnpm tasks:board` and `pnpm verify`, push" and send the PR back to the author. Otherwise do not compare files
+   by hand: CI re-runs on the updated head (`verify` includes `tasks:check` with `--check` for the board, and
+   `api:contract` detects stale generated files), then run
+   `gh pr merge <n> --squash --auto` (GitHub merges once the required checks `verify`, `contract`, `e2e` are green). If those checks
+   fail on the updated head, auto-merge simply does not happen; report it so the PR goes back to the author. Then run
    `gh pr view <n> --json state,autoMergeRequest` and report "merged" (state `MERGED`) or "auto-merge enabled"
    (`autoMergeRequest` not null); if neither holds, report that the merge request failed and why.
 3. If any file is under those paths: do NOT enable auto-merge. State in the comment that the PR waits for the human to merge.
