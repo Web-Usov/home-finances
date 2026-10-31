@@ -38,7 +38,7 @@
 
 - [T-036](T-036-lock-month-row-in-every-month-scoped.md) Lock month row in every month-scoped mutation (optimistic lock race) — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
 
-- [T-040](T-040-spec-follow-ups-batch-2.md) Spec follow-ups batch 2 — **in_progress** · docs · S · depends: — · —
+- [T-040](T-040-spec-follow-ups-batch-2.md) Spec follow-ups batch 2 — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/33)
 
 - [T-042](T-042-period-month-range-and-transfer-period-test.md) Types: PeriodSchema rejects months outside 01-12, explicit-period transfer test — **todo** · api · S · depends: T-025 · —
 
