@@ -1,7 +1,7 @@
 ---
 id: T-004
 title: Operations: history list and create (expense, transfer, adjustment)
-status: in_progress
+status: done
 epic: E-01
 depends: [T-003]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-05, AC-06, AC-07, AC-09, AC-10, AC-11]
 area: api
 size: M
 branch: task/T-004-operations-list-create
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/10
 ---
 
 # T-004. Operations: history list and create (expense, transfer, adjustment)
