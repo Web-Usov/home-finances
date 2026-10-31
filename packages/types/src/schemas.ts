@@ -170,7 +170,9 @@ export const CreateOperationRequestSchema = z
     amount: MoneyStringSchema,
     sign: z.enum(['+', '-']).optional(),
     comment: z.string().max(500).optional(),
-    /** Optimistic-lock counter of the working month (ADR 0005). */
+    /** Target month (API-21); absent = the working month (MON-16). */
+    period: PeriodSchema.optional(),
+    /** Optimistic-lock counter of the target month (ADR 0005). */
     version: z.number().int().nonnegative(),
   })
   .superRefine((value, ctx) => {

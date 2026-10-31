@@ -90,15 +90,20 @@ export class OperationsService {
   }
 
   /**
-   * Create an operation in the current working month (open → reopened → draft).
+   * Create an operation in `dto.period` (API-21) or, without it, in the working month (MON-16:
+   * open → reopened → draft).
    * Check order: month exists → version → month status → envelopes → business rules.
    */
   async create(dto: CreateOperationRequest): Promise<MutationResponse<OperationMutationData>> {
     const requestedMinor = parseMoneyMinor(dto.amount);
 
     return this.prisma.$transaction(async (tx) => {
-      // DATA-12 / MON-03: the working month is locked FOR UPDATE; version and status are checked under it.
-      const candidate = await lockWorkingMonth(tx, { expectedVersion: dto.version });
+      // DATA-12 / MON-03: the target month is locked FOR UPDATE; version and status are checked under it.
+      // API-21: an explicit period locks that month and all later ones (ascending); otherwise MON-16.
+      const candidate =
+        dto.period !== undefined
+          ? await lockMonthForMutation(tx, { period: dto.period }, { expectedVersion: dto.version })
+          : await lockWorkingMonth(tx, { expectedVersion: dto.version });
       if (candidate === null) {
         throw new NotFoundException(
           'MONTH_NOT_FOUND',

@@ -134,7 +134,7 @@ export function useOperationsControllerListV1<TData = Awaited<ReturnType<typeof 
 
 
 /**
- * @summary Create an operation in the current working month
+ * @summary Create an operation in the given period (default: the working month)
  */
 export const operationsControllerCreateV1 = (
     operationsControllerCreateV1Body: OperationsControllerCreateV1Body,
@@ -182,7 +182,7 @@ const {mutation: mutationOptions} = options ?
     export type OperationsControllerCreateV1MutationError = void
 
     /**
- * @summary Create an operation in the current working month
+ * @summary Create an operation in the given period (default: the working month)
  */
 export const useOperationsControllerCreateV1 = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext>, }
