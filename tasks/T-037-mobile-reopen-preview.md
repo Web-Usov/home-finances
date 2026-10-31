@@ -1,7 +1,7 @@
 ---
 id: T-037
 title: Mobile: show the recalculation range before reopening (reopen preview)
-status: in_progress
+status: done
 epic: E-03
 depends: [T-009, T-024]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-15]
 area: mobile
 size: S
 branch: task/T-037-mobile-reopen-preview
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/37
 ---
 
 # T-037. Mobile: show the recalculation range before reopening (reopen preview)
