@@ -38,6 +38,8 @@
 
 - [T-036](T-036-lock-month-row-in-every-month-scoped.md) Lock month row in every month-scoped mutation (optimistic lock race) — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
 
+- [T-040](T-040-spec-follow-ups-batch-2.md) Spec follow-ups batch 2 — **in_progress** · docs · S · depends: — · —
+
 ## E-01. Ядро API: месяцы и операции — planned
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
