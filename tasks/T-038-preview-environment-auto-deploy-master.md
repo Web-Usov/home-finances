@@ -42,8 +42,8 @@ A persistent preview of the app on the dev host for the owner, auto-updated afte
 - [x] `scripts/preview/update.sh` swaps a blue/green slot atomically; a failed build keeps the old release (verified on the host)
 - [x] systemd units installed and running on the host; first deploy and demo seed done; endpoints verified with curl
 - [x] `docs/preview.md` linked from `AGENTS.md` and `docs/README.md`
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -56,3 +56,14 @@ A persistent preview of the app on the dev host for the owner, auto-updated afte
 ## Result
 
 <!-- Filled at the end: PR link, notes, deviations. -->
+
+Preview runs on the dev host (see `docs/preview.md`): web `:8100`, API `127.0.0.1:3100`, DB `family_budget_preview`, systemd
+units + 2-minute timer, blue/green slots under `/root/workspace/finance-preview`. Verified on the host: first deploy, demo seed,
+update swap a -> b, failed build (type error) keeps the old release serving.
+
+Deviations / notes:
+- `API_HOST` env added to `apps/api/src/main.ts` (default `0.0.0.0`) so the preview API binds to loopback.
+- Until this PR is merged the host's `preview.env` has `PREVIEW_REF=origin/task/T-038-...` (master has no preview scripts yet);
+  remove that line after the merge so the updater follows `origin/master`.
+- Migrations are forward-only; a rolled-back release runs against the migrated DB.
+
