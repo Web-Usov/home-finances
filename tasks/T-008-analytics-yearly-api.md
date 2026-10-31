@@ -1,7 +1,7 @@
 ---
 id: T-008
 title: Reporting: yearly analytics endpoint (three reports)
-status: todo
+status: in_progress
 epic: E-02
 depends: [T-004]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-13, REP-01, REP-02, REP-03, REP-04, REP-05, REP-06, REP-08, REP-09, R
 acceptance: [AC-20]
 area: api
 size: M
-branch: null
+branch: task/T-008-analytics-yearly-api
 pr: null
 ---
 
