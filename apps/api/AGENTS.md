@@ -15,7 +15,7 @@ Global rules (money, periods, types, language, spec references) are in the root 
 | `modules/calculation-engine/` | stateless cascade recalculation (`recalculateFrom`, `recalculateMonthAtomically`) | done, unit + integration tests |
 | `modules/envelopes/` | list/create/update/archive; create with an initial balance inserts the `initial_balance` operation and recalculates the month in the same transaction | done |
 | `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation; optional `income` saved atomically in the same transaction, FIN-02 against the new income) | done |
-| `modules/months/` | list, create (draft/auto-open, allocation copy), `updateIncome` (PATCH, cascade) | done — list, create, `updateIncome`, `close` (draft promotion), `reopen` (cascade, recalc range) |
+| `modules/months/` | list, create (draft/auto-open, allocation copy), `updateIncome` (PATCH, cascade) | done — list, create, `updateIncome`, `close` (draft promotion), `reopen` (cascade, recalc range), `reopenPreview` (read-only, no locks, shares `planReopen` with `reopen`) |
 | `modules/operations/` | list/create/update/delete | done — list, create, PATCH, DELETE (`version` in the query) |
 | `modules/reporting/` | dashboard + yearly analytics | `GET /dashboard/monthly` done (reads `EnvelopeMonthSnapshot`, T-007); `GET /analytics/yearly` done (three reports from snapshots, T-008) |
 | `prisma/schema.prisma`, `prisma/seed.ts`, `prisma/migrations/` | 7 entities (BudgetMonth, Envelope, Allocation, Operation, OperationResult, EnvelopeMonthSnapshot, AppSettings), idempotent seed | done |

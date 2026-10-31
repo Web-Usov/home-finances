@@ -6,6 +6,7 @@ import {
   MonthSummaryResponseSchema,
   ReopenMonthRequestSchema,
   ReopenMonthResultSchema,
+  ReopenPreviewSchema,
   UpdateIncomeRequestSchema,
   mutationResponseSchema,
 } from '@family-budget/types';
@@ -73,6 +74,27 @@ export class MonthsController {
     @Body(new ZodValidationPipe(CloseMonthRequestSchema)) dto: CloseMonthRequest,
   ) {
     return this.monthsService.close(period, dto);
+  }
+
+  @Get(':period/reopen-preview')
+  @ApiOperation({
+    summary: 'Preview the recalculation range of reopening a closed month (read-only)',
+    description:
+      'MON-12 / API-20. Same checks and same range function as POST reopen, but writes nothing, ' +
+      'takes no version and no locks. Advisory: the state may change before the reopen request.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The month and the inclusive range of months a reopen would recalculate',
+    schema: zodOpenApiSchema(ReopenPreviewSchema),
+  })
+  @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND' })
+  @ApiResponse({
+    status: 409,
+    description: 'INVALID_STATUS_TRANSITION (month is not closed or another month is reopened, MON-13)',
+  })
+  reopenPreview(@Param('period') period: string) {
+    return this.monthsService.reopenPreview(period);
   }
 
   @Post(':period/reopen')

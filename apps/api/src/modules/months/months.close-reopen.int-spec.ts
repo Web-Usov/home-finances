@@ -23,6 +23,8 @@ describe('Months close / reopen (integration)', () => {
 
   const post = (path: string, body: object) =>
     request(t.app.getHttpServer()).post(`/api/v1/months/${path}`).send(body);
+  const preview = (period: string) =>
+    request(t.app.getHttpServer()).get(`/api/v1/months/${period}/reopen-preview`);
   const statusOf = async (period: string) =>
     (await t.prisma.budgetMonth.findUniqueOrThrow({ where: { period } })).status;
 
@@ -144,5 +146,77 @@ describe('Months close / reopen (integration)', () => {
     expect((await post('2026-01/close', { version: 2 }).expect(409)).body.error).toBe('VERSION_CONFLICT');
     expect((await post('2026-01/close', {}).expect(422)).body.error).toBe('VALIDATION_ERROR');
     expect((await post('2030-01/reopen', { version: 1 }).expect(404)).body.error).toBe('MONTH_NOT_FOUND');
+  });
+
+  describe('reopen preview (API-20)', () => {
+    const layouts: Array<[string, Array<[string, 'draft' | 'open' | 'closed' | 'reopened']>]> = [
+      ['target is the only month', [['2026-01', 'closed']]],
+      ['closed, closed, open, draft', [['2026-01', 'closed'], ['2026-02', 'closed'], ['2026-03', 'open'], ['2026-04', 'draft']]],
+      ['target in the middle', [['2026-01', 'closed'], ['2026-02', 'closed'], ['2026-03', 'closed'], ['2026-04', 'open']]],
+      ['year rollover', [['2026-11', 'closed'], ['2026-12', 'closed'], ['2027-01', 'open']]],
+    ];
+
+    it.each(layouts)(
+      'MON-12 / API-20 / AC-15: preview returns the same range as the reopen response (%s)',
+      async (_name, months) => {
+        for (const [period, status] of months) await createMonth(t.prisma, { period, status });
+        for (const [period, status] of months.filter(([, st]) => st === 'closed')) {
+          const previewed = await preview(period).expect(200);
+          expect(previewed.body.month).toMatchObject({ period, status });
+          // reopen the target, compare, then close it again so the next closed month can be tried
+          const current = await t.prisma.budgetMonth.findUniqueOrThrow({ where: { period } });
+          const reopened = await post(`${period}/reopen`, { version: current.version }).expect(200);
+          expect(previewed.body.recalcRange).toEqual(reopened.body.data.recalcRange);
+          expect(previewed.body.recalcRange).toEqual({ from: period, to: months[months.length - 1]![0] });
+          const after = await t.prisma.budgetMonth.findUniqueOrThrow({ where: { period } });
+          await post(`${period}/close`, { version: after.version }).expect(200);
+        }
+      },
+    );
+
+    it('API-20: preview does not change status, version or results', async () => {
+      const jan = await createMonth(t.prisma, { period: '2026-01', status: 'closed', incomeMinor: 1_000_000 });
+      await createMonth(t.prisma, { period: '2026-02', status: 'open', incomeMinor: 1_000_000 });
+      const envelope = await createEnvelope(t.prisma, { name: 'Food' });
+      await createAllocation(t.prisma, { monthId: jan.id, envelopeId: envelope.id, amountMinor: 300_000 });
+      const dump = async () => ({
+        months: await t.prisma.budgetMonth.findMany({ orderBy: { period: 'asc' } }),
+        snapshots: await t.prisma.envelopeMonthSnapshot.findMany({ orderBy: { id: 'asc' } }),
+        results: await t.prisma.operationResult.findMany({ orderBy: { id: 'asc' } }),
+      });
+      const before = await dump();
+
+      const response = await preview('2026-01').expect(200);
+
+      expect(response.body.month.version).toBe(jan.version);
+      expect(response.body.version).toBeUndefined();
+      expect(await dump()).toEqual(before);
+    });
+
+    it('API-20 / MON-13: preview of a second month while one is reopened answers 409 INVALID_STATUS_TRANSITION', async () => {
+      await createMonth(t.prisma, { period: '2026-01', status: 'closed' });
+      await createMonth(t.prisma, { period: '2026-02', status: 'reopened' });
+      await createMonth(t.prisma, { period: '2026-03', status: 'open' });
+
+      const previewed = await preview('2026-01').expect(409);
+      const reopened = await post('2026-01/reopen', { version: 1 }).expect(409);
+
+      expect(previewed.body).toEqual(reopened.body);
+      expect(previewed.body.error).toBe('INVALID_STATUS_TRANSITION');
+    });
+
+    it('API-20: preview of an open month answers 409 INVALID_STATUS_TRANSITION and of an unknown one 404 MONTH_NOT_FOUND', async () => {
+      await createMonth(t.prisma, { period: '2026-01', status: 'open' });
+
+      const open = await preview('2026-01').expect(409);
+      const reopenOpen = await post('2026-01/reopen', { version: 1 }).expect(409);
+      expect(open.body).toEqual(reopenOpen.body);
+      expect(open.body.error).toBe('INVALID_STATUS_TRANSITION');
+
+      const unknown = await preview('2030-05').expect(404);
+      const reopenUnknown = await post('2030-05/reopen', { version: 1 }).expect(404);
+      expect(unknown.body).toEqual(reopenUnknown.body);
+      expect(unknown.body.error).toBe('MONTH_NOT_FOUND');
+    });
   });
 });
