@@ -56,7 +56,7 @@
 
 Эпик: [E-03-month-screen.md](../epics/E-03-month-screen.md)
 
-- [T-009](T-009-month-dashboard-screen.md) Mobile: month dashboard screen, period switcher and month actions — **todo** · mobile · M · depends: T-006, T-007 · —
+- [T-009](T-009-month-dashboard-screen.md) Mobile: month dashboard screen, period switcher and month actions — **done** · mobile · M · depends: T-006, T-007 · [PR](https://github.com/Web-Usov/home-finances/pull/23)
 
 - [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **todo** · mobile · M · depends: T-009 · —
 
