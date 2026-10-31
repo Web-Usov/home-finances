@@ -3,7 +3,7 @@ id: T-009
 title: Mobile: month dashboard screen, period switcher and month actions
 status: todo
 epic: E-03
-depends: [T-006, T-007]
+depends: [T-006, T-007, T-024]
 blocked_by: []
 spec: [UI-01, UI-02, UI-06, UI-07, UI-08, UI-09, UI-10, MON-12, MSG-06, SCOPE-23, SCOPE-26, SCOPE-29, NFR-20]
 acceptance: [AC-01, AC-14, AC-15, AC-16]
@@ -24,6 +24,7 @@ The "Month" tab shows the real dashboard from the API: period switcher, status, 
 - Placeholder: `apps/mobile/app/(tabs)/month.tsx`. Stores: `apps/mobile/src/stores/monthStore.ts`. Generated hooks: `apps/mobile/src/api/{months,reporting}` (regenerate, never hand-edit; ADR 0012).
 - Reference for API-wired screen and forms: `apps/mobile/app/(tabs)/envelopes.tsx` and `src/components/envelopes/*`.
 - Styling: NativeWind `className` only. Money formatting via `formatMoneyMinor`/ru-RU helpers. Messages verbatim from MSG-06.
+- Reopen warning (MON-12): call `GET /api/v1/months/:period/reopen-preview` (API-20, T-024) before confirming; the range is never computed in the client.
 - Empty state: no months yet -> create first month with income (SCOPE-23, MON-05).
 - Layout from 360 px without horizontal scroll (NFR-20).
 
