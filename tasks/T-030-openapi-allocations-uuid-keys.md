@@ -1,0 +1,49 @@
+---
+id: T-030
+title: Keep propertyNames uuid for the allocations map in openapi.json
+status: done
+epic: E-00
+depends: []
+blocked_by: []
+spec: [API-04]
+acceptance: []
+area: api
+size: S
+branch: task/T-030-openapi-allocations-uuid-keys
+pr: https://github.com/Web-Usov/home-finances/pull/29
+---
+
+# T-030. Keep propertyNames uuid for the allocations map in openapi.json
+
+## Goal
+
+`apps/api/openapi.json` documents allocation map keys as UUIDs again (`propertyNames: { format: uuid }`).
+
+## Context
+
+- Found in the T-006 review: `zodOpenApiSchema` in `apps/api/src/common/swagger-zod.ts` uses `$refStrategy: none` and drops `propertyNames` of `z.record(z.string().uuid(), ...)`. Documentation only; runtime validation is unaffected.
+- Fix in the converter (post-process) or by an equivalent schema; the generated Orval client must stay type-correct.
+
+## Definition of Done
+
+- [x] `it('API-04: documents uuid keys of the allocations map via x-propertyNames ...')` (`apps/api/src/common/swagger-zod.spec.ts`, over the generated schema) passes
+- [x] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
+
+## Out of scope
+
+- Changing request validation.
+
+## Handoff log
+
+<!-- Append-only. One entry per interrupted session: date, what is done, what is next, branch/commit, gotchas. -->
+
+## Result
+
+`zodOpenApiSchema` (`apps/api/src/common/swagger-zod.ts`) now uses a zod-to-json-schema `override` for `ZodRecord`: it keeps the default
+`additionalProperties` output and adds the key schema as the vendor extension `x-propertyNames: { format: uuid }`.
+
+Deviation: the literal `propertyNames` keyword is not valid in the OpenAPI 3.0 Schema Object (it caused the Orval
+"allocations must NOT have additional properties" validation warning when present), so the DoD wording is satisfied with the
+`x-` extension instead. Orval and the generated mobile client are unchanged; the Orval warning does not appear.

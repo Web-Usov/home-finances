@@ -5,7 +5,7 @@ import { formatMoneyMinor, formatSignedMoneyMinor } from '@family-budget/types';
 import { FormInput } from '../FormInput';
 import { MONTH_LOCKED_MESSAGE, describeMonthError } from '../../lib/apiErrors';
 import { amountToApiString, amountToMinor, computeAllocationTotals } from '../../lib/allocation';
-import { formatRubles } from '../../lib/money';
+import { formatRubles, toInputMoney } from '../../lib/money';
 import { formatPeriodLower } from '../../lib/period';
 import { useSaveAllocations } from './useSaveAllocations';
 import type { Dashboard } from './types';
@@ -40,8 +40,8 @@ export function AllocationEditor({ dashboard, onDone }: AllocationEditorProps) {
 
   const methods = useForm<AllocationFormValues>({
     defaultValues: {
-      income: summary.income,
-      amounts: Object.fromEntries(active.map((envelope) => [envelope.envelopeId, envelope.replenished])),
+      income: toInputMoney(summary.income),
+      amounts: Object.fromEntries(active.map((envelope) => [envelope.envelopeId, toInputMoney(envelope.replenished)])),
     },
   });
   const { control, handleSubmit, setError, clearErrors, formState } = methods;
@@ -60,15 +60,13 @@ export function AllocationEditor({ dashboard, onDone }: AllocationEditorProps) {
     clearErrors('root');
     const incomeMinor = amountToMinor(values.income);
     if (incomeMinor === null) return;
-    const incomeValue = amountToApiString(values.income);
     const incomeChanged = incomeMinor !== amountToMinor(summary.income);
     save.mutate(
       {
         period: month.period,
         version: month.version,
         allocations: Object.fromEntries(active.map((e) => [e.envelopeId, amountToApiString(values.amounts[e.envelopeId] ?? '')])),
-        // Raising the income must land before the allocations, lowering it after them (FIN-02 on both endpoints).
-        income: incomeChanged ? { value: incomeValue, incomeFirst: incomeMinor >= (amountToMinor(summary.allocated) ?? 0) } : undefined,
+        income: incomeChanged ? amountToApiString(values.income) : undefined,
       },
       {
         onSuccess: onDone,
@@ -130,10 +128,10 @@ export function AllocationEditor({ dashboard, onDone }: AllocationEditorProps) {
           <View className="flex-row justify-between">
             <Text className="text-gray-700">Свободно</Text>
             <Text
-              className="font-semibold text-gray-900"
-              accessibilityLabel={`Свободно в редакторе: ${formatRubles(formatSignedMoneyMinor(totals.freeMinor))}`}
+              className={`font-semibold ${totals.freeMinor < 0 ? 'text-danger' : 'text-gray-900'}`}
+              accessibilityLabel={`Свободно в редакторе: ${formatRubles(formatSignedMoneyMinor(totals.freeMinor), { showNegative: true })}`}
             >
-              {formatRubles(formatSignedMoneyMinor(totals.freeMinor))}
+              {formatRubles(formatSignedMoneyMinor(totals.freeMinor), { showNegative: true })}
             </Text>
           </View>
         </View>

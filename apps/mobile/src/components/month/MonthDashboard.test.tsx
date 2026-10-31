@@ -59,6 +59,15 @@ describe('MonthDashboard', () => {
     expect(screen.getByLabelText(`Свободно: 40${NBSP}000,00${NBSP}₽`)).toBeTruthy();
   });
 
+  it('FIN-11 / UI-07: negative free funds of a draft are shown signed and in red, not clamped to zero', () => {
+    const dashboard = makeDashboard({ status: 'draft' });
+    dashboard.summary = { ...dashboard.summary, income: '0.00', allocated: '75000.00', free: '-75000.00' };
+    renderWithProviders(<MonthDashboard dashboard={dashboard} months={[makeMonth('2026-01', 'draft')]} onPeriodChange={jest.fn()} />);
+
+    const free = screen.getByLabelText(`Свободно: −75${NBSP}000,00${NBSP}₽`);
+    expect(free.props.className).toContain('text-danger');
+  });
+
   it('UI-07 / UI-09: shows the net adjustment separately and uncovered amounts with a type breakdown', () => {
     renderDashboard('open');
 

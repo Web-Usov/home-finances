@@ -147,6 +147,8 @@ export const UpdateIncomeRequestSchema = z.object({
 
 export const SaveAllocationsRequestSchema = z.object({
   allocations: z.record(z.string().uuid(), MoneyStringSchema),
+  /** Optional new month income, saved atomically with the allocations (FIN-02 is checked against it). */
+  income: MoneyStringSchema.optional(),
   version: z.number().int().nonnegative(),
 });
 
@@ -259,6 +261,12 @@ export function mutationResponseSchema<T extends z.ZodTypeAny>(data: T) {
   return z.object({ data, warnings: z.array(ApiWarningSchema) });
 }
 
+/** API-22: `data.summary` is the short summary of the affected month; envelope balances come from the dashboard (API-12). */
+export const MonthSummaryResultSchema = z.object({ summary: MonthSummarySchema });
+
+/** API-22: response of `PATCH /months/{period}` and `PUT /months/{period}/allocations`. */
+export const MonthSummaryResponseSchema = mutationResponseSchema(MonthSummaryResultSchema);
+
 export const OperationHistoryItemSchema = OperationSchema.extend({
   period: PeriodSchema,
   result: OperationResultSchema.nullable(),
@@ -279,9 +287,7 @@ export const OperationMutationResponseSchema = mutationResponseSchema(
 );
 
 /** API-11 / API-16: delete returns the recalculated month summary (the operation is gone). */
-export const DeleteOperationResponseSchema = mutationResponseSchema(
-  z.object({ summary: MonthSummarySchema }),
-);
+export const DeleteOperationResponseSchema = MonthSummaryResponseSchema;
 
 /** API-05: the closed month and the draft promoted to open (null when none or MON-15). */
 export const CloseMonthResultSchema = z.object({

@@ -28,7 +28,7 @@ describe('Months income update (integration)', () => {
   const patch = (period: string, body: object) =>
     request(t.app.getHttpServer()).patch(`/api/v1/months/${period}`).send(body);
 
-  it('API-03 / API-15 / API-16 / DATA-12: income change recalculates later months, bumps versions, returns summary + warnings', async () => {
+  it('API-03 / API-15 / API-16 / API-22 / DATA-12: income change recalculates later months, bumps versions, returns summary + warnings', async () => {
     const jan = await createMonth(t.prisma, { period: '2026-01', status: 'open', incomeMinor: 1_000_000 });
     const feb = await createMonth(t.prisma, { period: '2026-02', status: 'draft', incomeMinor: 1_000_000 });
     const envelope = await createEnvelope(t.prisma, { name: 'Food' });
@@ -38,7 +38,7 @@ describe('Months income update (integration)', () => {
     const response = await patch('2026-01', { income: '20000.00', version: 1 }).expect(200);
 
     expect(response.body.warnings).toEqual([]);
-    expect(response.body.data).toMatchObject({
+    expect(response.body.data.summary).toMatchObject({
       period: '2026-01',
       incomeMinor: 2_000_000,
       version: 2,

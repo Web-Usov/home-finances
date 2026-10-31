@@ -145,6 +145,12 @@ it('API-17: ...', async () => {
 (see `envelopes.int-spec.ts`). The helper lives in `test/` and is imported only by `*.int-spec.ts`; HTTP tests with a mocked
 `PrismaService` stay `*.spec.ts` (`envelopes.http.spec.ts`).
 
+**Concurrent requests:** supertest on the unlistened `getHttpServer()` binds a new `listen(0)` per request, so parallel requests fail
+with `read ECONNRESET` (a harness artefact, not a product defect). For races use `const base = await t.listen()` (the app on an
+ephemeral port) with `request(base)` or `fetch`. `test/races.ts` (`useRaceHarness`) builds on it: per-round world, both
+interleavings, assertions "exactly N winners, losers are domain 409, never 5xx, stored state equals the answers"; used by
+`src/common/month-lock.concurrency.*.int-spec.ts` (DATA-12, MON-13). A new month-scoped mutation adds a race against `close` there.
+
 ### Unit-test patterns for transactions and cascades
 
 - When a service uses `prisma.$transaction(async (tx) => ...)`, mock `$transaction` to hand a **distinct** `tx` object (not the

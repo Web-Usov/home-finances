@@ -24,6 +24,7 @@ The "Month" tab shows the real dashboard from the API: period switcher, status, 
 - Placeholder: `apps/mobile/app/(tabs)/month.tsx`. Stores: `apps/mobile/src/stores/monthStore.ts`. Generated hooks: `apps/mobile/src/api/{months,reporting}` (regenerate, never hand-edit; ADR 0012).
 - Reference for API-wired screen and forms: `apps/mobile/app/(tabs)/envelopes.tsx` and `src/components/envelopes/*`.
 - Styling: NativeWind `className` only. Money formatting via `formatMoneyMinor`/ru-RU helpers. Messages verbatim from MSG-06.
+- Reopen warning (MON-12): call `GET /api/v1/months/:period/reopen-preview` (API-20, T-024) before confirming; the range is never computed in the client.
 - Empty state: no months yet -> create first month with income (SCOPE-23, MON-05).
 - Layout from 360 px without horizontal scroll (NFR-20).
 

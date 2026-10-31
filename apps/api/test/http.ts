@@ -10,6 +10,12 @@ export interface TestApp {
   app: NestFastifyApplication;
   /** Real Prisma client bound to this jest worker's schema (same instance the app uses). */
   prisma: PrismaService;
+  /**
+   * Starts the app on an ephemeral port (once) and returns its base URL (`http://127.0.0.1:<port>`). Use it with
+   * `request(baseUrl)` or `fetch` whenever requests run CONCURRENTLY: supertest on the unlistened `getHttpServer()`
+   * binds a fresh `listen(0)` per request, and parallel requests fail with `read ECONNRESET` (a harness artefact).
+   */
+  listen: () => Promise<string>;
   /** Closes the app and disconnects Prisma. Call from `afterAll` (after `resetDb`). */
   close: () => Promise<void>;
 }
@@ -22,6 +28,8 @@ export interface TestApp {
  *   beforeAll(async () => { t = await createTestApp([EnvelopesModule]); });
  *   beforeEach(() => resetDb(t.prisma));
  *   afterAll(async () => { await resetDb(t.prisma); await t.close(); });
+ *
+ * For concurrent requests use `request(await t.listen())` instead of `getHttpServer()` (see `TestApp.listen`).
  */
 export async function createTestApp(modules: Type<unknown>[]): Promise<TestApp> {
   const prisma = createTestPrisma();
@@ -37,9 +45,18 @@ export async function createTestApp(modules: Type<unknown>[]): Promise<TestApp> 
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
 
+  let baseUrl: string | undefined;
+
   return {
     app,
     prisma,
+    listen: async () => {
+      if (baseUrl === undefined) {
+        await app.listen({ port: 0, host: '127.0.0.1' });
+        baseUrl = await app.getUrl();
+      }
+      return baseUrl;
+    },
     close: async () => {
       await app.close();
       await prisma.$disconnect();

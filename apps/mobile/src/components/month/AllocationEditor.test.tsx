@@ -76,8 +76,8 @@ describe('AllocationEditor', () => {
   it('UI-12 / AC-04: copied allocation is shown as editable values', () => {
     renderEditor();
 
-    expect(field('Продукты').props.value).toBe('50000.00');
-    expect(field('Дом').props.value).toBe('25000.00');
+    expect(field('Продукты').props.value).toBe('50000,00');
+    expect(field('Дом').props.value).toBe('25000,00');
     expect(field('Дом').props.editable).toBe(true);
     fireEvent.changeText(field('Дом'), '30000');
     expect(field('Дом').props.value).toBe('30000');
@@ -110,7 +110,7 @@ describe('AllocationEditor', () => {
     fireEvent.changeText(field('Дом'), '25000');
 
     expect(screen.getByText(`Распределено на 0,01${NBSP}₽ больше дохода. Уменьшите суммы по конвертам.`)).toBeTruthy();
-    expect(free()).toBe(`Свободно в редакторе: 0,00${NBSP}₽`);
+    expect(free()).toBe(`Свободно в редакторе: −0,01${NBSP}₽`);
     expect(save().props.accessibilityState.disabled).toBe(true);
     fireEvent.press(save());
     await new Promise<void>((resolve) => {
@@ -150,34 +150,49 @@ describe('AllocationEditor', () => {
     expect(keys).toEqual(expect.arrayContaining([['/api/v1/dashboard/monthly'], ['/api/v1/months']]));
   });
 
-  it('API-03 / API-04: a raised income is saved first, the allocations follow with the re-read version', async () => {
-    mockRequest.mockImplementation(((config: { url?: string }) =>
-      config.url === '/api/v1/dashboard/monthly' ? Promise.resolve(makeDashboard({ version: 4 })) : Promise.resolve(undefined)) as never);
+  it('API-04 / FIN-02: a changed income travels in the same single PUT request as the allocations', async () => {
+    mockRequest.mockResolvedValue(undefined as never);
     const { onDone } = renderEditor();
 
-    fireEvent.changeText(screen.getByLabelText('Доход для распределения'), '120000');
+    fireEvent.changeText(screen.getByLabelText('Доход для распределения'), '120 000,5');
+    fireEvent.changeText(field('Дом'), '10000');
     fireEvent.press(save());
 
     await waitFor(() => expect(onDone).toHaveBeenCalled());
-    const calls = mockRequest.mock.calls.map(([config]) => config);
-    expect(calls[0]).toMatchObject({ url: '/api/v1/months/2026-01', method: 'PATCH', data: { income: '120000.00', version: 3 } });
-    expect(calls[2]).toMatchObject({ url: '/api/v1/months/2026-01/allocations', method: 'PUT', data: { version: 4 } });
+    expect(mockRequest).toHaveBeenCalledTimes(1);
+    expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({
+      url: '/api/v1/months/2026-01/allocations',
+      method: 'PUT',
+      data: { allocations: { 'e-food': '50000.00', 'e-home': '10000.00' }, income: '120000.50', version: 3 },
+    });
   });
 
-  it('API-03 / API-04: a lowered income is saved after the allocations', async () => {
-    mockRequest.mockImplementation(((config: { url?: string }) =>
-      config.url === '/api/v1/dashboard/monthly' ? Promise.resolve(makeDashboard({ version: 4 })) : Promise.resolve(undefined)) as never);
+  it('API-04: an unchanged income is not sent', async () => {
+    mockRequest.mockResolvedValue(undefined as never);
     const { onDone } = renderEditor();
 
-    fireEvent.changeText(field('Продукты'), '10000');
-    fireEvent.changeText(field('Дом'), '10000');
-    fireEvent.changeText(screen.getByLabelText('Доход для распределения'), '30000');
     fireEvent.press(save());
 
     await waitFor(() => expect(onDone).toHaveBeenCalled());
-    const calls = mockRequest.mock.calls.map(([config]) => config);
-    expect(calls[0]).toMatchObject({ url: '/api/v1/months/2026-01/allocations', method: 'PUT', data: { version: 3 } });
-    expect(calls[2]).toMatchObject({ url: '/api/v1/months/2026-01', method: 'PATCH', data: { income: '30000.00', version: 4 } });
+    expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({ method: 'PUT' });
+    expect((mockRequest.mock.calls[0]?.[0] as { data: object }).data).not.toHaveProperty('income');
+  });
+
+  it('UI-12: values are prefilled in ru-RU input form and both separators are accepted when typing', () => {
+    renderEditor();
+
+    expect(screen.getByLabelText('Доход для распределения').props.value).toBe('100000,00');
+    fireEvent.changeText(field('Дом'), '1.5');
+    expect(allocated()).toBe(`Распределено в редакторе: 50${NBSP}001,50${NBSP}₽`);
+    fireEvent.changeText(field('Дом'), '1,5');
+    expect(allocated()).toBe(`Распределено в редакторе: 50${NBSP}001,50${NBSP}₽`);
+  });
+
+  it('FIN-11 / UI-13: negative free funds are shown signed and highlighted in red', () => {
+    renderEditor(makeEditorDashboard('draft', '0.00'));
+
+    const node = screen.getByLabelText(`Свободно в редакторе: −75${NBSP}000,00${NBSP}₽`);
+    expect(node.props.className).toContain('text-danger');
   });
 
   it('NFR-18 / ADR 0005: 409 VERSION_CONFLICT shows the API message, keeps the editor open and refetches', async () => {

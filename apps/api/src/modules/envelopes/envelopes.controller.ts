@@ -22,6 +22,7 @@ export class EnvelopesController {
   @ApiOperation({ summary: 'Create a new envelope' })
   @ApiBody({ schema: zodOpenApiSchema(CreateEnvelopeRequestSchema) })
   @ApiResponse({ status: 201, description: 'Created envelope with calculated balance' })
+  @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND (initial balance without any month)' })
   @ApiResponse({ status: 409, description: 'ENVELOPE_NAME_DUPLICATE or MONTH_LOCKED' })
   create(@Body(new ZodValidationPipe(CreateEnvelopeRequestSchema)) dto: CreateEnvelopeRequest) {
     return this.envelopesService.create(dto);

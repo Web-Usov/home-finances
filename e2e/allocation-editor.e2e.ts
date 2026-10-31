@@ -27,7 +27,7 @@ test.describe('allocation editor', { tag: '@smoke' }, () => {
 
     // UI-11: one field per active envelope plus the income.
     await button(page, 'Изменить распределение').click();
-    await expect(page.getByLabel('Доход для распределения')).toHaveValue('100000.00');
+    await expect(page.getByLabel('Доход для распределения')).toHaveValue('100000,00');
     await page.getByLabel('Распределение: Продукты').fill('50000');
     await page.getByLabel('Распределение: Дом').fill('25000');
 
@@ -62,15 +62,18 @@ test.describe('allocation editor', { tag: '@smoke' }, () => {
     await expect(page.getByText('Черновик февраля 2026 создан.')).toBeVisible();
     await button(page, 'Следующий месяц').click();
     await expect(page.getByRole('heading', { name: 'Февраль 2026' })).toBeVisible();
+    // FIN-11: free funds are signed on the dashboard (income 0, allocated 75 000).
+    await expect(page.getByLabel(/^Свободно: −75\s000,00/)).toBeVisible();
     await button(page, 'Изменить распределение').click();
-    await expect(page.getByLabel('Распределение: Продукты')).toHaveValue('50000.00');
-    await expect(page.getByLabel('Распределение: Дом')).toHaveValue('25000.00');
+    await expect(page.getByLabel('Распределение: Продукты')).toHaveValue('50000,00');
+    await expect(page.getByLabel('Распределение: Дом')).toHaveValue('25000,00');
     // The draft has no income yet, so the copied 75 000 overflow: the editor shows it and blocks the save.
     await expect(page.getByText(/Распределено на 75\s000,00\s₽ больше дохода\./)).toBeVisible();
+    await expect(page.getByLabel(/^Свободно в редакторе: −75\s000,00/)).toBeVisible();
     await expect(button(page, 'Сохранить распределение')).toBeDisabled();
     await shot(page, testInfo, '4-copied-allocation-overflow');
 
-    // Income and allocation are edited together; the income reaches the API before the allocation (FIN-02).
+    // Income and allocation are edited together; one request carries both, so the API stores them atomically (FIN-02).
     await page.getByLabel('Доход для распределения').fill('90000');
     await page.getByLabel('Распределение: Дом').fill('20000');
     await expect(page.getByLabel(/^Свободно в редакторе: 20\s000,00/)).toBeVisible();
