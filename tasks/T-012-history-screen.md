@@ -3,7 +3,7 @@ id: T-012
 title: Mobile: history screen with filters, edit and delete
 status: todo
 epic: E-04
-depends: [T-005, T-011]
+depends: [T-005, T-011, T-046]
 blocked_by: []
 spec: [UI-03, HIST-01, HIST-02, HIST-03, HIST-04, HIST-07, HIST-08, HIST-10, HIST-11, OP-17, MSG-06]
 acceptance: [AC-12, AC-13, AC-14]

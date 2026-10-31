@@ -26,33 +26,26 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+Process planner follow-ups 9-20 (`/root/.opencode/plan/planner-followups.md`): spec edits for the gaps that need a human decision and tasks T-041..T-046 for the pure code work.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- Spec: API-18/19 (OPERATION_NOT_FOUND), new API-23, API-24, HIST-13, HIST-14, HIST-15, UI-17, NFR-30, Q-05.
+- Already resolved on master (skipped): 10 (T-032), 13 (T-033), 16 (T-037 exists), 8 (T-025 / API-21), 14 partly (see T-046).
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `pnpm spec:check`, `pnpm tasks:check`, `pnpm verify:quick` green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Implementing the new tasks.
 
 ## Handoff log
 
-<!-- Append-only. One entry per interrupted session: date, what is done, what is next, branch/commit, gotchas. -->
+<!-- Append-only. -->
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Docs-only PR; see the PR body for decisions and the task list.

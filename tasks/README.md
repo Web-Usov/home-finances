@@ -40,6 +40,14 @@
 
 - [T-040](T-040-spec-follow-ups-batch-2.md) Spec follow-ups batch 2 — **in_progress** · docs · S · depends: — · —
 
+- [T-042](T-042-period-month-range-and-transfer-period-test.md) Types: PeriodSchema rejects months outside 01-12, explicit-period transfer test — **todo** · api · S · depends: T-025 · —
+
+- [T-043](T-043-msg-05-text-and-negative-closing-warning.md) Envelopes: align MSG-05 text with the spec, test negative closing warning — **todo** · api · S · depends: T-026 · —
+
+- [T-044](T-044-shared-working-month-and-free-helpers.md) API: shared working-month and free-funds helpers, dedup yearly uncovered schema — **todo** · api · S · depends: T-043, T-008 · —
+
+- [T-046](T-046-openapi-months-body-response-query-types.md) OpenAPI: typed POST /months body, GET /months response and query params — **todo** · api · S · depends: T-027, T-037 · —
+
 ## E-01. Ядро API: месяцы и операции — planned
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
@@ -64,6 +72,8 @@
 
 - [T-034](T-034-e01-rule-coverage.md) E-01: tests citing every epic rule — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/19)
 
+- [T-041](T-041-draft-copies-income.md) Months: new month copies income from the previous month — **todo** · api · S · depends: T-032, T-027 · —
+
 ## E-02. Отчётность API — planned
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)
@@ -71,6 +81,8 @@
 - [T-007](T-007-dashboard-monthly-api.md) Reporting: monthly dashboard endpoint — **done** · api · M · depends: T-004, T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/14)
 
 - [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **done** · api · M · depends: T-004 · [PR](https://github.com/Web-Usov/home-finances/pull/17)
+
+- [T-045](T-045-operations-filters-uncovered-only-role-source.md) Operations: uncoveredOnly and role=source filters for analytics drill-down — **todo** · api · M · depends: T-008, T-025 · —
 
 ## E-03. Экран «Месяц» и редактор распределения — planned
 
@@ -88,13 +100,13 @@
 
 - [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **todo** · mobile · M · depends: T-004, T-009, T-025, T-026 · —
 
-- [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **todo** · mobile · M · depends: T-005, T-011 · —
+- [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **todo** · mobile · M · depends: T-005, T-011, T-046 · —
 
 ## E-05. Годовая аналитика (UI) — planned
 
 Эпик: [E-05-analytics-ui.md](../epics/E-05-analytics-ui.md)
 
-- [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **todo** · mobile · M · depends: T-008, T-012 · —
+- [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **todo** · mobile · M · depends: T-008, T-012, T-045, T-046 · —
 
 ## E-06. Приёмка MVP и поставка — planned
 
