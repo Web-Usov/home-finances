@@ -1,7 +1,7 @@
 ---
 id: T-025
 title: Operations: optional period on POST /operations
-status: todo
+status: in_progress
 epic: E-01
 depends: [T-005, T-020]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-10, API-21, MON-16, MON-01, MON-04, OP-16, UI-16, SCOPE-33]
 acceptance: [AC-15, AC-16]
 area: api
 size: M
-branch: null
+branch: task/T-025-operations-period-param
 pr: null
 ---
 
