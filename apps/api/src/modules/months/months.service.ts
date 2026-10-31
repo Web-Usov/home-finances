@@ -29,7 +29,7 @@ export type UpdateIncomeRequest = z.infer<typeof UpdateIncomeRequestSchema>;
 export type CloseMonthRequest = z.infer<typeof CloseMonthRequestSchema>;
 export type ReopenMonthRequest = z.infer<typeof ReopenMonthRequestSchema>;
 
-/** Brief per-month totals — the "краткие итоги" of the months API (spec line 465). */
+/** Brief per-month totals — the "краткие итоги" of the months API (API-01). */
 export type MonthSummaryDto = z.infer<typeof MonthSummarySchema>;
 export type CloseMonthResultDto = z.infer<typeof CloseMonthResultSchema>;
 export type ReopenMonthResultDto = z.infer<typeof ReopenMonthResultSchema>;
@@ -60,12 +60,12 @@ function toSummary(month: BudgetMonth, totalAllocatedMinor: number): MonthSummar
 
 /**
  * Months service — month lifecycle: creation, income, close/reopen transitions.
- * Implemented per SPECIFICATION.md § Life Cycle of Month (lines 198-232).
+ * Implemented per MON-01..MON-15.
  *
  * Notes:
  * - All monetary values are integer kopecks (never float).
  * - Periods are YYYY-MM strings; lexicographic order == chronological order.
- * - Optimistic locking via `version` (spec line 457).
+ * - Optimistic locking via `version` (DATA-12).
  */
 @Injectable()
 export class MonthsService {
@@ -74,7 +74,7 @@ export class MonthsService {
     private readonly engine: CalculationEngineService,
   ) {}
 
-  /** All months in chronological order with brief summaries (spec line 465). */
+  /** All months in chronological order with brief summaries (API-01). */
   async list(): Promise<{ months: MonthSummaryDto[] }> {
     const months = await this.prisma.budgetMonth.findMany({
       orderBy: { period: 'asc' },
@@ -100,13 +100,13 @@ export class MonthsService {
   }
 
   /**
-   * Create the first or the next month (spec lines 209-217):
+   * Create the first or the next month (MON-05..MON-09):
    * - no months at all → the new month is 'open';
    * - an open month exists → the new month is a 'draft' (only one draft allowed);
    * - latest month closed and no draft → the new month is 'open'.
-   * The period must be the immediate next month — gaps are rejected (line 211).
+   * The period must be the immediate next month — gaps are rejected (MON-06).
    * Income defaults to 0. Allocations of the previous month are copied for
-   * active envelopes only, as editable values (lines 293, 356), atomically
+   * active envelopes only, as editable values (ENV-12, UI-12), atomically
    * with the month row.
    */
   async create(dto: CreateMonthRequest): Promise<{ month: MonthSummaryDto }> {
@@ -155,7 +155,7 @@ export class MonthsService {
   /**
    * Copy the previous month's allocations into the new month for ACTIVE
    * envelopes only — archived envelopes never enter new distributions
-   * (spec line 293). Returns the copied total for the summary.
+   * (ENV-12). Returns the copied total for the summary.
    */
   private async copyAllocations(
     db: DbClient,

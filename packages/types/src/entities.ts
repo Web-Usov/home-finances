@@ -1,6 +1,6 @@
 /**
  * Domain entities for the family budget application.
- * Derived from SPECIFICATION.md § Model Data (lines 437-446).
+ * Derived from DATA-01..DATA-07.
  *
  * All monetary values are stored as integer kopecks (minor units) in the database
  * and API, but displayed as decimal rubles in the UI.
