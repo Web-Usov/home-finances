@@ -20,7 +20,7 @@
 
 - [T-021](T-021-harden-process-scripts.md) Harden process scripts (with-lock, task-start, task-clean) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/6)
 
-- [T-022](T-022-process-stability-conflict-free-board.md) Process stability: conflict-free board, robust script tests — **in_progress** · infra · S · depends: — · —
+- [T-022](T-022-process-stability-conflict-free-board.md) Process stability: conflict-free board, robust script tests — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/11)
 
 ## E-01. Ядро API: месяцы и операции — planned
 
