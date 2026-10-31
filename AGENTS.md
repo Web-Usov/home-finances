@@ -71,6 +71,7 @@ Run it before declaring work done. Test details: `docs/testing.md`.
 | Testing strategy and commands | `docs/testing.md` |
 | Agent workflow (one task = one branch = one PR) | `docs/workflow.md` |
 | Owner's preview (auto-deployed master, URLs, logs, reset) | `docs/preview.md` |
+| Host ops (timer that updates BEHIND auto-merge PRs) | `docs/ops.md` |
 | Work items | `tasks/` (detailed, EN), `epics/` (RU); board in `tasks/README.md` |
 | DB schema | `apps/api/prisma/schema.prisma` |
 | Domain types / error codes | `packages/types/src/` |

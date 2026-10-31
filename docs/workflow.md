@@ -176,6 +176,8 @@ does not allow approving your own PR. So:
   pushes. Otherwise the reviewer enables auto-merge without comparing files: `verify` (`tasks:check`, board `--check`) and
   `contract` (`api:contract`) detect stale generated files on the updated head; if they fail, auto-merge does not happen and
   the PR goes back to the author.
+  A host timer (`docs/ops.md`, every 2 minutes) also runs update-branch for open PRs with auto-merge that fall `BEHIND`, so they keep
+  merging while CI runs; reviewers still run update-branch on LGTM, and conflicts (`DIRTY`) stay with the author.
   On `CHANGES REQUESTED` the reviewer only posts the comment (as a safety step it may run `gh pr merge <n> --disable-auto`);
   the implementer fixes the findings with new commits, runs `pnpm verify`, pushes, and `/review` runs again.
 - **Branch protection reality:** required approving reviews = 0, because agents and the owner share the GitHub account
