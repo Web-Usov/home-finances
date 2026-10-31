@@ -1,7 +1,7 @@
 ---
 id: T-023
 title: Envelope with an initial balance and no month returns MONTH_NOT_FOUND
-status: todo
+status: in_progress
 epic: E-00
 depends: [T-020]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [ENV-03, ENV-14, OP-10, API-18, API-19]
 acceptance: [AC-01]
 area: api
 size: S
-branch: null
+branch: task/T-023-initial-balance-month-not-found
 pr: null
 ---
 
