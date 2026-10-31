@@ -1,7 +1,7 @@
 ---
 id: T-011
 title: Mobile: expense, transfer and adjustment forms
-status: in_progress
+status: done
 epic: E-04
 depends: [T-004, T-009, T-025, T-026]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-05, AC-06, AC-07, AC-09, AC-10, AC-21]
 area: mobile
 size: M
 branch: task/T-011-operation-forms
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/35
 ---
 
 # T-011. Mobile: expense, transfer and adjustment forms
