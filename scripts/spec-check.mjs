@@ -4,7 +4,8 @@
  *
  * Usage:
  *   node scripts/spec-check.mjs                    # run checks, print coverage report
- *   node scripts/spec-check.mjs --strict-coverage  # additionally fail if any AC-* is not referenced from a test file
+ *   node scripts/spec-check.mjs --strict-coverage  # additionally fail if any AC-* is not referenced from a test file,
+ *                                                  # except the ACs deferred in scripts/spec-coverage-deferred.json
  *   node scripts/spec-check.mjs --verbose          # list every uncovered rule even when there are many
  *
  * What it does:
@@ -17,6 +18,11 @@
  *      docs/archive) cites the spec by line number ("SPECIFICATION.md ... line 12", "spec line 12"): cite rule IDs.
  *   4. Prints a coverage report: which rule IDs are referenced from test files
  *      (*.spec.ts, *.int-spec.ts, *.e2e.ts, *.test.tsx) and which are not (warning only).
+ *
+ * Deferred ACs (scripts/spec-coverage-deferred.json: `{ "AC-21": { "task": "T-xxx", "reason": "..." } }`): ACs whose test
+ * can only exist once a later (UI) task lands. Under --strict-coverage a deferred AC may stay uncovered, but an entry
+ * fails the check as soon as its AC is covered (remove it: the allowlist only shrinks), is not an AC-* of the spec, or
+ * lacks `task`/`reason`.
  *
  * Exit code: 0 on success; 1 on duplicates, dangling references, or (with --strict-coverage) uncovered AC-*.
  * Plain Node ESM, no dependencies.
@@ -91,6 +97,29 @@ export function isLineRefScanned(r) {
   return /^(apps\/[^/]+\/(src|test)|packages\/[^/]+\/src|e2e|scripts)\//.test(r);
 }
 
+/**
+ * Strict-coverage verdict. `uncoveredAc`: AC ids without a test reference; `deferred`: parsed allowlist;
+ * `acIds`: all AC ids of the spec. Returns error strings (empty = ok). Exported for tests.
+ */
+export function strictCoverageErrors(uncoveredAc, deferred, acIds) {
+  const errors = [];
+  for (const [id, entry] of Object.entries(deferred)) {
+    if (!acIds.includes(id)) errors.push(`spec-coverage-deferred.json: ${id} is not an AC-* defined in the spec`);
+    else if (!entry || typeof entry.task !== 'string' || typeof entry.reason !== 'string' || !entry.task || !entry.reason)
+      errors.push(`spec-coverage-deferred.json: ${id} needs non-empty "task" and "reason"`);
+    else if (!uncoveredAc.includes(id))
+      errors.push(`spec-coverage-deferred.json: ${id} is covered by a test now (${entry.task}); remove it from the allowlist`);
+  }
+  const missing = uncoveredAc.filter((id) => !(id in deferred));
+  if (missing.length) errors.push(`--strict-coverage: ${missing.length} AC-* not referenced from tests: ${missing.join(', ')}`);
+  return errors;
+}
+
+function loadDeferred() {
+  const file = path.join(root, 'scripts/spec-coverage-deferred.json');
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
+}
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) main();
 
@@ -163,8 +192,11 @@ if (uncovered.length) {
   else console.log('  ' + uncovered.join(' '));
 }
 
-if (strictCoverage && uncoveredAc.length) {
-  errors.push(`--strict-coverage: ${uncoveredAc.length} AC-* not referenced from tests: ${uncoveredAc.join(', ')}`);
+if (strictCoverage) {
+  const deferred = loadDeferred();
+  const deferredIds = Object.keys(deferred);
+  if (deferredIds.length) console.log(`deferred AC (scripts/spec-coverage-deferred.json): ${deferredIds.join(', ')}`);
+  errors.push(...strictCoverageErrors(uncoveredAc, deferred, ids.filter((id) => id.startsWith('AC-'))));
 }
 
 if (errors.length) {

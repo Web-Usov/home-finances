@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { findLineReferences, isLineRefScanned } from '../spec-check.mjs';
+import { findLineReferences, isLineRefScanned, strictCoverageErrors } from '../spec-check.mjs';
 
 test('findLineReferences flags SPECIFICATION.md with a line number', () => {
   for (const text of [
@@ -45,4 +45,18 @@ test('isLineRefScanned covers hand-written sources only', () => {
   assert.equal(isLineRefScanned('scripts/spec-check.mjs'), false);
   assert.equal(isLineRefScanned('scripts/__tests__/spec-check.test.mjs'), false);
   assert.equal(isLineRefScanned('docs/archive/SPECIFICATION.md'), false);
+});
+
+test('strictCoverageErrors: uncovered AC fails unless deferred', () => {
+  const ac = ['AC-01', 'AC-21'];
+  assert.deepEqual(strictCoverageErrors([], {}, ac), []);
+  assert.match(strictCoverageErrors(['AC-21'], {}, ac)[0], /AC-21/);
+  assert.deepEqual(strictCoverageErrors(['AC-21'], { 'AC-21': { task: 'T-011', reason: 'UI' } }, ac), []);
+});
+
+test('strictCoverageErrors: stale, unknown and incomplete allowlist entries fail', () => {
+  const ac = ['AC-01', 'AC-21'];
+  assert.match(strictCoverageErrors([], { 'AC-21': { task: 'T-011', reason: 'UI' } }, ac)[0], /remove it/);
+  assert.match(strictCoverageErrors([], { 'AC-99': { task: 'T-011', reason: 'UI' } }, ac)[0], /not an AC/);
+  assert.match(strictCoverageErrors(['AC-21'], { 'AC-21': { task: '' } }, ac)[0], /needs non-empty/);
 });
