@@ -1,7 +1,7 @@
 ---
 id: T-024
 title: Reopen preview endpoint GET /months/:period/reopen-preview
-status: in_progress
+status: done
 epic: E-01
 depends: [T-006, T-020]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-15]
 area: api
 size: S
 branch: task/T-024-reopen-preview-endpoint
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/30
 ---
 
 # T-024. Reopen preview endpoint GET /months/:period/reopen-preview
