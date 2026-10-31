@@ -13,9 +13,11 @@ import type {
   MonthStatus,
   MutationResponse,
   ReopenMonthResultSchema,
+  ReopenPreviewSchema,
 } from '@family-budget/types';
 import { z } from 'zod';
-import { ConflictException, ValidationException } from '../../common/exceptions';
+import { ConflictException, NotFoundException, ValidationException } from '../../common/exceptions';
+import { planReopen } from './reopen-plan';
 import type { MonthSummaryDto } from '../../common/month-summary';
 import { lockAllMonths, lockMonthForMutation } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -30,6 +32,7 @@ export type ReopenMonthRequest = z.infer<typeof ReopenMonthRequestSchema>;
 export type { MonthSummaryDto };
 export type CloseMonthResultDto = z.infer<typeof CloseMonthResultSchema>;
 export type ReopenMonthResultDto = z.infer<typeof ReopenMonthResultSchema>;
+export type ReopenPreviewDto = z.infer<typeof ReopenPreviewSchema>;
 
 /** Satisfied by both PrismaService and an interactive transaction client. */
 type DbClient = Prisma.TransactionClient;
@@ -290,33 +293,43 @@ export class MonthsService {
         { period },
         { expectedVersion: dto.version, rejectClosed: false },
       );
-      if (month.status !== 'closed') {
-        throw new ConflictException(
-          'INVALID_STATUS_TRANSITION',
-          `Месяц ${period} не закрыт. Повторно открыть можно только закрытый месяц.`,
-        );
-      }
       const alreadyReopened = await tx.budgetMonth.findFirst({ where: { status: 'reopened' } });
-      if (alreadyReopened !== null) {
-        throw new ConflictException(
-          'INVALID_STATUS_TRANSITION',
-          `Месяц ${alreadyReopened.period} уже открыт повторно. Закройте его, прежде чем открывать другой.`,
-        );
-      }
+      const lastBefore = await tx.budgetMonth.findFirst({ orderBy: { period: 'desc' } });
+      const recalcRange = planReopen(month, alreadyReopened, lastBefore);
 
       await tx.budgetMonth.update({ where: { id: month.id }, data: { status: 'reopened' } });
       const recalc = await this.engine.recalculateMonthAtomically(month.id, tx);
       const refreshed = await this.refreshMonth(tx, month.id);
-      const last = await tx.budgetMonth.findFirst({ orderBy: { period: 'desc' } });
       const totalAllocatedMinor = await this.sumAllocations(tx, month.id);
       return {
-        data: {
-          month: toSummary(refreshed, totalAllocatedMinor),
-          recalcRange: { from: period, to: last?.period ?? period },
-        },
+        data: { month: toSummary(refreshed, totalAllocatedMinor), recalcRange },
         warnings: recalc.warnings,
       };
     });
+  }
+
+  /**
+   * Preview of {@link reopen} (API-20, MON-12): the same checks and the same range function
+   * (`planReopen`), but read-only: no `version`, no write, and NO row locks. The answer is
+   * advisory: state may change between the preview and the reopen (another close/reopen or a
+   * new month), and `reopen` re-validates everything under its lock. Reads share one
+   * REPEATABLE READ snapshot so the three rows are mutually consistent.
+   */
+  async reopenPreview(period: string): Promise<ReopenPreviewDto> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const month = await tx.budgetMonth.findUnique({ where: { period } });
+        if (month === null) {
+          throw new NotFoundException('MONTH_NOT_FOUND', `Месяц не найден: ${period}`);
+        }
+        const alreadyReopened = await tx.budgetMonth.findFirst({ where: { status: 'reopened' } });
+        const last = await tx.budgetMonth.findFirst({ orderBy: { period: 'desc' } });
+        const recalcRange = planReopen(month, alreadyReopened, last);
+        const totalAllocatedMinor = await this.sumAllocations(tx, month.id);
+        return { month: toSummary(month, totalAllocatedMinor), recalcRange };
+      },
+      { isolationLevel: 'RepeatableRead' },
+    );
   }
 
   /** Re-read inside the recalc transaction — the engine bumps `version`. */

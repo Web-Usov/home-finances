@@ -28,13 +28,13 @@ A read-only endpoint returns the recalculation range that reopening a closed mon
 
 ## Definition of Done
 
-- [ ] `it('MON-12 / API-20 / AC-15: preview returns the same range as the reopen response')` (int-spec) passes
-- [ ] `it('API-20: preview does not change status, version or results')` passes
-- [ ] `it('API-20 / MON-13: preview of a second month while one is reopened answers 409 INVALID_STATUS_TRANSITION')` passes
-- [ ] `it('API-20: preview of an open month answers 409 INVALID_STATUS_TRANSITION and of an unknown one 404 MONTH_NOT_FOUND')` passes
-- [ ] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('MON-12 / API-20 / AC-15: preview returns the same range as the reopen response')` (int-spec) passes
+- [x] `it('API-20: preview does not change status, version or results')` passes
+- [x] `it('API-20 / MON-13: preview of a second month while one is reopened answers 409 INVALID_STATUS_TRANSITION')` passes
+- [x] `it('API-20: preview of an open month answers 409 INVALID_STATUS_TRANSITION and of an unknown one 404 MONTH_NOT_FOUND')` passes
+- [x] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -46,4 +46,7 @@ A read-only endpoint returns the recalculation range that reopening a closed mon
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+- `GET /api/v1/months/:period/reopen-preview` returns `{ month, recalcRange }` (`ReopenPreviewSchema` in `@family-budget/types`, Swagger + regenerated client).
+- Shared pure `planReopen` (`months/reopen-plan.ts`) holds the status / MON-13 checks and the range; `reopen` and `reopenPreview` both call it, so errors and range cannot diverge.
+- The preview takes no row locks and writes nothing (one REPEATABLE READ snapshot for consistency). It is advisory: state may change before the reopen, which re-validates under its lock.
+- Tests: `reopen-plan.spec.ts`, and the `reopen preview (API-20)` block in `months.close-reopen.int-spec.ts` (preview range == reopen range over four layouts).
