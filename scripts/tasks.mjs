@@ -184,7 +184,7 @@ function check({ gh }) {
   const masterFiles = originMasterTaskFiles();
   for (const t of tasks) {
     const clash = masterFiles.find((f) => f !== t.name && f.startsWith(`${t.data?.id}-`));
-    if (clash) err(t.rel, `task id ${t.data.id} is already used on origin/master by ${clash}; renumber this task (new id, file name, branch)`);
+    if (clash) err(t.rel, `task id ${t.data.id} is already used on origin/master by ${clash}; if the file was only renamed on master, run "git merge origin/master" first, otherwise renumber this task (new id, file name, branch)`);
   }
 
   // cycles (DFS)

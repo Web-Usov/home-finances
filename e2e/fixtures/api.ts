@@ -27,6 +27,15 @@ export class ApiFixture {
     return this.post<{ month: { id: string; period: string } }>('/months', { period, income });
   }
 
+  /** Closes `period` using its current version; promotes the draft when closing an open month. */
+  async closeMonth(period: string) {
+    const list = await this.request.get(`${this.apiUrl}/api/v1/months`);
+    const { months } = (await list.json()) as { months: { period: string; version: number }[] };
+    const month = months.find((m) => m.period === period);
+    if (!month) throw new Error(`month ${period} does not exist`);
+    return this.post(`/months/${period}/close`, { version: month.version });
+  }
+
   createEnvelope(name: string, initialBalance?: string) {
     return this.post<{ envelope: EnvelopeDto }>('/envelopes', { name, initialBalance });
   }

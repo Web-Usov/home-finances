@@ -9,13 +9,13 @@ Global rules (money, periods, types, language, spec references) are in the root 
 | Path | Responsibility | State |
 | --- | --- | --- |
 | `main.ts` | Fastify bootstrap, prefix `api`, URI versioning (default `v1`), Swagger UI at `/api`, JSON at `/api/swagger.json` (`src/openapi.ts` dumps `openapi.json` without a DB), `DomainExceptionFilter`, open CORS | done |
-| `common/` | `ZodValidationPipe`, domain exceptions (422/409/404), `DomainExceptionFilter`, `zodOpenApiSchema` | done |
+| `common/` | `ZodValidationPipe`, domain exceptions (422/409/404), `DomainExceptionFilter`, `zodOpenApiSchema`, `month-lock.ts` (`lockMonthForMutation`, `lockWorkingMonth`, `lockAllMonths`) | done |
 | `prisma/` | `PrismaService` (global client) | done |
 | `health/` | `GET /api/v1/health` | done |
 | `modules/calculation-engine/` | stateless cascade recalculation (`recalculateFrom`, `recalculateMonthAtomically`) | done, unit + integration tests |
 | `modules/envelopes/` | list/create/update/archive; create with an initial balance inserts the `initial_balance` operation and recalculates the month in the same transaction | done |
-| `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation) | done |
-| `modules/months/` | list, create (draft/auto-open, allocation copy), `updateIncome` (PATCH, cascade) | done — list, create, `updateIncome`, `close` (draft promotion), `reopen` (cascade, recalc range) |
+| `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation; optional `income` saved atomically in the same transaction, FIN-02 against the new income) | done |
+| `modules/months/` | list, create (draft/auto-open, allocation copy), `updateIncome` (PATCH, cascade) | done — list, create, `updateIncome`, `close` (draft promotion), `reopen` (cascade, recalc range), `reopenPreview` (read-only, no locks, shares `planReopen` with `reopen`) |
 | `modules/operations/` | list/create/update/delete | done — list, create, PATCH, DELETE (`version` in the query) |
 | `modules/reporting/` | dashboard + yearly analytics | `GET /dashboard/monthly` done (reads `EnvelopeMonthSnapshot`, T-007); `GET /analytics/yearly` done (three reports from snapshots, T-008) |
 | `prisma/schema.prisma`, `prisma/seed.ts`, `prisma/migrations/` | 7 entities (BudgetMonth, Envelope, Allocation, Operation, OperationResult, EnvelopeMonthSnapshot, AppSettings), idempotent seed | done |
@@ -27,11 +27,18 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
 - Controllers are thin: `@ApiTags`/`@ApiOperation`/`@ApiResponse`, validate the body with
   `@Body(new ZodValidationPipe(Schema))`, delegate to the service, return plain objects. No business logic, no `unknown` DTOs.
 - Services own business rules. Mutations: `prisma.$transaction(async (tx) => { write source data; engine.recalculateMonthAtomically(monthId, tx) })`.
-  Mutations return the affected month summary plus `warnings`.
+  Month mutations return `data.summary` (short `MonthSummary` via `buildMonthSummary`, API-22; no envelope data) plus `warnings`;
+  `close`/`reopen` keep their `month` field.
 - Pass the interactive `tx` into the engine; never call it after the transaction has committed.
 - Errors: throw `ValidationException` (422), `ConflictException` (409) or `NotFoundException` (404) with a code from
   `ApiErrorCode` in `@family-budget/types`. Add new codes there, not locally.
 - Order of checks for month-scoped mutations (as in allocations): existence → `version` (`VERSION_CONFLICT`) → month status (`MONTH_LOCKED`) → business rules.
+  Every one of them runs inside the `$transaction`, right after `lockMonthForMutation(tx, { period } | { id }, { expectedVersion })`
+  (`common/month-lock.ts`): it takes `FOR UPDATE` on the month and all later months in ascending period order and does the first
+  three checks. Never read or check `version`/`status` outside the transaction or without the lock (DATA-12 race), never lock months
+  in another order (deadlock), and use `lockWorkingMonth` when the request has no period (operations create, envelope create/archive).
+  `lockWorkingMonth` re-resolves the working month under the lock: when it changed to an earlier month meanwhile (a concurrent
+  reopen) the mutation answers `409 VERSION_CONFLICT` (retry after a refetch) instead of locking out of order.
 - User-facing error messages are Russian and must match the spec `MSG-*` texts where one exists.
 - Prisma: UUID primary keys (`@id @default(uuid()) @db.Uuid`), money columns `Int` mapped to `*_minor`. Change the schema only
   together with a migration (`pnpm db:migrate`).
@@ -45,7 +52,7 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
   and assert `toHaveBeenCalledWith(id, tx)` on the engine (same-transaction proof); for cascades also assert the BudgetMonth
   `version` bump (ADR 0005). Name new files by feature: `<module>.<feature>.int-spec.ts`.
 - Integration: `*.int-spec.ts` (`jest.int.config.js`), real PostgreSQL test DB `family_budget_test` with a schema per jest worker
-  (`pnpm db:up`, `apps/api/.env.test`); factories in `test/db.ts`, HTTP-level app helper `createTestApp(modules)` in `test/http.ts`. Details: `docs/testing.md`.
+  (`pnpm db:up`, `apps/api/.env.test`); factories in `test/db.ts`, HTTP-level app helper `createTestApp(modules)` in `test/http.ts`. Concurrent requests need `await t.listen()` (base URL), see `test/races.ts`. Details: `docs/testing.md`.
 - Engine formulas must be covered by DB-free unit tests (`calculation-engine.service.spec.ts`).
 
 ## Commands

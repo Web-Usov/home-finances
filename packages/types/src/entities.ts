@@ -1,6 +1,6 @@
 /**
  * Domain entities for the family budget application.
- * Derived from SPECIFICATION.md § Model Data (lines 437-446).
+ * Derived from DATA-01..DATA-07.
  *
  * All monetary values are stored as integer kopecks (minor units) in the database
  * and API, but displayed as decimal rubles in the UI.
@@ -108,33 +108,6 @@ export interface AppSettings {
 // ---------------------------------------------------------------------------
 // Aggregate / DTO types
 // ---------------------------------------------------------------------------
-
-export interface MonthSummary {
-  period: string;
-  status: MonthStatus;
-  incomeMinor: number;
-  totalAllocatedMinor: number;
-  freeFundsMinor: number;
-  totalExpensesRequestedMinor: number;
-  totalExpensesCoveredMinor: number;
-  totalAdjustmentsAppliedMinor: number;
-  totalUncoveredMinor: number;
-  envelopes: EnvelopeSnapshot[];
-}
-
-export interface EnvelopeSnapshot {
-  envelopeId: string;
-  envelopeName: string;
-  opening: number;
-  allocation: number;
-  expensesRequested: number;
-  expensesCovered: number;
-  adjustmentApplied: number;
-  transfersIn: number;
-  transfersOut: number;
-  closing: number;
-  uncovered: number;
-}
 
 export interface YearlyAnalytics {
   year: number;

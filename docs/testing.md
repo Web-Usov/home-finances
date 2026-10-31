@@ -145,6 +145,12 @@ it('API-17: ...', async () => {
 (see `envelopes.int-spec.ts`). The helper lives in `test/` and is imported only by `*.int-spec.ts`; HTTP tests with a mocked
 `PrismaService` stay `*.spec.ts` (`envelopes.http.spec.ts`).
 
+**Concurrent requests:** supertest on the unlistened `getHttpServer()` binds a new `listen(0)` per request, so parallel requests fail
+with `read ECONNRESET` (a harness artefact, not a product defect). For races use `const base = await t.listen()` (the app on an
+ephemeral port) with `request(base)` or `fetch`. `test/races.ts` (`useRaceHarness`) builds on it: per-round world, both
+interleavings, assertions "exactly N winners, losers are domain 409, never 5xx, stored state equals the answers"; used by
+`src/common/month-lock.concurrency.*.int-spec.ts` (DATA-12, MON-13). A new month-scoped mutation adds a race against `close` there.
+
 ### Unit-test patterns for transactions and cascades
 
 - When a service uses `prisma.$transaction(async (tx) => ...)`, mock `$transaction` to hand a **distinct** `tx` object (not the
@@ -176,6 +182,13 @@ describe('CALC-02', () => { ... });
 IDs come from `docs/spec/*.md` (`**[OP-04]**`, `AC-08`). `pnpm spec:check` (`scripts/spec-check.mjs`, part of `verify`) fails on duplicate or dangling IDs and
 reports spec rules and AC that no test covers (warnings; `--verbose` lists them). Without a spec
 ID use a plain behaviour description.
+
+`pnpm spec:check --strict-coverage` additionally fails when an AC-* is not referenced from a test file (any mention in a
+`*.spec.ts`, `*.int-spec.ts`, `*.e2e.ts` or `*.test.tsx` counts, so cite an AC only in a test that really asserts it).
+ACs whose test must wait for a later UI task are listed in `scripts/spec-coverage-deferred.json`
+(`{ "AC-21": { "task": "T-xxx", "reason": "..." } }`). The allowlist only shrinks: once the AC is covered the entry
+makes the check fail until it is removed. API-level acceptance scenarios live in
+`apps/api/src/acceptance/acceptance.mvp-scenarios.int-spec.ts`.
 
 ## Mobile tests
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { BudgetMonth, Envelope, Operation, OperationResult, Prisma } from '@prisma/client';
+import type { Envelope, Operation, OperationResult, Prisma } from '@prisma/client';
 import {
   formatMoneyMinor,
   parseMoneyMinor,
@@ -11,6 +11,7 @@ import {
 } from '@family-budget/types';
 import { z } from 'zod';
 import { ConflictException, NotFoundException, ValidationException } from '../../common/exceptions';
+import { lockMonthForMutation, lockWorkingMonth } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 import type { MonthSummaryDto } from '../months/months.service';
@@ -89,23 +90,26 @@ export class OperationsService {
   }
 
   /**
-   * Create an operation in the current working month (open → reopened → draft).
+   * Create an operation in `dto.period` (API-21) or, without it, in the working month (MON-16:
+   * open → reopened → draft).
    * Check order: month exists → version → month status → envelopes → business rules.
    */
   async create(dto: CreateOperationRequest): Promise<MutationResponse<OperationMutationData>> {
     const requestedMinor = parseMoneyMinor(dto.amount);
 
     return this.prisma.$transaction(async (tx) => {
-      const candidate = await this.findCurrentMonth(tx);
+      // DATA-12 / MON-03: the target month is locked FOR UPDATE; version and status are checked under it.
+      // API-21: an explicit period locks that month and all later ones (ascending); otherwise MON-16.
+      const candidate =
+        dto.period !== undefined
+          ? await lockMonthForMutation(tx, { period: dto.period }, { expectedVersion: dto.version })
+          : await lockWorkingMonth(tx, { expectedVersion: dto.version });
       if (candidate === null) {
         throw new NotFoundException(
           'MONTH_NOT_FOUND',
           'Нет бюджетного месяца для операции. Сначала создайте месяц.',
         );
       }
-      const locked = await this.lockMonth(tx, candidate.id);
-      this.assertVersion(locked, candidate.period, dto.version);
-      this.assertMonthMutable(locked, candidate.period);
 
       const source = await this.findEnvelope(tx, dto.sourceEnvelopeId, candidate.period);
       let destination: Envelope | null = null;
@@ -252,9 +256,7 @@ export class OperationsService {
     if (found === null) {
       throw notFound();
     }
-    const locked = await this.lockMonth(db, found.monthId);
-    this.assertVersion(locked, found.month.period, version);
-    this.assertMonthMutable(locked, found.month.period);
+    await lockMonthForMutation(db, { id: found.monthId }, { expectedVersion: version });
 
     // re-read under the lock: a concurrent delete of the same operation has committed by now
     const operation = await db.operation.findUnique({ where: { id } });
@@ -268,26 +270,6 @@ export class OperationsService {
       );
     }
     return { operation, period: found.month.period };
-  }
-
-  /** DATA-12 / ADR 0005: stale `version` → VERSION_CONFLICT. */
-  private assertVersion(locked: { version: number }, period: string, expected: number): void {
-    if (locked.version !== expected) {
-      throw new ConflictException(
-        'VERSION_CONFLICT',
-        `Данные месяца ${period} изменились. Обновите данные и повторите.`,
-      );
-    }
-  }
-
-  /** HIST-10 / MON-03: closed months are read-only. */
-  private assertMonthMutable(locked: { status: string }, period: string): void {
-    if (locked.status === 'closed') {
-      throw new ConflictException(
-        'MONTH_LOCKED',
-        `Месяц ${period} закрыт. Откройте его повторно, чтобы внести изменения.`,
-      );
-    }
   }
 
   /** OP-07 / AC-07: offer the available amount instead of saving an uncovered transfer. */
@@ -329,25 +311,6 @@ export class OperationsService {
     return [];
   }
 
-  /**
-   * Current working month (MON-01, MON-02, MON-04): prefer 'open', then 'reopened', then 'draft'.
-   * With no mutable month it falls back to the latest month so a closed-month mutation is
-   * rejected with MONTH_LOCKED (HIST-10); null only when no month exists at all.
-   */
-  private async findCurrentMonth(db: DbClient): Promise<BudgetMonth | null> {
-    const mutableMonths = await db.budgetMonth.findMany({
-      where: { status: { in: ['open', 'reopened', 'draft'] } },
-      orderBy: { period: 'desc' },
-    });
-
-    return (
-      mutableMonths.find((m) => m.status === 'open') ??
-      mutableMonths.find((m) => m.status === 'reopened') ??
-      mutableMonths.find((m) => m.status === 'draft') ??
-      db.budgetMonth.findFirst({ orderBy: { period: 'desc' } })
-    );
-  }
-
   /** DATA-11: the envelope must exist (404) and not be archived at or before the month (409). */
   private async findEnvelope(db: DbClient, id: string, period: string): Promise<Envelope> {
     const envelope = await db.envelope.findUnique({ where: { id } });
@@ -365,24 +328,6 @@ export class OperationsService {
       );
     }
     return envelope;
-  }
-
-  /**
-   * Lock the month row FOR UPDATE and return its fresh status/version: concurrent mutations of
-   * the same month serialise, so the version check, sequence_no and the transfer balance check
-   * are race-safe.
-   */
-  private async lockMonth(
-    db: DbClient,
-    monthId: string,
-  ): Promise<{ status: string; version: number }> {
-    const rows = await db.$queryRaw<Array<{ status: string; version: number }>>`
-      SELECT status, version FROM budget_month WHERE id = ${monthId}::uuid FOR UPDATE`;
-    const row = rows[0];
-    if (row === undefined) {
-      throw new NotFoundException('MONTH_NOT_FOUND', `Месяц не найден: ${monthId}`);
-    }
-    return row;
   }
 
   /** OP-17: sequence_no = max + 1 within the month, computed inside the locked transaction. */

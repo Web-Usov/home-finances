@@ -84,7 +84,7 @@
         },
         "responses": {
           "200": {
-            "description": "Updated month summary and warnings",
+            "description": "data.summary (short month summary, API-22) and warnings",
             "content": {
               "application/json": {
                 "schema": {
@@ -93,44 +93,53 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "period": {
-                          "type": "string",
-                          "pattern": "^\\d{4}-\\d{2}$"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "draft",
-                            "open",
-                            "closed",
-                            "reopened"
-                          ]
-                        },
-                        "incomeMinor": {
-                          "type": "integer"
-                        },
-                        "version": {
-                          "type": "integer"
-                        },
-                        "totalAllocatedMinor": {
-                          "type": "integer"
-                        },
-                        "freeFundsMinor": {
-                          "type": "integer"
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "id",
-                        "period",
-                        "status",
-                        "incomeMinor",
-                        "version",
-                        "totalAllocatedMinor",
-                        "freeFundsMinor"
+                        "summary"
                       ],
                       "additionalProperties": false
                     },
@@ -364,6 +373,113 @@
         ]
       }
     },
+    "/api/v1/months/{period}/reopen-preview": {
+      "get": {
+        "description": "MON-12 / API-20. Same checks and same range function as POST reopen, but writes nothing, takes no version and no locks. Advisory: the state may change before the reopen request.",
+        "operationId": "MonthsController_reopenPreview_v1",
+        "parameters": [
+          {
+            "name": "period",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The month and the inclusive range of months a reopen would recalculate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "month": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "period": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}$"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "draft",
+                            "open",
+                            "closed",
+                            "reopened"
+                          ]
+                        },
+                        "incomeMinor": {
+                          "type": "integer"
+                        },
+                        "version": {
+                          "type": "integer"
+                        },
+                        "totalAllocatedMinor": {
+                          "type": "integer"
+                        },
+                        "freeFundsMinor": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "period",
+                        "status",
+                        "incomeMinor",
+                        "version",
+                        "totalAllocatedMinor",
+                        "freeFundsMinor"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recalcRange": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}$"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "month",
+                    "recalcRange"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MONTH_NOT_FOUND"
+          },
+          "409": {
+            "description": "INVALID_STATUS_TRANSITION (month is not closed or another month is reopened, MON-13)"
+          }
+        },
+        "summary": "Preview the recalculation range of reopening a closed month (read-only)",
+        "tags": [
+          "Months"
+        ]
+      }
+    },
     "/api/v1/months/{period}/reopen": {
       "post": {
         "operationId": "MonthsController_reopen_v1",
@@ -568,6 +684,9 @@
           "201": {
             "description": "Created envelope with calculated balance"
           },
+          "404": {
+            "description": "MONTH_NOT_FOUND (initial balance without any month)"
+          },
           "409": {
             "description": "ENVELOPE_NAME_DUPLICATE or MONTH_LOCKED"
           }
@@ -679,7 +798,14 @@
                     "additionalProperties": {
                       "type": "string",
                       "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    "x-propertyNames": {
+                      "format": "uuid"
                     }
+                  },
+                  "income": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,2})?$"
                   },
                   "version": {
                     "type": "integer",
@@ -697,7 +823,93 @@
         },
         "responses": {
           "200": {
-            "description": "Summary and warnings"
+            "description": "data.summary (short month summary, API-22) and warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "summary"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           },
           "404": {
             "description": "MONTH_NOT_FOUND or ENVELOPE_NOT_FOUND (unknown or archived envelope)"
@@ -709,7 +921,7 @@
             "description": "ALLOCATION_EXCEEDS_INCOME"
           }
         },
-        "summary": "Save full allocation table for a month",
+        "summary": "Save full allocation table for a month, optionally together with the month income",
         "tags": [
           "Allocations"
         ]
@@ -963,6 +1175,10 @@
                   "comment": {
                     "type": "string",
                     "maxLength": 500
+                  },
+                  "period": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}$"
                   },
                   "version": {
                     "type": "integer",
@@ -1220,7 +1436,7 @@
             "description": "VALIDATION_ERROR"
           }
         },
-        "summary": "Create an operation in the current working month",
+        "summary": "Create an operation in the given period (default: the working month)",
         "tags": [
           "Operations"
         ]

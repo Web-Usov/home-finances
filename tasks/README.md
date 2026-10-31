@@ -8,7 +8,7 @@
 
 - [T-001](T-001-zod-pipe-422.md) ZodValidationPipe returns 422 and drop legacy global ValidationPipe — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/3)
 
-- [T-002](T-002-spec-rule-ids-in-code.md) Replace "SPECIFICATION.md line NNN" comments with rule IDs — **todo** · docs · S · depends: — · —
+- [T-002](T-002-spec-rule-ids-in-code.md) Replace "SPECIFICATION.md line NNN" comments with rule IDs — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/21)
 
 - [T-017](T-017-envelope-initial-balance-recalc.md) Envelope created with an initial balance must show that balance (recalculate month) — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/4)
 
@@ -16,13 +16,27 @@
 
 - [T-019](T-019-remove-class-validator-deps.md) Remove unused class-validator and class-transformer dependencies — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/8)
 
-- [T-020](T-020-spec-gaps-validation-error-month-not-found.md) Spec gaps from pilot reviews (API-18 VALIDATION_ERROR, initial balance without a month) — **todo** · docs · S · depends: — · —
+- [T-020](T-020-spec-gaps-validation-error-month-not-found.md) Spec gaps from pilot reviews (error codes, working month and period on operations, reopen preview, message format) — **done** · docs · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/12)
 
 - [T-021](T-021-harden-process-scripts.md) Harden process scripts (with-lock, task-start, task-clean) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/6)
 
 - [T-022](T-022-process-stability-conflict-free-board.md) Process stability: conflict-free board, robust script tests — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/11)
 
+- [T-023](T-023-initial-balance-month-not-found.md) Envelope with an initial balance and no month returns MONTH_NOT_FOUND — **done** · api · S · depends: T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/26)
+
+- [T-026](T-026-money-ru-messages.md) ru-RU money formatting in server messages — **todo** · api · S · depends: T-005, T-025, T-020 · —
+
+- [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **todo** · api · S · depends: T-006 · —
+
+- [T-029](T-029-version-check-in-tx.md) Re-check month version inside the transaction in allocations.save and other mutations — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
+
+- [T-030](T-030-openapi-allocations-uuid-keys.md) Keep propertyNames uuid for the allocations map in openapi.json — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/29)
+
 - [T-033](T-033-task-id-allocation.md) Task id allocation sees task files of all remote branches — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/18)
+
+- [T-035](T-035-reviewer-update-branch-flow-fixes.md) Reviewer update-branch flow fixes — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/20)
+
+- [T-036](T-036-lock-month-row-in-every-month-scoped.md) Lock month row in every month-scoped mutation (optimistic lock race) — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
 
 ## E-01. Ядро API: месяцы и операции — done
 
@@ -35,6 +49,14 @@
 - [T-005](T-005-operations-update-delete.md) Operations: update and delete with stable sequence and recalculation — **done** · api · M · depends: T-004 · [PR](https://github.com/Web-Usov/home-finances/pull/13)
 
 - [T-006](T-006-month-close-reopen.md) Months: close, reopen and draft promotion — **done** · api · M · depends: T-003 · [PR](https://github.com/Web-Usov/home-finances/pull/9)
+
+- [T-024](T-024-reopen-preview-endpoint.md) Reopen preview endpoint GET /months/:period/reopen-preview — **done** · api · S · depends: T-006, T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/30)
+
+- [T-025](T-025-operations-period-param.md) Operations: optional period on POST /operations — **done** · api · M · depends: T-005, T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/31)
+
+- [T-027](T-027-unify-mutation-summary.md) Unify month mutation response shape (data.summary) — **done** · api · M · depends: T-020, T-029 · [PR](https://github.com/Web-Usov/home-finances/pull/27)
+
+- [T-031](T-031-int-uncovered-does-not-block-close.md) Int test: uncovered operations do not block closing a month — **done** · api · S · depends: T-004, T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/13)
 
 - [T-032](T-032-months-recalculate-on-month-creation.md) Months: recalculate on month creation and draft promotion — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/16)
 
@@ -52,15 +74,17 @@
 
 Эпик: [E-03-month-screen.md](../epics/E-03-month-screen.md)
 
-- [T-009](T-009-month-dashboard-screen.md) Mobile: month dashboard screen, period switcher and month actions — **todo** · mobile · M · depends: T-006, T-007 · —
+- [T-009](T-009-month-dashboard-screen.md) Mobile: month dashboard screen, period switcher and month actions — **done** · mobile · M · depends: T-006, T-007 · [PR](https://github.com/Web-Usov/home-finances/pull/23)
 
-- [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **todo** · mobile · M · depends: T-009 · —
+- [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **todo** · mobile · M · depends: T-009, T-026, T-027 · —
+
+- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **todo** · mobile · S · depends: T-009, T-024 · —
 
 ## E-04. Операции и история (UI) — planned
 
 Эпик: [E-04-operations-ui.md](../epics/E-04-operations-ui.md)
 
-- [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **todo** · mobile · M · depends: T-004, T-009 · —
+- [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **todo** · mobile · M · depends: T-004, T-009, T-025, T-026 · —
 
 - [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **todo** · mobile · M · depends: T-005, T-011 · —
 
@@ -74,8 +98,10 @@
 
 Эпик: [E-06-mvp-release.md](../epics/E-06-mvp-release.md)
 
-- [T-014](T-014-ac-test-coverage.md) Acceptance: tests for AC-01..AC-22 and strict spec coverage — **todo** · api · M · depends: T-005, T-006, T-007, T-008 · —
+- [T-014](T-014-ac-test-coverage.md) Acceptance: tests for AC-01..AC-22 and strict spec coverage — **done** · api · M · depends: T-005, T-006, T-007, T-008 · [PR](https://github.com/Web-Usov/home-finances/pull/22)
 
 - [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **todo** · mobile · M · depends: T-010, T-012, T-013 · —
 
 - [T-016](T-016-docker-compose-e2e.md) Delivery: docker compose from scratch and persistence after restart — **todo** · infra · S · depends: T-014 · —
+
+- [T-038](T-038-preview-environment-auto-deploy-master.md) Preview environment: auto-deploy master for the owner — **done** · infra · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/28)

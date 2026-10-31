@@ -265,7 +265,7 @@ describe('CalculationEngineService.applyOperation', () => {
       });
     });
 
-    it("'-' decreases down to zero only; excess stored as uncovered (spec lines 182-184)", () => {
+    it("'-' decreases down to zero only; excess stored as uncovered (OP-14)", () => {
       const result = engine.applyOperation(100_000, undefined, 150_000, 'adjustment', '-');
       expect(result).toEqual({
         sourceBalanceAfter: 0,

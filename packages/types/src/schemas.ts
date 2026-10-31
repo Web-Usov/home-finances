@@ -1,6 +1,6 @@
 /**
  * Zod validation schemas for all domain entities.
- * These schemas enforce the constraints from SPECIFICATION.md § Constraints (lines 449-459).
+ * These schemas enforce the constraints from DATA-08..DATA-13.
  */
 
 import { z } from 'zod';
@@ -147,6 +147,8 @@ export const UpdateIncomeRequestSchema = z.object({
 
 export const SaveAllocationsRequestSchema = z.object({
   allocations: z.record(z.string().uuid(), MoneyStringSchema),
+  /** Optional new month income, saved atomically with the allocations (FIN-02 is checked against it). */
+  income: MoneyStringSchema.optional(),
   version: z.number().int().nonnegative(),
 });
 
@@ -168,7 +170,9 @@ export const CreateOperationRequestSchema = z
     amount: MoneyStringSchema,
     sign: z.enum(['+', '-']).optional(),
     comment: z.string().max(500).optional(),
-    /** Optimistic-lock counter of the working month (ADR 0005). */
+    /** Target month (API-21); absent = the working month (MON-16). */
+    period: PeriodSchema.optional(),
+    /** Optimistic-lock counter of the target month (ADR 0005). */
     version: z.number().int().nonnegative(),
   })
   .superRefine((value, ctx) => {
@@ -259,6 +263,12 @@ export function mutationResponseSchema<T extends z.ZodTypeAny>(data: T) {
   return z.object({ data, warnings: z.array(ApiWarningSchema) });
 }
 
+/** API-22: `data.summary` is the short summary of the affected month; envelope balances come from the dashboard (API-12). */
+export const MonthSummaryResultSchema = z.object({ summary: MonthSummarySchema });
+
+/** API-22: response of `PATCH /months/{period}` and `PUT /months/{period}/allocations`. */
+export const MonthSummaryResponseSchema = mutationResponseSchema(MonthSummaryResultSchema);
+
 export const OperationHistoryItemSchema = OperationSchema.extend({
   period: PeriodSchema,
   result: OperationResultSchema.nullable(),
@@ -279,9 +289,7 @@ export const OperationMutationResponseSchema = mutationResponseSchema(
 );
 
 /** API-11 / API-16: delete returns the recalculated month summary (the operation is gone). */
-export const DeleteOperationResponseSchema = mutationResponseSchema(
-  z.object({ summary: MonthSummarySchema }),
-);
+export const DeleteOperationResponseSchema = MonthSummaryResponseSchema;
 
 /** API-05: the closed month and the draft promoted to open (null when none or MON-15). */
 export const CloseMonthResultSchema = z.object({
@@ -294,6 +302,9 @@ export const ReopenMonthResultSchema = z.object({
   month: MonthSummarySchema,
   recalcRange: z.object({ from: PeriodSchema, to: PeriodSchema }),
 });
+
+/** API-20 / MON-12: read-only preview of a reopen; same `recalcRange` as `ReopenMonthResultSchema`, no version. */
+export const ReopenPreviewSchema = ReopenMonthResultSchema;
 
 // ---------------------------------------------------------------------------
 // Reporting: monthly dashboard (API-12, UI-06..09)
@@ -459,7 +470,7 @@ export const YearlyAnalyticsResponseSchema = z.object({
 
 /**
  * Validate that the sum of allocations does not exceed income.
- * SPECIFICATION.md line 68: Σ allocation ≤ income
+ * FIN-02: Σ allocation ≤ income
  */
 export function validateAllocations(
   incomeMinor: number,
@@ -472,7 +483,7 @@ export function validateAllocations(
 
 /**
  * Convert decimal ruble string to integer kopecks.
- * SPECIFICATION.md line 82: sums stored as integer kopecks.
+ * FIN-08: sums stored as integer kopecks.
  */
 export function parseMoneyMinor(value: string): number {
   const parts = value.split('.');

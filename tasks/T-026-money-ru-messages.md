@@ -1,0 +1,47 @@
+---
+id: T-026
+title: ru-RU money formatting in server messages
+status: todo
+epic: E-00
+depends: [T-005, T-025, T-020]
+blocked_by: []
+spec: [MSG-01, MSG-02, MSG-03, MSG-04, MSG-05, MSG-07, API-14, AC-03]
+acceptance: [AC-03]
+area: api
+size: S
+branch: null
+pr: null
+---
+
+# T-026. ru-RU money formatting in server messages
+
+## Goal
+
+Amounts inside server-generated `message` fields follow MSG-07 (`0,01`, `1 234,50`, NBSP thousands separator); API amount fields stay decimal strings (API-14).
+
+## Context
+
+- Spec: MSG-07. Today `formatMoneyMinor` (`packages/types/src/schemas.ts`) returns `"0.01"` and is used both for messages and as a transport format; add a separate helper (e.g. `formatMoneyRu(minor)`) in `packages/types`, keep `formatMoneyMinor` unchanged.
+- Call sites in messages: `months.service.ts`, `allocations.service.ts`, `operations.service.ts`, `envelopes.service.ts` (grep `formatMoneyMinor` near `₽`). Negative values are not expected in messages.
+- Chained after T-005/T-025 because it edits `operations.service.ts`.
+
+## Definition of Done
+
+- [ ] `it('MSG-07: formats 1 kopeck, 123450 kopecks and 10000000 kopecks as 0,01 / 1 234,50 / 100 000,00')` (unit, with U+00A0 separator) passes
+- [ ] `it('MSG-01 / AC-03: overflow of 0.01 renders Распределено на 0,01 ₽ больше дохода. Уменьшите суммы по конвертам.')` passes
+- [ ] Tests for MSG-02, MSG-03, MSG-04, MSG-05 assert the ru-RU amounts in `message`
+- [ ] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
+- [ ] `pnpm verify` is green
+- [ ] Task file updated (status, branch, pr, Result)
+
+## Out of scope
+
+- Structured error parameters / client-side message building.
+
+## Handoff log
+
+<!-- Append-only. One entry per interrupted session: date, what is done, what is next, branch/commit, gotchas. -->
+
+## Result
+
+<!-- Filled at the end: PR link, notes, deviations. -->

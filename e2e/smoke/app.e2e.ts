@@ -52,6 +52,8 @@ test.describe('app shell', { tag: '@smoke' }, () => {
     expect(envelope.balanceMinor).toBe(20_000);
     await page.goto('/envelopes');
     await expect(page.getByText('Транспорт')).toBeVisible();
+    // NFR-24: ru-RU money format (shared with the month screen).
+    await expect(page.getByText(/^200,00\s₽$/)).toBeVisible();
 
     // ENV-03 / OP-10 / FIN-14: the balance survives a re-read (derived data was recalculated).
     const res = await page.request.get(`${getE2eEnv().apiUrl}/api/v1/envelopes`);

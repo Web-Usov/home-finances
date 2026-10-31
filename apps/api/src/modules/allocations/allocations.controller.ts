@@ -1,6 +1,6 @@
 import { Controller, Put, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
-import { SaveAllocationsRequestSchema } from '@family-budget/types';
+import { MonthSummaryResponseSchema, SaveAllocationsRequestSchema } from '@family-budget/types';
 import { ZodValidationPipe } from '../../common/pipes';
 import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { AllocationsService } from './allocations.service';
@@ -12,9 +12,15 @@ export class AllocationsController {
   constructor(private readonly allocationsService: AllocationsService) {}
 
   @Put()
-  @ApiOperation({ summary: 'Save full allocation table for a month' })
+  @ApiOperation({
+    summary: 'Save full allocation table for a month, optionally together with the month income',
+  })
   @ApiBody({ schema: zodOpenApiSchema(SaveAllocationsRequestSchema) })
-  @ApiResponse({ status: 200, description: 'Summary and warnings' })
+  @ApiResponse({
+    status: 200,
+    description: 'data.summary (short month summary, API-22) and warnings',
+    schema: zodOpenApiSchema(MonthSummaryResponseSchema),
+  })
   @ApiResponse({
     status: 404,
     description: 'MONTH_NOT_FOUND or ENVELOPE_NOT_FOUND (unknown or archived envelope)',
