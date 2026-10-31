@@ -43,19 +43,19 @@ function sumUncoveredByType(uncoveredByType: Prisma.JsonValue): number {
 
 /**
  * Allocations service — saves the full monthly distribution table.
- * Implemented per SPECIFICATION.md § Allocation Editor (lines 352-363) and
- * § Income, Distribution and Free Funds (lines 121-131).
+ * Implemented per UI-11..UI-15 (allocation editor) and
+ * FIN-11, FIN-12 (income, distribution and free funds).
  *
  * Notes:
  * - All monetary values are integer kopecks; API strings are converted exactly
  *   once at the boundary via parseMoneyMinor (never float).
  * - Check order is load month → version → status → Σ ≤ income → envelopes:
  *   a stale tab reports VERSION_CONFLICT even when the month closed meanwhile.
- * - Archived envelopes are rejected (spec line 293): they are excluded from new
+ * - Archived envelopes are rejected (ENV-12): they are excluded from new
  *   allocations, so for the write path an archived id is as unavailable as an
  *   unknown one → ENVELOPE_NOT_FOUND with a message naming the archive reason.
  * - Source mutation + cascade recalculation commit in ONE $transaction
- *   (spec line 261) via recalculateMonthAtomically(monthId, tx).
+ *   (CALC-13) via recalculateMonthAtomically(monthId, tx).
  */
 @Injectable()
 export class AllocationsService {
@@ -145,7 +145,7 @@ export class AllocationsService {
     return { allocations };
   }
 
-  /** Every id must belong to an existing, non-archived envelope (spec line 293). */
+  /** Every id must belong to an existing, non-archived envelope (ENV-12). */
   private async assertEnvelopesAvailable(
     db: DbClient,
     amountByEnvelopeId: Map<string, number>,

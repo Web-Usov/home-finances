@@ -1,6 +1,6 @@
 /**
  * Zod validation schemas for all domain entities.
- * These schemas enforce the constraints from SPECIFICATION.md § Constraints (lines 449-459).
+ * These schemas enforce the constraints from DATA-08..DATA-13.
  */
 
 import { z } from 'zod';
@@ -459,7 +459,7 @@ export const YearlyAnalyticsResponseSchema = z.object({
 
 /**
  * Validate that the sum of allocations does not exceed income.
- * SPECIFICATION.md line 68: Σ allocation ≤ income
+ * FIN-02: Σ allocation ≤ income
  */
 export function validateAllocations(
   incomeMinor: number,
@@ -472,7 +472,7 @@ export function validateAllocations(
 
 /**
  * Convert decimal ruble string to integer kopecks.
- * SPECIFICATION.md line 82: sums stored as integer kopecks.
+ * FIN-08: sums stored as integer kopecks.
  */
 export function parseMoneyMinor(value: string): number {
   const parts = value.split('.');

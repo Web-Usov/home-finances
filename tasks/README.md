@@ -8,7 +8,7 @@
 
 - [T-001](T-001-zod-pipe-422.md) ZodValidationPipe returns 422 and drop legacy global ValidationPipe — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/3)
 
-- [T-002](T-002-spec-rule-ids-in-code.md) Replace "SPECIFICATION.md line NNN" comments with rule IDs — **todo** · docs · S · depends: — · —
+- [T-002](T-002-spec-rule-ids-in-code.md) Replace "SPECIFICATION.md line NNN" comments with rule IDs — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/21)
 
 - [T-017](T-017-envelope-initial-balance-recalc.md) Envelope created with an initial balance must show that balance (recalculate month) — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/4)
 

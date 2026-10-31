@@ -29,13 +29,13 @@ function currentCalendarPeriod(now: Date = new Date()): string {
 
 /**
  * Envelopes service — manages envelope lifecycle, naming, ordering.
- * Implemented per SPECIFICATION.md § Envelope Management (lines 263-296).
+ * Implemented per ENV-01..ENV-13.
  *
  * Notes:
  * - All monetary values are integer kopecks (never float).
  * - Name uniqueness is case-insensitive across ALL envelopes, including archived
- *   (spec line 279), enforced via Prisma `mode: 'insensitive'` (LOWER comparison).
- * - Mutations are forbidden in closed months (spec line 204) → MONTH_LOCKED.
+ *   (ENV-06), enforced via Prisma `mode: 'insensitive'` (LOWER comparison).
+ * - Mutations are forbidden in closed months (MON-03) → MONTH_LOCKED.
  */
 @Injectable()
 export class EnvelopesService {
@@ -69,7 +69,7 @@ export class EnvelopesService {
   /**
    * Create an envelope. When `initialBalance` is provided, a matching
    * `initial_balance` operation is appended to the current working month
-   * (open/reopened/draft) atomically with the envelope (spec lines 271, 277), and the
+   * (open/reopened/draft) atomically with the envelope (ENV-03, ENV-05), and the
    * month is recalculated in the same transaction (ENV-03, OP-10, FIN-14, CALC-04).
    */
   async create(dto: CreateEnvelopeRequest): Promise<{ envelope: EnvelopeWithBalance }> {
@@ -134,7 +134,7 @@ export class EnvelopesService {
 
   /**
    * Rename and/or change display order. Pure metadata change — never touches
-   * financial data and is not blocked by month status (spec line 281).
+   * financial data and is not blocked by month status (ENV-07).
    */
   async update(id: string, dto: UpdateEnvelopeRequest): Promise<{ envelope: Envelope }> {
     const envelope = await this.prisma.envelope.findUnique({ where: { id } });
@@ -161,10 +161,10 @@ export class EnvelopesService {
   }
 
   /**
-   * Archive an envelope with zero balance (spec lines 287-295).
+   * Archive an envelope with zero balance (ENV-10..ENV-13).
    * Already-archived envelopes are returned unchanged: re-archiving must never
-   * move archivedPeriod (spec line 295), and a no-op is not a closed-month
-   * mutation. Otherwise the month lock (spec line 204) is checked before the
+   * move archivedPeriod (ENV-13), and a no-op is not a closed-month
+   * mutation. Otherwise the month lock (MON-03) is checked before the
    * balance so MONTH_LOCKED always wins; balance is the latest snapshot closing
    * (0 when none exists — the same source list() displays).
    */
@@ -206,7 +206,7 @@ export class EnvelopesService {
 
   /**
    * Current working month: prefer 'open', then 'reopened', then 'draft'
-   * (spec lines 200-205, 277). When no mutable month exists, falls back to the
+   * (MON-01..MON-04, ENV-05). When no mutable month exists, falls back to the
    * latest month overall so the caller can reject closed-month mutations;
    * returns null only when no budget month exists at all.
    */

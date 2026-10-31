@@ -285,8 +285,8 @@ describe('MonthsService', () => {
     });
 
     // -----------------------------------------------------------------------
-    // allocation copying (spec line 356: plan copied as editable values;
-    // line 293: archived envelopes are excluded from new allocations)
+    // allocation copying (UI-12: plan copied as editable values;
+    // ENV-12: archived envelopes are excluded from new allocations)
     // -----------------------------------------------------------------------
 
     it('copies allocations from the previous month for active envelopes only', async () => {

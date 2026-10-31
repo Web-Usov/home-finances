@@ -61,7 +61,7 @@ function emptyAccum(): MonthEnvelopeAccum {
 
 /**
  * Calculation Engine — deterministic cascade recalculation of balances.
- * Implemented per SPECIFICATION.md § Cascade Recalculation (lines 233-262).
+ * Implemented per CALC-01..CALC-13.
  *
  * Key invariants:
  * - Envelope balance never negative
@@ -76,20 +76,20 @@ export class CalculationEngineService {
 
   /**
    * Recalculate all derived data (OperationResult, EnvelopeMonthSnapshot) for
-   * every month from `period` forward, atomically (spec lines 237-247, 261).
+   * every month from `period` forward, atomically (CALC-02..CALC-07, CALC-13).
    *
    * `period` is the earliest affected month, determined by the caller. The
    * whole affected month is replayed from its restored opening balances:
-   * derived data must be reproducible from source data (line 235), and a full
+   * derived data must be reproducible from source data (CALC-01), and a full
    * deterministic replay is what guarantees it — the "first affected position"
    * only matters for locating that earliest month, which the caller did.
    *
    * Pass an existing transaction client as `db` when the source-data mutation
-   * and the recalculation must commit atomically (line 261); otherwise the
+   * and the recalculation must commit atomically (CALC-13); otherwise the
    * engine wraps the whole cascade in its own transaction.
    *
    * Source data (Operation, Allocation) is never modified — only derived rows
-   * are deleted and rebuilt (line 459).
+   * are deleted and rebuilt (DATA-13).
    */
   async recalculateFrom(period: string, db?: DbClient): Promise<RecalculateFromResult> {
     if (db !== undefined) {
@@ -101,7 +101,7 @@ export class CalculationEngineService {
   /**
    * Resolve a BudgetMonth by id, then atomically recalculate all derived data
    * from that month's period forward and increment `version` by 1 on every
-   * affected BudgetMonth (spec lines 245, 261, 505-511).
+   * affected BudgetMonth (CALC-06, CALC-13, NFR-16..NFR-19).
    *
    * The entire cascade — delete + recreate of OperationResult and
    * EnvelopeMonthSnapshot for all affected months, and the version increment —
@@ -109,7 +109,7 @@ export class CalculationEngineService {
    * rolls back: no partial derived data, no version change.
    *
    * Callers that must commit their own source-data mutation and the cascade in
-   * ONE transaction pass their interactive tx client as `db` (spec line 261);
+   * ONE transaction pass their interactive tx client as `db` (CALC-13);
    * without it the method wraps everything in its own `$transaction`.
    *
    * @throws NotFoundException when no BudgetMonth exists for `monthId`.
@@ -204,9 +204,9 @@ export class CalculationEngineService {
 
   /**
    * Replay one month: restore opening balances, apply initial balances, then
-   * the allocation, then operations by sequence_no (spec lines 134-138, 190,
-   * 241). Recreates all derived rows for the month and returns the per-envelope
-   * closing balances that become the next month's opening (line 134).
+   * the allocation, then operations by sequence_no (FIN-13, FIN-14, OP-15,
+   * CALC-04). Recreates all derived rows for the month and returns the per-envelope
+   * closing balances that become the next month's opening (FIN-13).
    */
   private async replayMonth(args: {
     db: DbClient;
@@ -239,7 +239,7 @@ export class CalculationEngineService {
     const resultRows: Prisma.OperationResultCreateManyInput[] = [];
 
     // Initial balances apply before the allocation and all user operations,
-    // only in the envelope's creation month (spec lines 138, 174).
+    // only in the envelope's creation month (FIN-14, OP-10).
     const initialOps = operations.filter((op) => op.type === 'initial_balance');
     const userOps = operations.filter((op) => op.type !== 'initial_balance');
 
@@ -254,7 +254,7 @@ export class CalculationEngineService {
     }
 
     // The monthly allocation always applies before expenses, transfers and
-    // adjustments (spec lines 138, 190).
+    // adjustments (FIN-14, OP-15).
     for (const allocation of allocations) {
       balances.set(
         allocation.envelopeId,
@@ -283,7 +283,7 @@ export class CalculationEngineService {
         balances.set(op.destinationEnvelopeId, applied.destinationBalanceAfter ?? 0);
         // transfersOut is the covered part (what actually left the source);
         // transfersIn is the full requested amount (what the destination
-        // actually received, spec lines 165-168). The gap lives in
+        // actually received, OP-09). The gap lives in
         // uncoveredByType.transfer.
         sourceAccum.transfersOut += applied.covered;
         sourceAccum.uncoveredTransfer += applied.uncovered;
@@ -309,14 +309,14 @@ export class CalculationEngineService {
         sourceAccum.expensesCovered += applied.covered;
         sourceAccum.uncoveredExpense += applied.uncovered;
       } else if (op.type === 'adjustment') {
-        // Dashboard shows the net actually-applied amount (spec line 186).
+        // Dashboard shows the net actually-applied amount (OP-14).
         sourceAccum.adjustmentApplied += sign === '-' ? -applied.covered : applied.covered;
         sourceAccum.uncoveredAdjustment += applied.uncovered;
       }
       resultRows.push(toResultRow(op, sourceBefore, applied));
     }
 
-    // Derived rows are fully rebuilt from source data (spec lines 443-444, 459).
+    // Derived rows are fully rebuilt from source data (DATA-05, DATA-06, DATA-13).
     await db.operationResult.deleteMany({ where: { operation: { monthId: month.id } } });
     await db.envelopeMonthSnapshot.deleteMany({ where: { monthId: month.id } });
     if (resultRows.length > 0) {
@@ -360,7 +360,7 @@ export class CalculationEngineService {
         uncoveredByType,
       });
 
-      // Conflict "Архивный конверт с остатком" (spec line 259): an envelope
+      // Conflict "Архивный конверт с остатком" (CALC-12): an envelope
       // archived at or before this month ends up with a non-zero balance.
       // Reported once per envelope, at the first month the conflict appears.
       const envelope = envelopeById.get(envelopeId);
@@ -391,7 +391,7 @@ export class CalculationEngineService {
 
   /**
    * Apply a single operation to envelope balance(s).
-   * Per SPECIFICATION.md § Operation Rules (lines 142-187).
+   * Per OP-01..OP-14 (operation rules).
    *
    * All inputs/outputs are integer kopecks — never float.
    *
