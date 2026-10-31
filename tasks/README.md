@@ -2,9 +2,9 @@
 
 > Файл создаётся командой `node scripts/tasks.mjs board`. Источник правды — frontmatter файлов `tasks/T-*.md` и `epics/E-*.md`.
 
-Всего задач: 30 — todo: 21, in_progress: 1, review: 0, blocked: 0, done: 8.
+Всего задач: 30 — todo: 21, in_progress: 0, review: 0, blocked: 0, done: 9.
 
-## E-00. Технический долг и соответствие спеке — planned (5/12)
+## E-00. Технический долг и соответствие спеке — planned (6/12)
 
 Эпик: [E-00-tech-debt.md](../epics/E-00-tech-debt.md)
 
@@ -15,7 +15,7 @@
 | [T-017](T-017-envelope-initial-balance-recalc.md) | Envelope created with an initial balance must show that balance (recalculate month) | done | api | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/4) |
 | [T-018](T-018-process-v1-retro.md) | Process v1: apply pilot retro | done | infra | M | — | [PR](https://github.com/Web-Usov/home-finances/pull/5) |
 | [T-019](T-019-remove-class-validator-deps.md) | Remove unused class-validator and class-transformer dependencies | done | api | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/8) |
-| [T-020](T-020-spec-gaps-validation-error-month-not-found.md) | Spec gaps from pilot reviews (error codes, working month and period on operations, reopen preview, message format) | in_progress | docs | M | — | — |
+| [T-020](T-020-spec-gaps-validation-error-month-not-found.md) | Spec gaps from pilot reviews (error codes, working month and period on operations, reopen preview, message format) | done | docs | M | — | [PR](https://github.com/Web-Usov/home-finances/pull/12) |
 | [T-021](T-021-harden-process-scripts.md) | Harden process scripts (with-lock, task-start, task-clean) | done | infra | S | — | [PR](https://github.com/Web-Usov/home-finances/pull/6) |
 | [T-023](T-023-initial-balance-month-not-found.md) | Envelope with an initial balance and no month returns MONTH_NOT_FOUND | todo | api | S | T-020 | — |
 | [T-026](T-026-money-ru-messages.md) | ru-RU money formatting in server messages | todo | api | S | T-005, T-025, T-020 | — |

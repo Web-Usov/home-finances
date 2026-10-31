@@ -1,7 +1,7 @@
 ---
 id: T-020
 title: Spec gaps from pilot reviews (error codes, working month and period on operations, reopen preview, message format)
-status: in_progress
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: docs
 size: M
 branch: task/T-020-spec-gaps-validation-error-month-not-found
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/12
 ---
 
 # T-020. Spec gaps from pilot reviews (error codes, working month and period on operations, reopen preview, message format)
