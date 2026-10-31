@@ -1,7 +1,7 @@
 ---
 id: T-028
 title: Enforce a single reopened month in the database (MON-13 race)
-status: todo
+status: in_progress
 epic: E-00
 depends: [T-006]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [MON-13, DATA-01, DATA-12]
 acceptance: [AC-15]
 area: api
 size: S
-branch: null
+branch: task/T-028-single-reopened-month-db
 pr: null
 ---
 
