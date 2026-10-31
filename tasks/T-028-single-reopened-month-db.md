@@ -1,7 +1,7 @@
 ---
 id: T-028
 title: Enforce a single reopened month in the database (MON-13 race)
-status: todo
+status: done
 epic: E-00
 depends: [T-006]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [MON-13, DATA-01, DATA-12]
 acceptance: [AC-15]
 area: api
 size: S
-branch: null
-pr: null
+branch: task/T-028-single-reopened-month-db
+pr: https://github.com/Web-Usov/home-finances/pull/36
 ---
 
 # T-028. Enforce a single reopened month in the database (MON-13 race)
@@ -26,11 +26,11 @@ Two concurrent reopen requests for different closed months cannot both succeed: 
 
 ## Definition of Done
 
-- [ ] `it('MON-13: two concurrent reopens of different months leave exactly one reopened month and one 409 INVALID_STATUS_TRANSITION')` (int-spec) passes
-- [ ] Migration applies on a clean DB (`pnpm db:migrate` / `pnpm test:int`)
-- [ ] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('MON-13: two concurrent reopens of different months leave exactly one reopened month and one 409 INVALID_STATUS_TRANSITION')` (int-spec) passes
+- [x] Migration applies on a clean DB (`pnpm db:migrate` / `pnpm test:int`)
+- [x] `pnpm api:generate` was run and `pnpm api:contract` shows no drift (only if controllers/DTOs/types changed)
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -42,4 +42,9 @@ Two concurrent reopen requests for different closed months cannot both succeed: 
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Partial unique index `budget_month_single_reopened_key` on `budget_month(status) WHERE status = 'reopened'`
+(migration `20261031120000_single_reopened_month`, `IF NOT EXISTS`, not modelled in schema.prisma). `MonthsService.reopen`
+maps a P2002 on that index (and only that one, `reopen-violation.ts`) to 409 `INVALID_STATUS_TRANSITION`; the T-036 lock-based
+check stays. Tests: `months.reopen-unique.int-spec.ts` (DB-level rejection on insert and update), `months.service.spec.ts`
+(mapping, other P2002 rethrown); the concurrent-reopen race is already covered by `month-lock.concurrency.same-kind.int-spec.ts`.
+Migration verified on a scratch schema holding existing data with one reopened month, applied twice. No API/contract change.

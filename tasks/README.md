@@ -26,7 +26,7 @@
 
 - [T-026](T-026-money-ru-messages.md) ru-RU money formatting in server messages — **done** · api · S · depends: T-005, T-025, T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/32)
 
-- [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **todo** · api · S · depends: T-006 · —
+- [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **done** · api · S · depends: T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/36)
 
 - [T-029](T-029-version-check-in-tx.md) Re-check month version inside the transaction in allocations.save and other mutations — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
 
@@ -105,3 +105,5 @@
 - [T-016](T-016-docker-compose-e2e.md) Delivery: docker compose from scratch and persistence after restart — **todo** · infra · S · depends: T-014 · —
 
 - [T-038](T-038-preview-environment-auto-deploy-master.md) Preview environment: auto-deploy master for the owner — **done** · infra · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/28)
+
+- [T-039](T-039-preview-keep-api-up-restart-always.md) Preview: keep API up (Restart=always, health watchdog) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/34)
