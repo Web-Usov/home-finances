@@ -5,15 +5,8 @@
  * API for family budget application — months, envelopes, allocations, operations
  * OpenAPI spec version: 1.0
  */
-import type { MonthsControllerUpdateIncomeV1200DataStatus } from './monthsControllerUpdateIncomeV1200DataStatus';
+import type { MonthsControllerUpdateIncomeV1200DataSummary } from './monthsControllerUpdateIncomeV1200DataSummary';
 
 export type MonthsControllerUpdateIncomeV1200Data = {
-  id: string;
-  /** @pattern ^\d{4}-\d{2}$ */
-  period: string;
-  status: MonthsControllerUpdateIncomeV1200DataStatus;
-  incomeMinor: number;
-  version: number;
-  totalAllocatedMinor: number;
-  freeFundsMinor: number;
+  summary: MonthsControllerUpdateIncomeV1200DataSummary;
 };

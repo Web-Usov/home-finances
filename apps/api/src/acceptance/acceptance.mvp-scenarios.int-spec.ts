@@ -127,22 +127,25 @@ describe('MVP acceptance scenarios (integration)', () => {
     const version = await versionOf('2026-01');
     const operationsBefore = await t.prisma.operation.count();
 
+    // concurrent on purpose: all seven are rejected by the same lock-protected closed-month check. They go through the
+    // listened server (t.listen): supertest on the unlistened one fails parallel requests with ECONNRESET.
+    const live = request(await t.listen());
+    const operateLive = (body: object) => live.post('/api/v1/operations').send({ ...body, version });
     const attempts = [
-      () => http().patch('/api/v1/months/2026-01').send({ income: '1.00', version }),
-      () => allocate('2026-01', { [food.id]: '1.00' }),
-      () => operate('2026-01', { type: 'expense', sourceEnvelopeId: food.id, amount: '1.00' }),
-      () => operate('2026-01', {
+      () => live.patch('/api/v1/months/2026-01').send({ income: '1.00', version }),
+      () => live.put('/api/v1/months/2026-01/allocations').send({ allocations: { [food.id]: '1.00' }, version }),
+      () => operateLive({ type: 'expense', sourceEnvelopeId: food.id, amount: '1.00' }),
+      () => operateLive({
         type: 'transfer',
         sourceEnvelopeId: food.id,
         destinationEnvelopeId: home.id,
         amount: '1.00',
       }),
-      () => operate('2026-01', { type: 'adjustment', sign: '+', sourceEnvelopeId: food.id, amount: '1.00' }),
-      () => http().post('/api/v1/envelopes').send({ name: 'New', initialBalance: '10.00' }),
-      () => http().post(`/api/v1/envelopes/${home.id}/archive`).send({}),
+      () => operateLive({ type: 'adjustment', sign: '+', sourceEnvelopeId: food.id, amount: '1.00' }),
+      () => live.post('/api/v1/envelopes').send({ name: 'New', initialBalance: '10.00' }),
+      () => live.post(`/api/v1/envelopes/${home.id}/archive`).send({}),
     ];
-    const responses = [];
-    for (const attempt of attempts) responses.push(await attempt()); // sequential: each request is its own transaction
+    const responses = await Promise.all(attempts.map((attempt) => attempt()));
 
     expect(responses.map((r) => [r.status, r.body.error])).toEqual(responses.map(() => [409, 'MONTH_LOCKED']));
     expect(responses).toHaveLength(7);

@@ -11,16 +11,13 @@ import {
 import type {
   CloseMonthResultSchema,
   MonthStatus,
-  MonthSummarySchema,
   MutationResponse,
   ReopenMonthResultSchema,
 } from '@family-budget/types';
 import { z } from 'zod';
-import {
-  ConflictException,
-  NotFoundException,
-  ValidationException,
-} from '../../common/exceptions';
+import { ConflictException, ValidationException } from '../../common/exceptions';
+import type { MonthSummaryDto } from '../../common/month-summary';
+import { lockAllMonths, lockMonthForMutation } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 
@@ -30,7 +27,7 @@ export type CloseMonthRequest = z.infer<typeof CloseMonthRequestSchema>;
 export type ReopenMonthRequest = z.infer<typeof ReopenMonthRequestSchema>;
 
 /** Brief per-month totals — the "краткие итоги" of the months API (API-01). */
-export type MonthSummaryDto = z.infer<typeof MonthSummarySchema>;
+export type { MonthSummaryDto };
 export type CloseMonthResultDto = z.infer<typeof CloseMonthResultSchema>;
 export type ReopenMonthResultDto = z.infer<typeof ReopenMonthResultSchema>;
 
@@ -110,33 +107,32 @@ export class MonthsService {
    * with the month row.
    */
   async create(dto: CreateMonthRequest): Promise<{ month: MonthSummaryDto }> {
-    const months = await this.prisma.budgetMonth.findMany({
-      orderBy: { period: 'asc' },
-    });
-    const latest = months[months.length - 1];
-
-    let status: MonthStatus = 'open';
-    if (latest !== undefined) {
-      const expected = nextPeriod(latest.period);
-      if (dto.period !== expected) {
-        throw new ValidationException(
-          'INVALID_PERIOD',
-          `Месяц ${dto.period} не является следующим. Ожидается: ${expected}.`,
-        );
-      }
-      const draft = months.find((m) => m.status === 'draft');
-      if (draft !== undefined) {
-        throw new ConflictException(
-          'INVALID_STATUS_TRANSITION',
-          `Уже существует черновик месяца ${draft.period}. Одновременно допускается только один черновик.`,
-        );
-      }
-      status = months.some((m) => m.status === 'open') ? 'draft' : 'open';
-    }
-
-    const incomeMinor = dto.income !== undefined ? parseMoneyMinor(dto.income) : 0;
-
     const { created, copiedTotalMinor } = await this.prisma.$transaction(async (tx) => {
+      // The new month's status depends on every other month (a concurrent close or create), so all
+      // month rows are locked in ascending order before they are read (DATA-12, MON-05..MON-08).
+      const months = await lockAllMonths(tx);
+      const latest = months[months.length - 1];
+
+      let status: MonthStatus = 'open';
+      if (latest !== undefined) {
+        const expected = nextPeriod(latest.period);
+        if (dto.period !== expected) {
+          throw new ValidationException(
+            'INVALID_PERIOD',
+            `Месяц ${dto.period} не является следующим. Ожидается: ${expected}.`,
+          );
+        }
+        const draft = months.find((m) => m.status === 'draft');
+        if (draft !== undefined) {
+          throw new ConflictException(
+            'INVALID_STATUS_TRANSITION',
+            `Уже существует черновик месяца ${draft.period}. Одновременно допускается только один черновик.`,
+          );
+        }
+        status = months.some((m) => m.status === 'open') ? 'draft' : 'open';
+      }
+
+      const incomeMinor = dto.income !== undefined ? parseMoneyMinor(dto.income) : 0;
       const month = await tx.budgetMonth.create({
         data: { period: dto.period, status, incomeMinor },
       });
@@ -182,7 +178,7 @@ export class MonthsService {
   }
 
   /**
-   * Change the income of a non-closed month (API-03). Optimistic
+   * Change the income of a non-closed month (API-03, API-22: `data.summary`). Optimistic
    * locking via `version` (DATA-12) is checked before the closed-month lock
    * (MON-03, NFR-18). The income update and the cascade recalculation commit in one
    * transaction (API-15); the engine increments `version` on all affected
@@ -191,18 +187,11 @@ export class MonthsService {
   async updateIncome(
     period: string,
     dto: UpdateIncomeRequest,
-  ): Promise<MutationResponse<MonthSummaryDto>> {
+  ): Promise<MutationResponse<{ summary: MonthSummaryDto }>> {
     const incomeMinor = parseMoneyMinor(dto.income);
     return this.prisma.$transaction(async (tx) => {
-      // Read and version-check inside the transaction (DATA-12): no window between check and write.
-      const month = await this.findMonthOrThrow(tx, period);
-      this.assertVersion(month, dto.version);
-      if (month.status === 'closed') {
-        throw new ConflictException(
-          'MONTH_LOCKED',
-          'Месяц закрыт. Откройте его повторно, чтобы внести изменения.',
-        );
-      }
+      // DATA-12 / MON-03: lock, then version and status under the lock (no window between check and write).
+      const month = await lockMonthForMutation(tx, { period }, { expectedVersion: dto.version });
       // FIN-02: income may not drop below what is already allocated (MSG-01).
       const allocatedMinor = await this.sumAllocations(tx, month.id);
       if (incomeMinor < allocatedMinor) {
@@ -215,7 +204,10 @@ export class MonthsService {
       const recalc = await this.engine.recalculateMonthAtomically(month.id, tx);
       const refreshed = await this.refreshMonth(tx, month.id);
       const totalAllocatedMinor = await this.sumAllocations(tx, month.id);
-      return { data: toSummary(refreshed, totalAllocatedMinor), warnings: recalc.warnings };
+      return {
+        data: { summary: toSummary(refreshed, totalAllocatedMinor) },
+        warnings: recalc.warnings,
+      };
     });
   }
 
@@ -233,8 +225,12 @@ export class MonthsService {
     dto: CloseMonthRequest,
   ): Promise<MutationResponse<CloseMonthResultDto>> {
     return this.prisma.$transaction(async (tx) => {
-      const month = await this.findMonthOrThrow(tx, period);
-      this.assertVersion(month, dto.version);
+      // Locks the month and, in ascending period order, every later one (so the draft too).
+      const month = await lockMonthForMutation(
+        tx,
+        { period },
+        { expectedVersion: dto.version, rejectClosed: false },
+      );
       if (month.status !== 'open' && month.status !== 'reopened') {
         throw new ConflictException(
           'INVALID_STATUS_TRANSITION',
@@ -287,8 +283,13 @@ export class MonthsService {
     dto: ReopenMonthRequest,
   ): Promise<MutationResponse<ReopenMonthResultDto>> {
     return this.prisma.$transaction(async (tx) => {
-      const month = await this.findMonthOrThrow(tx, period);
-      this.assertVersion(month, dto.version);
+      // Locks the target and every later month. MON-13 is checked under that lock: the single
+      // reopened month either lies in the locked range or its close shares a locked row with us.
+      const month = await lockMonthForMutation(
+        tx,
+        { period },
+        { expectedVersion: dto.version, rejectClosed: false },
+      );
       if (month.status !== 'closed') {
         throw new ConflictException(
           'INVALID_STATUS_TRANSITION',
@@ -316,23 +317,6 @@ export class MonthsService {
         warnings: recalc.warnings,
       };
     });
-  }
-
-  private async findMonthOrThrow(db: DbClient, period: string): Promise<BudgetMonth> {
-    const month = await db.budgetMonth.findUnique({ where: { period } });
-    if (month === null) {
-      throw new NotFoundException('MONTH_NOT_FOUND', `Месяц не найден: ${period}`);
-    }
-    return month;
-  }
-
-  private assertVersion(month: BudgetMonth, version: number): void {
-    if (month.version !== version) {
-      throw new ConflictException(
-        'VERSION_CONFLICT',
-        `Месяц ${month.period} был изменён (version ${month.version}). Обновите данные и повторите.`,
-      );
-    }
   }
 
   /** Re-read inside the recalc transaction — the engine bumps `version`. */
