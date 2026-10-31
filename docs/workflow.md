@@ -128,7 +128,8 @@ git commit -am "docs(tasks): mark T-xxx done [T-xxx]" && git push
    checks yet, sleep 15s and retry until they appear.
 
 `/ship` stops here and never merges or enables auto-merge. Next step: `/review <pr>` (section 6); the reviewer enables
-auto-merge after `VERDICT: LGTM`. After the merge run `pnpm task:clean T-xxx`.
+auto-merge after `VERDICT: LGTM`. After the merge run `pnpm task:clean T-xxx` (it finds the branch through the task file's `branch:` field, so renumbered
+tasks work too).
 
 PR title format equals the commit format (header max 100 chars), because the squash commit takes the PR title.
 
@@ -168,6 +169,11 @@ does not allow approving your own PR. So:
   run `/review <pr>`. On `VERDICT: LGTM`, if the diff touches none of `docs/spec/**`, `docs/decisions/**`, `epics/**`,
   the reviewer runs `gh pr merge <n> --squash --auto` (GitHub merges as soon as `verify`, `contract`, `e2e` are green) and
   then reports "merged" or "auto-merge enabled" based on `gh pr view <n> --json state,autoMergeRequest`.
+  Branch protection is strict (the branch must be up to date with master): if `gh pr view <n> --json mergeStateStatus` is
+  `BEHIND`, the reviewer first runs `gh pr update-branch <n>` (GitHub merges master in and re-runs CI), then enables
+  auto-merge. It sends the PR back to the author only when the update conflicts or master changed generated files / the
+  board that the PR also touches; the author then merges `origin/master` locally, runs `pnpm tasks:board`, `pnpm verify`
+  and pushes.
   On `CHANGES REQUESTED` the reviewer only posts the comment (as a safety step it may run `gh pr merge <n> --disable-auto`);
   the implementer fixes the findings with new commits, runs `pnpm verify`, pushes, and `/review` runs again.
 - **Branch protection reality:** required approving reviews = 0, because agents and the owner share the GitHub account

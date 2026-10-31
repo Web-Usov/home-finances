@@ -42,6 +42,8 @@ when a branch's task id collides with a different task file on `origin/master`.
 - [x] `tasks:check` fails on an id used by a different file on `origin/master`, skips without the ref (`scripts/__tests__/tasks.test.mjs`)
 - [x] CI `verify` job fetches `origin/master` so the rule runs there
 - [x] `pnpm verify` is green
+- [x] `task:clean` resolves the branch from the task file's `branch:` field (fallback: id pattern); test `resolveBranch ...`
+- [x] Reviewer flow (agent, `/review`, workflow.md) handles BEHIND PRs with `gh pr update-branch`; `/ship` says to merge origin/master first
 - [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
@@ -57,3 +59,8 @@ when a branch's task id collides with a different task file on `origin/master`.
 Id allocation now scans task files on all remote/local refs; `tasks:check` reports cross-branch id collisions with
 `origin/master`. Note: on PR CI the merge ref already makes a clash a "duplicate task id"; the new rule catches it locally
 and when the merge is textually clean. Not covered: two branches that both allocate the same id before either is pushed.
+
+Extended: `task:clean` takes the branch from the `branch:` field of the task file on origin/master (renumbered T-023 -> T-032
+kept its old branch name), keeping all safety checks. Reviewer flow updated for strict branch protection: on LGTM a BEHIND PR is
+updated with `gh pr update-branch` before auto-merge (conflicts or changed generated files/board go back to the author);
+`gh pr update-branch*` allowed for the reviewer; `/ship` tells the author to merge origin/master first.
