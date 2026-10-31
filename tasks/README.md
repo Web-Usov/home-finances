@@ -102,4 +102,4 @@
 
 - [T-016](T-016-docker-compose-e2e.md) Delivery: docker compose from scratch and persistence after restart — **todo** · infra · S · depends: T-014 · —
 
-- [T-038](T-038-preview-environment-auto-deploy-master.md) Preview environment: auto-deploy master for the owner — **in_progress** · infra · M · depends: — · —
+- [T-038](T-038-preview-environment-auto-deploy-master.md) Preview environment: auto-deploy master for the owner — **done** · infra · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/28)
