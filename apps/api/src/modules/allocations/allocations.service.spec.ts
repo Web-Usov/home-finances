@@ -54,24 +54,6 @@ function makeAllocation(overrides: Partial<Allocation> = {}): Allocation {
   };
 }
 
-function makeSnapshot(overrides: Record<string, unknown> = {}) {
-  return {
-    envelopeId: ENV_A,
-    envelope: { name: 'Еда' },
-    opening: 100_000,
-    initial: 0,
-    allocation: 5_000_000,
-    expensesRequested: 200_000,
-    expensesCovered: 150_000,
-    adjustmentApplied: -50_000,
-    transfersIn: 0,
-    transfersOut: 0,
-    closing: 4_950_000,
-    uncoveredByType: { expense: 50_000 },
-    ...overrides,
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Mocks — Prisma surface mirrors AllocationsService usage; $transaction hands
 // the same mock to the callback as the tx client. Engine is mocked separately.
@@ -81,6 +63,7 @@ function createMockPrisma() {
   const mock = {
     budgetMonth: {
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
     envelope: {
       findMany: jest.fn(),
@@ -89,9 +72,7 @@ function createMockPrisma() {
       findMany: jest.fn(),
       deleteMany: jest.fn(),
       createMany: jest.fn(),
-    },
-    envelopeMonthSnapshot: {
-      findMany: jest.fn(),
+      aggregate: jest.fn(),
     },
     $transaction: jest.fn(),
     $queryRaw: jest.fn(),
@@ -133,7 +114,7 @@ function createService(mock: MockPrisma, engine: MockEngine): AllocationsService
   );
 }
 
-/** Happy-path stubs: open month version 3, two active envelopes, one snapshot. */
+/** Happy-path stubs: open month version 3, two active envelopes, 75 000.00 ₽ allocated after the save. */
 function stubSaveDefaults(mock: MockPrisma, engine: MockEngine): void {
   mock.budgetMonth.findUnique.mockResolvedValue(makeMonth());
   mock.envelope.findMany.mockResolvedValue([
@@ -142,7 +123,7 @@ function stubSaveDefaults(mock: MockPrisma, engine: MockEngine): void {
   ]);
   mock.allocation.deleteMany.mockResolvedValue({ count: 1 });
   mock.allocation.createMany.mockResolvedValue({ count: 2 });
-  mock.envelopeMonthSnapshot.findMany.mockResolvedValue([makeSnapshot()]);
+  mock.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 7_500_000 } });
   engine.recalculateMonthAtomically.mockResolvedValue({
     recalculatedFrom: '2026-08',
     warnings: [],
@@ -190,32 +171,20 @@ describe('AllocationsService', () => {
       expect(result.warnings).toEqual([
         { code: 'ARCHIVED_ENVELOPE_WITH_BALANCE', message: 'warn' },
       ]);
-      expect(result.data).toMatchObject({
-        period: '2026-08',
-        status: 'open',
-        incomeMinor: 10_000_000,
-        totalAllocatedMinor: 7_500_000,
-        freeFundsMinor: 2_500_000,
-        totalExpensesRequestedMinor: 200_000,
-        totalExpensesCoveredMinor: 150_000,
-        totalAdjustmentsAppliedMinor: -50_000,
-        totalUncoveredMinor: 50_000,
-      });
-      expect(result.data.envelopes).toEqual([
-        {
-          envelopeId: ENV_A,
-          envelopeName: 'Еда',
-          opening: 100_000,
-          allocation: 5_000_000,
-          expensesRequested: 200_000,
-          expensesCovered: 150_000,
-          adjustmentApplied: -50_000,
-          transfersIn: 0,
-          transfersOut: 0,
-          closing: 4_950_000,
-          uncovered: 50_000,
+      expect(mock.budgetMonth.update).not.toHaveBeenCalled(); // no `income` in the request
+      expect(result.data).toEqual({
+        summary: {
+          id: 'month-1',
+          period: '2026-08',
+          status: 'open',
+          incomeMinor: 10_000_000,
+          version: 3,
+          totalAllocatedMinor: 7_500_000,
+          freeFundsMinor: 2_500_000,
         },
-      ]);
+      });
+      // API-22: no envelope data in the response
+      expect(result.data.summary).not.toHaveProperty('envelopes');
     });
 
     it('DATA-12 / MON-03: locks the month row FOR UPDATE on the transaction client before any write', async () => {
@@ -232,13 +201,15 @@ describe('AllocationsService', () => {
     it('accepts a total equal to the income exactly', async () => {
       stubSaveDefaults(mock, engine);
 
+      mock.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 10_000_000 } });
+
       const result = await service.save('2026-08', {
         allocations: { [ENV_A]: '60000.00', [ENV_B]: '40000.00' },
         version: 3,
       });
 
-      expect(result.data.totalAllocatedMinor).toBe(10_000_000);
-      expect(result.data.freeFundsMinor).toBe(0);
+      expect(result.data.summary.totalAllocatedMinor).toBe(10_000_000);
+      expect(result.data.summary.freeFundsMinor).toBe(0);
       expect(mock.allocation.createMany).toHaveBeenCalled();
     });
 
@@ -367,7 +338,7 @@ describe('AllocationsService', () => {
 
     it('clears the table for an empty allocation map and still recalculates', async () => {
       stubSaveDefaults(mock, engine);
-      mock.envelopeMonthSnapshot.findMany.mockResolvedValue([]);
+      mock.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: null } });
 
       const result = await service.save('2026-08', { allocations: {}, version: 3 });
 
@@ -375,37 +346,63 @@ describe('AllocationsService', () => {
       expect(mock.allocation.createMany).not.toHaveBeenCalled();
       expect(mock.envelope.findMany).not.toHaveBeenCalled();
       expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-1', mock);
-      expect(result.data.totalAllocatedMinor).toBe(0);
-      expect(result.data.freeFundsMinor).toBe(10_000_000);
-      expect(result.data.envelopes).toEqual([]);
+      expect(result.data.summary.totalAllocatedMinor).toBe(0);
+      expect(result.data.summary.freeFundsMinor).toBe(10_000_000);
     });
 
-    it('sums uncovered parts across all types per envelope in the summary', async () => {
+    it('FIN-02 / UI-11 / API-04: an `income` in the request is stored in the same transaction, before the cascade', async () => {
       stubSaveDefaults(mock, engine);
-      mock.envelopeMonthSnapshot.findMany.mockResolvedValue([
-        makeSnapshot({ uncoveredByType: { expense: 50_000, transfer: 25_000 } }),
-        makeSnapshot({
-          envelopeId: ENV_B,
-          envelope: { name: 'Дом' },
-          opening: 0,
-          allocation: 2_500_000,
-          expensesRequested: 0,
-          expensesCovered: 0,
-          adjustmentApplied: 0,
-          closing: 2_500_000,
-          uncoveredByType: {},
-        }),
-      ]);
+      mock.budgetMonth.findUnique
+        .mockResolvedValueOnce(makeMonth()) // the lock query
+        .mockResolvedValue(makeMonth({ incomeMinor: 8_000_000 })); // the summary re-read
 
       const result = await service.save('2026-08', {
         allocations: { [ENV_A]: '50000.00', [ENV_B]: '25000.00' },
+        income: '80000.00',
         version: 3,
       });
 
-      const [first, second] = result.data.envelopes;
-      expect(first?.uncovered).toBe(75_000);
-      expect(second?.uncovered).toBe(0);
-      expect(result.data.totalUncoveredMinor).toBe(75_000);
+      expect(mock.budgetMonth.update).toHaveBeenCalledWith({
+        where: { id: 'month-1' },
+        data: { incomeMinor: 8_000_000 },
+      });
+      expect(mock.$transaction).toHaveBeenCalledTimes(1);
+      expect(mock.$queryRaw).toHaveBeenCalledTimes(1); // one lock, one version check
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledTimes(1);
+      expect(mock.budgetMonth.update.mock.invocationCallOrder[0]).toBeLessThan(
+        engine.recalculateMonthAtomically.mock.invocationCallOrder[0] ?? 0,
+      );
+      expect(result.data.summary).toMatchObject({ incomeMinor: 8_000_000, freeFundsMinor: 500_000 });
+    });
+
+    it('FIN-02 / MSG-01: the sum is checked against the NEW income and nothing is written on overflow', async () => {
+      stubSaveDefaults(mock, engine); // stored income 100 000.00 ₽
+
+      const promise = service.save('2026-08', {
+        allocations: { [ENV_A]: '50000.00', [ENV_B]: '25000.00' },
+        income: '70000.00',
+        version: 3,
+      });
+
+      await expect(promise).rejects.toMatchObject({
+        code: 'ALLOCATION_EXCEEDS_INCOME',
+        statusCode: 422,
+        message: 'Распределено на 5000.00 ₽ больше дохода. Уменьшите суммы по конвертам.',
+      });
+      expect(mock.budgetMonth.update).not.toHaveBeenCalled();
+      expect(mock.allocation.deleteMany).not.toHaveBeenCalled();
+      expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+    });
+
+    it('FIN-02: a lowered income is accepted when the new allocations fit it, even if the old ones would not', async () => {
+      stubSaveDefaults(mock, engine);
+
+      await service.save('2026-08', { allocations: { [ENV_A]: '100.00' }, income: '100.00', version: 3 });
+
+      expect(mock.budgetMonth.update).toHaveBeenCalledWith({
+        where: { id: 'month-1' },
+        data: { incomeMinor: 10_000 },
+      });
     });
   });
 

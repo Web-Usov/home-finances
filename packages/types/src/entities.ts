@@ -109,33 +109,6 @@ export interface AppSettings {
 // Aggregate / DTO types
 // ---------------------------------------------------------------------------
 
-export interface MonthSummary {
-  period: string;
-  status: MonthStatus;
-  incomeMinor: number;
-  totalAllocatedMinor: number;
-  freeFundsMinor: number;
-  totalExpensesRequestedMinor: number;
-  totalExpensesCoveredMinor: number;
-  totalAdjustmentsAppliedMinor: number;
-  totalUncoveredMinor: number;
-  envelopes: EnvelopeSnapshot[];
-}
-
-export interface EnvelopeSnapshot {
-  envelopeId: string;
-  envelopeName: string;
-  opening: number;
-  allocation: number;
-  expensesRequested: number;
-  expensesCovered: number;
-  adjustmentApplied: number;
-  transfersIn: number;
-  transfersOut: number;
-  closing: number;
-  uncovered: number;
-}
-
 export interface YearlyAnalytics {
   year: number;
   months: MonthAnalytics[];

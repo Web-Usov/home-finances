@@ -84,7 +84,7 @@
         },
         "responses": {
           "200": {
-            "description": "Updated month summary and warnings",
+            "description": "data.summary (short month summary, API-22) and warnings",
             "content": {
               "application/json": {
                 "schema": {
@@ -93,44 +93,53 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "period": {
-                          "type": "string",
-                          "pattern": "^\\d{4}-\\d{2}$"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "draft",
-                            "open",
-                            "closed",
-                            "reopened"
-                          ]
-                        },
-                        "incomeMinor": {
-                          "type": "integer"
-                        },
-                        "version": {
-                          "type": "integer"
-                        },
-                        "totalAllocatedMinor": {
-                          "type": "integer"
-                        },
-                        "freeFundsMinor": {
-                          "type": "integer"
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
-                        "id",
-                        "period",
-                        "status",
-                        "incomeMinor",
-                        "version",
-                        "totalAllocatedMinor",
-                        "freeFundsMinor"
+                        "summary"
                       ],
                       "additionalProperties": false
                     },
@@ -684,6 +693,10 @@
                       "pattern": "^\\d+(\\.\\d{1,2})?$"
                     }
                   },
+                  "income": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                  },
                   "version": {
                     "type": "integer",
                     "minimum": 0
@@ -700,7 +713,93 @@
         },
         "responses": {
           "200": {
-            "description": "Summary and warnings"
+            "description": "data.summary (short month summary, API-22) and warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "period": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}$"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "draft",
+                                "open",
+                                "closed",
+                                "reopened"
+                              ]
+                            },
+                            "incomeMinor": {
+                              "type": "integer"
+                            },
+                            "version": {
+                              "type": "integer"
+                            },
+                            "totalAllocatedMinor": {
+                              "type": "integer"
+                            },
+                            "freeFundsMinor": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "period",
+                            "status",
+                            "incomeMinor",
+                            "version",
+                            "totalAllocatedMinor",
+                            "freeFundsMinor"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "summary"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "warnings"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           },
           "404": {
             "description": "MONTH_NOT_FOUND or ENVELOPE_NOT_FOUND (unknown or archived envelope)"
@@ -712,7 +811,7 @@
             "description": "ALLOCATION_EXCEEDS_INCOME"
           }
         },
-        "summary": "Save full allocation table for a month",
+        "summary": "Save full allocation table for a month, optionally together with the month income",
         "tags": [
           "Allocations"
         ]

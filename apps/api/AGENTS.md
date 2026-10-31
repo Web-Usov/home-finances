@@ -14,7 +14,7 @@ Global rules (money, periods, types, language, spec references) are in the root 
 | `health/` | `GET /api/v1/health` | done |
 | `modules/calculation-engine/` | stateless cascade recalculation (`recalculateFrom`, `recalculateMonthAtomically`) | done, unit + integration tests |
 | `modules/envelopes/` | list/create/update/archive; create with an initial balance inserts the `initial_balance` operation and recalculates the month in the same transaction | done |
-| `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation) | done |
+| `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation; optional `income` saved atomically in the same transaction, FIN-02 against the new income) | done |
 | `modules/months/` | list, create (draft/auto-open, allocation copy), `updateIncome` (PATCH, cascade) | done — list, create, `updateIncome`, `close` (draft promotion), `reopen` (cascade, recalc range) |
 | `modules/operations/` | list/create/update/delete | done — list, create, PATCH, DELETE (`version` in the query) |
 | `modules/reporting/` | dashboard + yearly analytics | `GET /dashboard/monthly` done (reads `EnvelopeMonthSnapshot`, T-007); `GET /analytics/yearly` done (three reports from snapshots, T-008) |
@@ -27,7 +27,8 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
 - Controllers are thin: `@ApiTags`/`@ApiOperation`/`@ApiResponse`, validate the body with
   `@Body(new ZodValidationPipe(Schema))`, delegate to the service, return plain objects. No business logic, no `unknown` DTOs.
 - Services own business rules. Mutations: `prisma.$transaction(async (tx) => { write source data; engine.recalculateMonthAtomically(monthId, tx) })`.
-  Mutations return the affected month summary plus `warnings`.
+  Month mutations return `data.summary` (short `MonthSummary` via `buildMonthSummary`, API-22; no envelope data) plus `warnings`;
+  `close`/`reopen` keep their `month` field.
 - Pass the interactive `tx` into the engine; never call it after the transaction has committed.
 - Errors: throw `ValidationException` (422), `ConflictException` (409) or `NotFoundException` (404) with a code from
   `ApiErrorCode` in `@family-budget/types`. Add new codes there, not locally.
@@ -36,6 +37,8 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
   (`common/month-lock.ts`): it takes `FOR UPDATE` on the month and all later months in ascending period order and does the first
   three checks. Never read or check `version`/`status` outside the transaction or without the lock (DATA-12 race), never lock months
   in another order (deadlock), and use `lockWorkingMonth` when the request has no period (operations create, envelope create/archive).
+  `lockWorkingMonth` re-resolves the working month under the lock: when it changed to an earlier month meanwhile (a concurrent
+  reopen) the mutation answers `409 VERSION_CONFLICT` (retry after a refetch) instead of locking out of order.
 - User-facing error messages are Russian and must match the spec `MSG-*` texts where one exists.
 - Prisma: UUID primary keys (`@id @default(uuid()) @db.Uuid`), money columns `Int` mapped to `*_minor`. Change the schema only
   together with a migration (`pnpm db:migrate`).
