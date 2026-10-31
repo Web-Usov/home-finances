@@ -1,7 +1,7 @@
 ---
 id: T-005
 title: Operations: update and delete with stable sequence and recalculation
-status: todo
+status: in_progress
 epic: E-01
 depends: [T-004]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-11, FIN-05, OP-16, OP-17, OP-18, HIST-07, HIST-08, HIST-09, HIST-10, 
 acceptance: [AC-08, AC-12, AC-13, AC-14]
 area: api
 size: M
-branch: null
+branch: task/T-005-operations-update-delete
 pr: null
 ---
 
