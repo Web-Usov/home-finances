@@ -26,33 +26,29 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+The preview API/web survive clean exits, stray SIGTERMs and OOM pressure: systemd always restarts them and a watchdog restarts an unhealthy API.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- Incident 2026-10-31 22:15: `family-budget-preview-api` exited cleanly (`Deactivated successfully`, no signal/OOM line in the journal), `Restart=on-failure` did not restart it, `/api` gave 502.
+- Files: `scripts/preview/systemd/*`, `scripts/preview/watchdog.sh`, `scripts/preview/install-systemd.sh`, `docs/preview.md`.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] API and web units: `Restart=always`, `RestartSec=3`, start limit, `OOMScoreAdjust` -200; update unit +500
+- [x] Watchdog timer (1 min): 2 consecutive failed health checks restart the API; covered by `scripts/__tests__/preview-watchdog.test.mjs`
+- [x] Repo has no use of port 3100 by tests/scripts; docs state 3100/8100 are reserved
+- [x] Units re-installed on the host; SIGTERM of the API recovers in seconds; health via 8100 OK
+- [x] `docs/preview.md` has availability + 502 troubleshooting sections
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Changing app code (`apps/`).
 
 ## Handoff log
 
-<!-- Append-only. One entry per interrupted session: date, what is done, what is next, branch/commit, gotchas. -->
-
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Root cause: the API got a clean stop at 22:15:06 (systemd counts SIGTERM/exit 0 as success), `Restart=on-failure` ignored it. The sender is not identifiable from the journal; the repo has no kill-by-port code (e2e uses OS-assigned free ports, `reuseExistingServer: false`), so a manual or agent `kill` on port 3100 is the likely cause. Fixed by `Restart=always`, the watchdog, OOM score tuning and documenting the reserved ports.
