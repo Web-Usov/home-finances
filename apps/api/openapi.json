@@ -55,6 +55,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Expected month version as a quoted ETag, e.g. `\"7\"` (API-25). Missing → 428 PRECONDITION_REQUIRED, malformed → 422 VALIDATION_ERROR, stale → 409 VERSION_CONFLICT.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"7\""
+            }
           }
         ],
         "requestBody": {
@@ -67,15 +77,10 @@
                   "income": {
                     "type": "string",
                     "pattern": "^\\d+(\\.\\d{1,2})?$"
-                  },
-                  "version": {
-                    "type": "integer",
-                    "minimum": 0
                   }
                 },
                 "required": [
-                  "income",
-                  "version"
+                  "income"
                 ],
                 "additionalProperties": false
               }
@@ -84,6 +89,14 @@
         },
         "responses": {
           "200": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "data.summary (short month summary, API-22) and warnings",
             "content": {
               "application/json": {
@@ -180,6 +193,9 @@
           },
           "422": {
             "description": "ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR"
+          },
+          "428": {
+            "description": "PRECONDITION_REQUIRED (no If-Match header, API-27)"
           }
         },
         "summary": "Change income for a month",
@@ -199,30 +215,28 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "version": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "version"
-                ],
-                "additionalProperties": false
-              }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Expected month version as a quoted ETag, e.g. `\"7\"` (API-25). Missing → 428 PRECONDITION_REQUIRED, malformed → 422 VALIDATION_ERROR, stale → 409 VERSION_CONFLICT.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"7\""
             }
           }
-        },
+        ],
         "responses": {
           "200": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "Closed month and the draft promoted to open (null if none)",
             "content": {
               "application/json": {
@@ -365,6 +379,9 @@
           },
           "422": {
             "description": "ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR"
+          },
+          "428": {
+            "description": "PRECONDITION_REQUIRED (no If-Match header, API-27)"
           }
         },
         "summary": "Close an open or reopened month; promotes the draft when closing an open month",
@@ -375,7 +392,7 @@
     },
     "/api/v1/months/{period}/reopen-preview": {
       "get": {
-        "description": "MON-12 / API-20. Same checks and same range function as POST reopen, but writes nothing, takes no version and no locks. Advisory: the state may change before the reopen request.",
+        "description": "MON-12 / API-20. Same checks and same range function as POST reopen, but writes nothing, takes no If-Match and no locks. Advisory: the state may change before the reopen request.",
         "operationId": "MonthsController_reopenPreview_v1",
         "parameters": [
           {
@@ -389,6 +406,14 @@
         ],
         "responses": {
           "200": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "The month and the inclusive range of months a reopen would recalculate",
             "content": {
               "application/json": {
@@ -491,30 +516,28 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "version": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "version"
-                ],
-                "additionalProperties": false
-              }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Expected month version as a quoted ETag, e.g. `\"7\"` (API-25). Missing → 428 PRECONDITION_REQUIRED, malformed → 422 VALIDATION_ERROR, stale → 409 VERSION_CONFLICT.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"7\""
             }
           }
-        },
+        ],
         "responses": {
           "200": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "Reopened month and the recalculated period range",
             "content": {
               "application/json": {
@@ -630,6 +653,9 @@
           },
           "422": {
             "description": "VALIDATION_ERROR"
+          },
+          "428": {
+            "description": "PRECONDITION_REQUIRED (no If-Match header, API-27)"
           }
         },
         "summary": "Reopen a closed month and recalculate later months",
@@ -784,6 +810,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Expected month version as a quoted ETag, e.g. `\"7\"` (API-25). Missing → 428 PRECONDITION_REQUIRED, malformed → 422 VALIDATION_ERROR, stale → 409 VERSION_CONFLICT.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"7\""
+            }
           }
         ],
         "requestBody": {
@@ -806,15 +842,10 @@
                   "income": {
                     "type": "string",
                     "pattern": "^\\d+(\\.\\d{1,2})?$"
-                  },
-                  "version": {
-                    "type": "integer",
-                    "minimum": 0
                   }
                 },
                 "required": [
-                  "allocations",
-                  "version"
+                  "allocations"
                 ],
                 "additionalProperties": false
               }
@@ -823,6 +854,14 @@
         },
         "responses": {
           "200": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "data.summary (short month summary, API-22) and warnings",
             "content": {
               "application/json": {
@@ -919,6 +958,9 @@
           },
           "422": {
             "description": "ALLOCATION_EXCEEDS_INCOME"
+          },
+          "428": {
+            "description": "PRECONDITION_REQUIRED (no If-Match header, API-27)"
           }
         },
         "summary": "Save full allocation table for a month, optionally together with the month income",
@@ -1136,7 +1178,18 @@
       },
       "post": {
         "operationId": "OperationsController_create_v1",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Expected month version as a quoted ETag, e.g. `\"7\"` (API-25). Missing → 428 PRECONDITION_REQUIRED, malformed → 422 VALIDATION_ERROR, stale → 409 VERSION_CONFLICT.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"7\""
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1179,17 +1232,12 @@
                   "period": {
                     "type": "string",
                     "pattern": "^\\d{4}-\\d{2}$"
-                  },
-                  "version": {
-                    "type": "integer",
-                    "minimum": 0
                   }
                 },
                 "required": [
                   "type",
                   "sourceEnvelopeId",
-                  "amount",
-                  "version"
+                  "amount"
                 ],
                 "additionalProperties": false
               }
@@ -1198,6 +1246,14 @@
         },
         "responses": {
           "201": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "Operation, its result, the new month summary and warnings",
             "content": {
               "application/json": {
@@ -1434,6 +1490,9 @@
           },
           "422": {
             "description": "VALIDATION_ERROR"
+          },
+          "428": {
+            "description": "PRECONDITION_REQUIRED (no If-Match header, API-27)"
           }
         },
         "summary": "Create an operation in the given period (default: the working month)",
@@ -1453,6 +1512,16 @@
             "description": "Operation id (UUID)",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Expected month version as a quoted ETag, e.g. `\"7\"` (API-25). Missing → 428 PRECONDITION_REQUIRED, malformed → 422 VALIDATION_ERROR, stale → 409 VERSION_CONFLICT.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"7\""
             }
           }
         ],
@@ -1478,15 +1547,8 @@
                   "comment": {
                     "type": "string",
                     "maxLength": 500
-                  },
-                  "version": {
-                    "type": "integer",
-                    "minimum": 0
                   }
                 },
-                "required": [
-                  "version"
-                ],
                 "additionalProperties": false
               }
             }
@@ -1494,6 +1556,14 @@
         },
         "responses": {
           "200": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "Operation, its fresh result, the new month summary and warnings",
             "content": {
               "application/json": {
@@ -1730,6 +1800,9 @@
           },
           "422": {
             "description": "VALIDATION_ERROR"
+          },
+          "428": {
+            "description": "PRECONDITION_REQUIRED (no If-Match header, API-27)"
           }
         },
         "summary": "Edit an operation; sequence_no is kept, the cascade is recalculated",
@@ -1750,15 +1823,26 @@
             }
           },
           {
-            "name": "version",
+            "name": "If-Match",
+            "in": "header",
+            "description": "Expected month version as a quoted ETag, e.g. `\"7\"` (API-25). Missing → 428 PRECONDITION_REQUIRED, malformed → 422 VALIDATION_ERROR, stale → 409 VERSION_CONFLICT.",
             "required": true,
-            "in": "query",
-            "description": "Month version (ADR 0005)",
-            "schema": {}
+            "schema": {
+              "type": "string",
+              "example": "\"7\""
+            }
           }
         ],
         "responses": {
           "200": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "The recalculated month summary and warnings",
             "content": {
               "application/json": {
@@ -1855,6 +1939,9 @@
           },
           "422": {
             "description": "VALIDATION_ERROR"
+          },
+          "428": {
+            "description": "PRECONDITION_REQUIRED (no If-Match header, API-27)"
           }
         },
         "summary": "Delete an operation; the sequence_no gap stays, the cascade is recalculated",
@@ -1877,6 +1964,14 @@
         ],
         "responses": {
           "200": {
+            "headers": {
+              "ETag": {
+                "description": "Current version of the month as a quoted ETag, e.g. `\"7\"` (API-26)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "description": "Summary, envelopes, warnings",
             "content": {
               "application/json": {

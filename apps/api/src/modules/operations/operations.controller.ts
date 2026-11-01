@@ -12,13 +12,15 @@ import {
 import {
   CreateOperationRequestSchema,
   UpdateOperationRequestSchema,
-  DeleteOperationQuerySchema,
   DeleteOperationResponseSchema,
   OperationListQuerySchema,
   OperationListResponseSchema,
   OperationMutationResponseSchema,
 } from '@family-budget/types';
 import { z } from 'zod';
+import { ApiIfMatch, IfMatch } from '../../common/if-match';
+import type { ExpectedVersion } from '../../common/if-match';
+import { MONTH_ETAG_HEADERS, MonthETag } from '../../common/month-etag';
 import { ZodValidationPipe } from '../../common/pipes';
 import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { OperationsService } from './operations.service';
@@ -55,9 +57,12 @@ export class OperationsController {
   }
 
   @Post()
+  @MonthETag()
+  @ApiIfMatch()
   @ApiOperation({ summary: 'Create an operation in the given period (default: the working month)' })
   @ApiBody({ schema: zodOpenApiSchema(CreateOperationRequestSchema) })
   @ApiCreatedResponse({
+    headers: MONTH_ETAG_HEADERS,
     description: 'Operation, its result, the new month summary and warnings',
     schema: zodOpenApiSchema(OperationMutationResponseSchema),
   })
@@ -67,15 +72,21 @@ export class OperationsController {
     description: 'VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope',
   })
   @ApiResponse({ status: 422, description: 'VALIDATION_ERROR' })
-  create(@Body(new ZodValidationPipe(CreateOperationRequestSchema)) dto: CreateOperationRequest) {
-    return this.operationsService.create(dto);
+  create(
+    @Body(new ZodValidationPipe(CreateOperationRequestSchema)) dto: CreateOperationRequest,
+    @IfMatch() expectedVersion: ExpectedVersion,
+  ) {
+    return this.operationsService.create(dto, expectedVersion);
   }
 
   @Patch(':id')
+  @MonthETag()
+  @ApiIfMatch()
   @ApiOperation({ summary: 'Edit an operation; sequence_no is kept, the cascade is recalculated' })
   @ApiParam({ name: 'id', description: 'Operation id (UUID)' })
   @ApiBody({ schema: zodOpenApiSchema(UpdateOperationRequestSchema) })
   @ApiOkResponse({
+    headers: MONTH_ETAG_HEADERS,
     description: 'Operation, its fresh result, the new month summary and warnings',
     schema: zodOpenApiSchema(OperationMutationResponseSchema),
   })
@@ -88,25 +99,25 @@ export class OperationsController {
   update(
     @Param('id', OperationIdPipe) id: string,
     @Body(new ZodValidationPipe(UpdateOperationRequestSchema)) dto: UpdateOperationRequest,
+    @IfMatch() expectedVersion: ExpectedVersion,
   ) {
-    return this.operationsService.update(id, dto);
+    return this.operationsService.update(id, dto, expectedVersion);
   }
 
   @Delete(':id')
+  @MonthETag()
+  @ApiIfMatch()
   @ApiOperation({ summary: 'Delete an operation; the sequence_no gap stays, the cascade is recalculated' })
   @ApiParam({ name: 'id', description: 'Operation id (UUID)' })
-  @ApiQuery({ name: 'version', required: true, description: 'Month version (ADR 0005)' })
   @ApiOkResponse({
+    headers: MONTH_ETAG_HEADERS,
     description: 'The recalculated month summary and warnings',
     schema: zodOpenApiSchema(DeleteOperationResponseSchema),
   })
   @ApiResponse({ status: 404, description: 'OPERATION_NOT_FOUND' })
   @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or MONTH_LOCKED' })
   @ApiResponse({ status: 422, description: 'VALIDATION_ERROR' })
-  remove(
-    @Param('id', OperationIdPipe) id: string,
-    @Query(new ZodValidationPipe(DeleteOperationQuerySchema)) query: { version: number },
-  ) {
-    return this.operationsService.remove(id, query.version);
+  remove(@Param('id', OperationIdPipe) id: string, @IfMatch() expectedVersion: ExpectedVersion) {
+    return this.operationsService.remove(id, expectedVersion);
   }
 }

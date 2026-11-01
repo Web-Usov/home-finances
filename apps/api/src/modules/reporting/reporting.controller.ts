@@ -6,6 +6,7 @@ import {
   YearlyAnalyticsQuerySchema,
   YearlyAnalyticsResponseSchema,
 } from '@family-budget/types';
+import { MONTH_ETAG_HEADERS, MonthETag } from '../../common/month-etag';
 import { ZodValidationPipe } from '../../common/pipes';
 import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { ReportingService } from './reporting.service';
@@ -17,10 +18,12 @@ export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
 
   @Get('dashboard/monthly')
+  @MonthETag()
   @ApiOperation({ summary: 'Monthly dashboard' })
   @ApiQuery({ name: 'period', required: false, description: 'YYYY-MM; defaults to the working month' })
   @ApiResponse({
     status: 200,
+    headers: MONTH_ETAG_HEADERS,
     description: 'Summary, envelopes, warnings',
     schema: zodOpenApiSchema(DashboardMonthlyResponseSchema),
   })
