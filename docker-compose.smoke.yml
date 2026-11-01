@@ -1,15 +1,15 @@
 # Override used by scripts/smoke-compose.sh together with docker-compose.yml and an
-# isolated project name: other ports, no fixed container names, so it cannot clash
-# with the running dev stack (family-budget-db on 5432).
+# isolated project name: no fixed container names, so it cannot clash with the running
+# dev stack (family-budget-db on 5432) or the preview (3100/8100). Host ports come from
+# POSTGRES_PORT / API_HOST_PORT / WEB_HOST_PORT, which the script sets to free ports.
 services:
   postgres:
     container_name: !reset null
-    ports: !override
-      - "${SMOKE_DB_PORT:-55432}:5432"
   migrate:
     container_name: !reset null
   api:
     container_name: !reset null
     restart: "no"
-    ports: !override
-      - "${SMOKE_API_PORT:-33000}:3000"
+  web:
+    container_name: !reset null
+    restart: "no"

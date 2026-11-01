@@ -7,10 +7,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { FormInput } from '../FormInput';
 import {
-  getEnvelopesControllerListV1QueryKey,
   useEnvelopesControllerUpdateV1,
 } from '../../api/envelopes/envelopes';
 import type { EnvelopesControllerUpdateV1Body } from '../../api/model';
+import { invalidateBudgetData } from '../../lib/queryKeys';
 import { getApiErrorMessage } from './types';
 import type { ApiErrorResponse, EnvelopeWithBalance } from './types';
 
@@ -37,7 +37,7 @@ export function EnvelopeRenameForm({ envelope, onDone }: EnvelopeRenameFormProps
   const updateMutation = useEnvelopesControllerUpdateV1<AxiosError<ApiErrorResponse>>({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getEnvelopesControllerListV1QueryKey() });
+        void invalidateBudgetData(queryClient);
         onDone();
       },
       onError: (error) => {

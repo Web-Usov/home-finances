@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Envelope, Operation, OperationResult, Prisma } from '@prisma/client';
 import {
-  formatMoneyMinor,
+  formatMoneyMinorRu,
   parseMoneyMinor,
   CreateOperationRequestSchema,
   OperationListQuerySchema,
@@ -275,7 +275,7 @@ export class OperationsService {
   /** OP-07 / AC-07: offer the available amount instead of saving an uncovered transfer. */
   private assertTransferCovered(requestedMinor: number, availableMinor: number): void {
     if (requestedMinor > availableMinor) {
-      const available = formatMoneyMinor(availableMinor);
+      const available = formatMoneyMinorRu(availableMinor);
       throw new ConflictException(
         'TRANSFER_EXCEEDS_BALANCE',
         `Доступно ${available} ₽. Перевести только ${available} ₽?`,
@@ -291,12 +291,12 @@ export class OperationsService {
     if (result.uncoveredMinor <= 0) {
       return [];
     }
-    const uncovered = formatMoneyMinor(result.uncoveredMinor);
+    const uncovered = formatMoneyMinorRu(result.uncoveredMinor);
     if (operation.type === 'expense') {
       return [
         {
           code: 'EXPENSE_EXCEEDS_BALANCE',
-          message: `В конверте доступно ${formatMoneyMinor(result.sourceBalanceBefore)} ₽. ${uncovered} ₽ будут отмечены как непокрытые.`,
+          message: `В конверте доступно ${formatMoneyMinorRu(result.sourceBalanceBefore)} ₽. ${uncovered} ₽ будут отмечены как непокрытые.`,
         },
       ];
     }

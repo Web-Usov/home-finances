@@ -71,7 +71,7 @@ describe('Months income update (integration)', () => {
 
     expect(response.body).toEqual({
       error: 'ALLOCATION_EXCEEDS_INCOME',
-      message: 'Распределено на 0.01 ₽ больше дохода. Уменьшите суммы по конвертам.',
+      message: 'Распределено на 0,01 ₽ больше дохода. Уменьшите суммы по конвертам.',
     });
     const row = await t.prisma.budgetMonth.findUniqueOrThrow({ where: { id: jan.id } });
     expect(row).toMatchObject({ incomeMinor: 1_000_000, version: 1 });

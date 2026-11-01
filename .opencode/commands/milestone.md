@@ -14,7 +14,8 @@ Prepare the milestone report for epic: $ARGUMENTS. Follow `docs/workflow.md` sec
    в 2-3 предложениях; таблица смёрженных PR (задача, PR, что сделано); покрытие правил и AC (покрыто/не покрыто, со
    ссылками на тесты по ID); скриншоты e2e и демо-сценарий из «Критериев приёмки вехи» шаг за шагом с ожидаемым
    результатом; известные ограничения и риски; что нужно проверить человеку.
-4. Prepare (do not merge) a PR `docs(epics): milestone report E-xx` containing the report; if the epic status should
+4. Prepare (do not merge) a PR `docs(epics): milestone report E-xx` (English title) containing the report; its body uses
+   `.github/PULL_REQUEST_TEMPLATE/human-review.md` in RUSSIAN, starting with `⚠️ Требуется ревью человека`; if the epic status should
    become `done`, include that change in the same PR. Human review is required (CODEOWNERS). Never set
    `accepted` - only the human does.
 5. Finish with a short Russian message for the human: where the report is, what to click through, how to accept.

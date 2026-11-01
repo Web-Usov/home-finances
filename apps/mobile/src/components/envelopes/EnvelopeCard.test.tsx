@@ -3,6 +3,8 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { renderWithProviders } from '../../../test/render';
 import { customAxiosInstance } from '../../api/axios-instance';
+import { getReportingControllerMonthlyDashboardV1QueryKey } from '../../api/reporting/reporting';
+import { getMonthsControllerListV1QueryKey } from '../../api/months/months';
 import { EnvelopeCard } from './EnvelopeCard';
 import type { EnvelopeWithBalance } from './types';
 
@@ -68,5 +70,36 @@ describe('EnvelopeCard', () => {
     fireEvent.press(screen.getByText('Архивировать'));
 
     expect(await screen.findByText('Баланс конверта не нулевой')).toBeTruthy();
+  });
+
+  // SCOPE-24 / SCOPE-25 / AC-01 / AC-18: the month dashboard and month list must refetch after an envelope change.
+  function expectBudgetDataInvalidated(invalidate: jest.SpyInstance) {
+    const keys = invalidate.mock.calls.map((call) => (call[0] as { queryKey: unknown }).queryKey);
+    expect(keys).toContainEqual(getReportingControllerMonthlyDashboardV1QueryKey());
+    expect(keys).toContainEqual(getMonthsControllerListV1QueryKey());
+  }
+
+  it('SCOPE-25 / AC-18: archiving invalidates the month dashboard and months queries', async () => {
+    mockRequest.mockResolvedValue(undefined as never);
+    const { queryClient } = renderWithProviders(<EnvelopeCard envelope={envelope} />);
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
+
+    fireEvent.press(screen.getByText('Архивировать'));
+
+    await waitFor(() => expect(invalidate).toHaveBeenCalled());
+    expectBudgetDataInvalidated(invalidate);
+  });
+
+  it('SCOPE-25 / AC-18: renaming invalidates the month dashboard and months queries', async () => {
+    mockRequest.mockResolvedValue(undefined as never);
+    const { queryClient } = renderWithProviders(<EnvelopeCard envelope={envelope} />);
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
+
+    fireEvent.press(screen.getByText('Переименовать'));
+    fireEvent.changeText(screen.getByDisplayValue('Еда'), 'Продукты');
+    fireEvent.press(screen.getByText('Сохранить'));
+
+    await waitFor(() => expect(invalidate).toHaveBeenCalled());
+    expectBudgetDataInvalidated(invalidate);
   });
 });

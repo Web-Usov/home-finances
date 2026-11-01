@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { AllocationEditor } from './AllocationEditor';
 import { IncomeForm } from './IncomeForm';
 import { EnvelopeRow } from './EnvelopeRow';
 import { MonthActions } from './MonthActions';
 import { MonthStatusBadge } from './MonthStatusBadge';
 import { PeriodSwitcher } from './PeriodSwitcher';
-import { QuickActions } from './QuickActions';
+import { QuickActionsPanel } from './QuickActionsPanel';
 import { SummaryCard } from './SummaryCard';
 import type { Dashboard, MonthSummary } from './types';
 
@@ -19,6 +20,7 @@ interface MonthDashboardProps {
 export function MonthDashboard({ dashboard, months, onPeriodChange }: MonthDashboardProps) {
   const { month, summary, envelopes, warnings } = dashboard;
   const [editingIncome, setEditingIncome] = useState(false);
+  const [editingAllocation, setEditingAllocation] = useState(false);
   const closed = month.status === 'closed';
 
   return (
@@ -67,7 +69,26 @@ export function MonthDashboard({ dashboard, months, onPeriodChange }: MonthDashb
         )}
       </View>
 
-      <QuickActions status={month.status} />
+      <View className="bg-white rounded-xl p-4 shadow-sm mb-4">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-gray-600 flex-1 mr-2">Распределение дохода по конвертам</Text>
+          {!editingAllocation && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Изменить распределение"
+              accessibilityState={{ disabled: closed }}
+              disabled={closed}
+              onPress={() => setEditingAllocation(true)}
+              className="rounded-lg bg-gray-100 px-3 py-2 active:bg-gray-200 disabled:opacity-40"
+            >
+              <Text className="font-medium text-primary-700">Изменить распределение</Text>
+            </Pressable>
+          )}
+        </View>
+        {editingAllocation && <AllocationEditor key={month.period} dashboard={dashboard} onDone={() => setEditingAllocation(false)} />}
+      </View>
+
+      <QuickActionsPanel key={month.period} dashboard={dashboard} />
 
       <View className="bg-white rounded-xl p-4 shadow-sm mb-4">
         <Text className="text-lg font-semibold text-gray-800 mb-1">Конверты</Text>

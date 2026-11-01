@@ -31,7 +31,7 @@ docs/                spec, decisions (ADR), architecture, archive
 e2e/                 Playwright workspace (@family-budget/e2e)
 scripts/             repo tooling (verify, api-contract, spec-check, tasks, smoke-compose)
 tasks/, epics/       work items: detailed tasks (EN), epics (RU); tasks/README.md is the generated board
-docker-compose.yml   PostgreSQL 16 + one-shot `migrate` + API
+docker-compose.yml   PostgreSQL 16 + one-shot `migrate` + API + `web` (Expo export served by serve-web.mjs, docker/web/Dockerfile)
 ```
 
 ## Commands
@@ -71,6 +71,7 @@ Run it before declaring work done. Test details: `docs/testing.md`.
 | Testing strategy and commands | `docs/testing.md` |
 | Agent workflow (one task = one branch = one PR) | `docs/workflow.md` |
 | Owner's preview (auto-deployed master, URLs, logs, reset) | `docs/preview.md` |
+| Host ops (timer that updates BEHIND auto-merge PRs) | `docs/ops.md` |
 | Work items | `tasks/` (detailed, EN), `epics/` (RU); board in `tasks/README.md` |
 | DB schema | `apps/api/prisma/schema.prisma` |
 | Domain types / error codes | `packages/types/src/` |
@@ -86,9 +87,10 @@ One task = one session = one branch (`task/T-xxx-slug`) = one git worktree = one
 2. Implement tests-first, cite rule IDs in test names, commit as `type(scope): subject [T-xxx]`.
 3. `/verify` (`pnpm verify`), then `/ship`: push, PR from the template, then one commit setting `done` + PR url; `/ship` never merges.
 4. `/review <pr|T-xxx>` runs the reviewer; verdict is a PR comment (same GitHub account, no self-approval; required approvals = 0).
-   On LGTM only the reviewer enables `gh pr merge --squash --auto` (not for spec/ADR/epics PRs: the human merges).
+   On LGTM only the reviewer enables `gh pr merge --squash --auto` (not for spec/ADR/epics PRs: the human merges; those
+   PR bodies and verdicts are Russian, see Language rule).
 5. Never end a session with uncommitted changes: `/handoff` (WIP commit, push, Handoff log entry in the task file).
-6. Spec ambiguity: set the task `blocked`, add a Q-proposal to the Handoff log. Only the planner changes `docs/spec/**`,
+6. Spec ambiguity: set the task `blocked`, add a Q-proposal to the Handoff log (in Russian: it is a question to the human). Only the planner changes `docs/spec/**`,
    `docs/decisions/**`, `epics/**` (human review).
 
 Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Commands (`.opencode/commands/`): `/next`,
@@ -103,9 +105,21 @@ Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Comman
 
 ## Language rule
 
-- **Russian:** epics, key features, spec rules (`docs/spec/**`), ADRs (`docs/decisions/**`).
+Principle (owner decision, ADR 0010 addendum of 2026-11-01): agent-facing development docs stay English; **everything
+intended for HUMAN review or decision is Russian**, so the owner can read and answer comfortably. If no human review is
+required, English is fine.
+
+- **Russian:** epics, key features, spec rules (`docs/spec/**`), ADRs (`docs/decisions/**`), and every human-facing text:
+  - the **body** of a PR that needs human review/merge (diff touches `docs/spec/**`, `docs/decisions/**`, `epics/**`, or it is
+    a milestone report PR), starting with `⚠️ Требуется ревью человека` (template `.github/PULL_REQUEST_TEMPLATE/human-review.md`);
+  - questions, options and recommendations addressed to the human: `Q-` entries, questions in PRs, `blocked` escalations
+    (`Q-proposal` in the Handoff log), written as Вопрос / Варианты / Рекомендация / Затронутые правила / Задачи
+    (`docs/workflow.md` section 7);
+  - milestone reports (`docs/milestones/**`) and notifications/final messages to the human;
+  - reviewer verdict comments on PRs that wait for the human merge (the `VERDICT:` keyword stays as is).
 - **English:** detailed tasks, all AGENTS.md, workflow/testing/architecture docs, agent configs, code, comments, tests,
-  commit messages, PR text.
+  commit messages, **PR titles** (conventional commit; they become squash commits), and bodies/verdicts of agent-only PRs
+  (auto-merged after review).
 - **UI strings stay Russian** (ru-RU).
 
 ## Tooling notes
@@ -115,6 +129,7 @@ Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Comman
 - After editing `packages/types` run the root `pnpm typecheck` (turbo builds the types package first); `pnpm --filter api typecheck`
   alone sees the stale `dist` of the types package.
 - The turbo cache is shared across worktrees: replayed logs may show paths of other worktrees; harmless.
+- Ports 3100 (preview API) and 8100 (preview web) are reserved for the preview (`docs/preview.md`): never bind, reuse or kill them from tests, dev servers or agents.
 - Commit headers are at most 100 characters; pre-commit checks the working tree, so stage everything you commit.
 - Claim a task with `pnpm task:start T-xxx`, clean up after the merge with `pnpm task:clean T-xxx`.
 

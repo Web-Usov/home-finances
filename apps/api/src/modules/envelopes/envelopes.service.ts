@@ -3,7 +3,7 @@ import { Prisma, type Envelope } from '@prisma/client';
 import {
   CreateEnvelopeRequestSchema,
   UpdateEnvelopeRequestSchema,
-  formatMoneyMinor,
+  formatMoneyMinorRu,
   parseMoneyMinor,
 } from '@family-budget/types';
 import { z } from 'zod';
@@ -245,7 +245,7 @@ export class EnvelopesService {
       if (balanceMinor !== 0) {
         throw new ConflictException(
           'ENVELOPE_NOT_EMPTY',
-          `Невозможно архивировать конверт «${envelope.name}»: баланс ${formatMoneyMinor(balanceMinor)} ₽. Переведите остаток или сделайте отрицательную корректировку.`,
+          `Невозможно архивировать конверт «${envelope.name}»: баланс ${formatMoneyMinorRu(balanceMinor)} ₽. Переведите остаток или сделайте отрицательную корректировку.`,
         );
       }
 

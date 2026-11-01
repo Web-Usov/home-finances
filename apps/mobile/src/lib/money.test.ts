@@ -1,4 +1,4 @@
-import { formatRubles, isNonZeroMoney, normalizeMoneyInput } from './money';
+import { formatRubles, isNonZeroMoney, normalizeMoneyInput, toInputMoney } from './money';
 
 const NBSP = ' ';
 
@@ -25,5 +25,18 @@ describe('money input helpers', () => {
 
   it('normalises typed input to an API decimal string', () => {
     expect(normalizeMoneyInput('1 500,5')).toBe('1500.5');
+  });
+});
+
+describe('formatRubles showNegative / toInputMoney', () => {
+  it('FIN-11: showNegative keeps the minus sign without adding a plus', () => {
+    expect(formatRubles('-75000.00', { showNegative: true })).toBe('−75\u00A0000,00\u00A0₽');
+    expect(formatRubles('25000.00', { showNegative: true })).toBe('25\u00A0000,00\u00A0₽');
+  });
+
+  it('prefills API decimals in ru-RU input form', () => {
+    expect(toInputMoney('100000.00')).toBe('100000,00');
+    expect(toInputMoney('0.5')).toBe('0,50');
+    expect(toInputMoney('7')).toBe('7,00');
   });
 });

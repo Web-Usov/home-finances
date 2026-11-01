@@ -13,7 +13,7 @@ const ACTIONS: { kind: QuickActionKind; label: string }[] = [
 
 interface QuickActionsProps {
   status: MonthStatus;
-  /** Operation forms arrive with T-011; until then the buttons have nothing to open. */
+  /** Opens the operation form of the pressed action (QuickActionsPanel, T-011). */
   onAction?: (kind: QuickActionKind) => void;
 }
 

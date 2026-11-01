@@ -40,6 +40,18 @@ export class ApiFixture {
     return this.post<{ envelope: EnvelopeDto }>('/envelopes', { name, initialBalance });
   }
 
+  /** Creates an operation in `period` with that month's current version (arrange-only; amounts are ruble strings). */
+  async createOperation(
+    period: string,
+    body: { type: 'expense' | 'transfer' | 'adjustment'; sourceEnvelopeId: string; destinationEnvelopeId?: string; amount: string; comment?: string },
+  ) {
+    const list = await this.request.get(`${this.apiUrl}/api/v1/months`);
+    const { months } = (await list.json()) as { months: { period: string; version: number }[] };
+    const month = months.find((m) => m.period === period);
+    if (!month) throw new Error(`month ${period} does not exist`);
+    return this.post('/operations', { ...body, period, version: month.version });
+  }
+
   /** Truncates all tables of the e2e schema (keeps the Prisma migrations table). */
   async reset(): Promise<void> {
     const { baseDatabaseUrl, schema } = getE2eEnv();

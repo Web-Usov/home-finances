@@ -3,6 +3,14 @@ const NBSP = '\u00A0';
 interface FormatRublesOptions {
   /** Keep a minus sign and prefix positive non-zero values with "+" (net adjustments only). */
   signed?: boolean;
+  /** Keep a minus sign on negative values without adding "+" to positive ones (signed free funds, FIN-11). */
+  showNegative?: boolean;
+}
+
+/** Decimal string for a text input in ru-RU form: "100000.5" -> "100000,50" (no grouping, so it stays editable). */
+export function toInputMoney(value: string): string {
+  const [integerPart = '0', fraction = ''] = value.split('.');
+  return `${integerPart},${fraction.padEnd(2, '0').slice(0, 2)}`;
 }
 
 /**
@@ -11,13 +19,14 @@ interface FormatRublesOptions {
  * Works on the string itself — no float arithmetic (FIN-08). Unless `signed`, a negative value is shown as
  * zero because negative balances are never displayed (NFR-24).
  */
-export function formatRubles(value: string, { signed = false }: FormatRublesOptions = {}): string {
+export function formatRubles(value: string, { signed = false, showNegative = false }: FormatRublesOptions = {}): string {
   const negative = value.startsWith('-');
   const [integerPart = '0', fraction = ''] = (negative ? value.slice(1) : value).split('.');
   const grouped = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
   const body = `${grouped},${fraction.padEnd(2, '0').slice(0, 2)}`;
   const isZero = !/[1-9]/.test(body);
   if (isZero) return `${body}${NBSP}₽`;
+  if (showNegative && !signed) return `${negative ? '−' : ''}${body}${NBSP}₽`;
   if (!signed) return negative ? `0,00${NBSP}₽` : `${body}${NBSP}₽`;
   return `${negative ? '−' : '+'}${body}${NBSP}₽`;
 }

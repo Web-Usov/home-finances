@@ -2,12 +2,18 @@ import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
-import { useMonthsControllerCloseV1, useMonthsControllerReopenV1 } from '../../api/months/months';
+import {
+  monthsControllerReopenPreviewV1,
+  useMonthsControllerCloseV1,
+  useMonthsControllerReopenPreviewV1,
+  useMonthsControllerReopenV1,
+} from '../../api/months/months';
 import { describeMonthError } from '../../lib/apiErrors';
 import { formatPeriodGenitive, formatPeriodLabel, formatPeriodLower, nextPeriod } from '../../lib/period';
 import type { ApiErrorResponse } from '../envelopes/types';
 import { ReopenConfirm } from './ReopenConfirm';
-import { invalidateMonthData, useCreateMonth } from './useMonthMutations';
+import { invalidateBudgetData } from '../../lib/queryKeys';
+import { useCreateMonth } from './useMonthMutations';
 import type { Dashboard, MonthSummary } from './types';
 
 interface MonthActionsProps {
@@ -60,12 +66,20 @@ export function MonthActions({ month, months }: MonthActionsProps) {
     const { code, message } = describeMonthError(error, fallback);
     setNotice({ tone: 'error', text: message });
     // The month changed under us: refresh so the retry uses the current version (ADR 0005).
-    if (code === 'VERSION_CONFLICT') void invalidateMonthData(queryClient);
+    if (code === 'VERSION_CONFLICT') void invalidateBudgetData(queryClient);
   };
 
   const createMutation = useCreateMonth();
   const closeMutation = useMonthsControllerCloseV1<AxiosError<ApiErrorResponse>>();
   const reopenMutation = useMonthsControllerReopenV1<AxiosError<ApiErrorResponse>>();
+  // MON-12 / API-20: advisory range, fetched fresh every time the confirmation opens; the reopen response stays authoritative.
+  const reopenPreview = useMonthsControllerReopenPreviewV1<
+    Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>,
+    AxiosError<ApiErrorResponse>
+  >(month.period, { query: { enabled: confirmingReopen, retry: false, staleTime: 0, gcTime: 0 } });
+  const previewError = reopenPreview.isError
+    ? describeMonthError(reopenPreview.error, 'Не удалось определить диапазон пересчёта').message
+    : null;
 
   const latest = months[months.length - 1];
   const hasDraft = months.some((m) => m.status === 'draft');
@@ -101,7 +115,7 @@ export function MonthActions({ month, months }: MonthActionsProps) {
       { period: month.period, data: { version: month.version } },
       {
         onSuccess: ({ data }) => {
-          void invalidateMonthData(queryClient);
+          void invalidateBudgetData(queryClient);
           const promoted = data.promotedDraft
             ? ` ${formatPeriodLabel(data.promotedDraft.period)} теперь открыт.`
             : '';
@@ -119,8 +133,8 @@ export function MonthActions({ month, months }: MonthActionsProps) {
       {
         onSuccess: ({ data }) => {
           setConfirmingReopen(false);
-          void invalidateMonthData(queryClient);
-          // MON-12: the preview endpoint (T-024) is pending, so the range is reported from the response.
+          void invalidateBudgetData(queryClient);
+          // MON-12: the range of the performed reopening comes from the response (the preview was advisory).
           const { from, to } = data.recalcRange;
           setNotice({
             tone: 'info',
@@ -166,6 +180,9 @@ export function MonthActions({ month, months }: MonthActionsProps) {
       {confirmingReopen && (
         <ReopenConfirm
           period={month.period}
+          recalcRange={reopenPreview.data?.recalcRange}
+          loading={reopenPreview.isPending}
+          error={previewError}
           pending={reopenMutation.isPending}
           onConfirm={handleReopen}
           onCancel={() => setConfirmingReopen(false)}
