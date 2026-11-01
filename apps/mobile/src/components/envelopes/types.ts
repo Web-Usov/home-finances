@@ -1,21 +1,8 @@
 import { isAxiosError } from 'axios';
-import type { Envelope } from '@family-budget/types';
+import type { EnvelopesControllerListV1200EnvelopesItem } from '../../api/model';
 
-/**
- * Envelope with its current balance in integer kopecks.
- * Mirrors `EnvelopeWithBalance` from apps/api envelopes.service.list() — the
- * shape returned by GET /api/v1/envelopes. The OpenAPI spec has no response
- * schema, so the orval client types the response as `void`; we re-type it via
- * the hook's `TData` generic and this interface.
- */
-export interface EnvelopeWithBalance extends Envelope {
-  balanceMinor: number;
-}
-
-/** Response body of GET /api/v1/envelopes — see envelopes.service.list(). */
-export interface EnvelopesListResponse {
-  envelopes: EnvelopeWithBalance[];
-}
+/** Envelope with its current balance in integer kopecks (generated type of GET /api/v1/envelopes). */
+export type EnvelopeWithBalance = EnvelopesControllerListV1200EnvelopesItem;
 
 /** Backend error body on 409/422: { error: ApiErrorCode, message: string }. */
 export interface ApiErrorResponse {

@@ -34,7 +34,7 @@ export function FirstMonthForm({ onCreated }: { onCreated: (period: string) => v
   const onSubmit = (values: FirstMonthValues) => {
     const income = values.income.trim() === '' ? undefined : normalizeMoneyInput(values.income);
     mutation.mutate(
-      { period: values.period, income },
+      { data: { period: values.period, income } },
       {
         onSuccess: ({ month }) => onCreated(month.period),
         onError: (error) => setError('root', { message: describeMonthError(error, 'Не удалось создать месяц').message }),

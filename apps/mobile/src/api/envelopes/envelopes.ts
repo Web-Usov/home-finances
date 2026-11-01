@@ -25,7 +25,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  EnvelopesControllerArchiveV1200,
+  EnvelopesControllerCreateV1201,
   EnvelopesControllerCreateV1Body,
+  EnvelopesControllerListV1200,
+  EnvelopesControllerUpdateV1200,
   EnvelopesControllerUpdateV1Body
 } from '.././model';
 
@@ -45,7 +49,7 @@ export const envelopesControllerListV1 = (
 ) => {
       
       
-      return customAxiosInstance<void>(
+      return customAxiosInstance<EnvelopesControllerListV1200>(
       {url: `/api/v1/envelopes`, method: 'GET', signal
     },
       options);
@@ -137,7 +141,7 @@ export const envelopesControllerCreateV1 = (
 ) => {
       
       
-      return customAxiosInstance<void>(
+      return customAxiosInstance<EnvelopesControllerCreateV1201>(
       {url: `/api/v1/envelopes`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: envelopesControllerCreateV1Body, signal
@@ -201,7 +205,7 @@ export const envelopesControllerUpdateV1 = (
  options?: SecondParameter<typeof customAxiosInstance>,) => {
       
       
-      return customAxiosInstance<void>(
+      return customAxiosInstance<EnvelopesControllerUpdateV1200>(
       {url: `/api/v1/envelopes/${id}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: envelopesControllerUpdateV1Body
@@ -265,7 +269,7 @@ export const envelopesControllerArchiveV1 = (
 ) => {
       
       
-      return customAxiosInstance<void>(
+      return customAxiosInstance<EnvelopesControllerArchiveV1200>(
       {url: `/api/v1/envelopes/${id}/archive`, method: 'POST', signal
     },
       options);
@@ -273,7 +277,7 @@ export const envelopesControllerArchiveV1 = (
   
 
 
-export const getEnvelopesControllerArchiveV1MutationOptions = <TError = unknown,
+export const getEnvelopesControllerArchiveV1MutationOptions = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, TError,{id: string}, TContext> => {
 
@@ -300,12 +304,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type EnvelopesControllerArchiveV1MutationResult = NonNullable<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>>
     
-    export type EnvelopesControllerArchiveV1MutationError = unknown
+    export type EnvelopesControllerArchiveV1MutationError = void
 
     /**
  * @summary Archive envelope with zero balance
  */
-export const useEnvelopesControllerArchiveV1 = <TError = unknown,
+export const useEnvelopesControllerArchiveV1 = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof envelopesControllerArchiveV1>>,

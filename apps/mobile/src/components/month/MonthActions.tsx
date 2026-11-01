@@ -92,7 +92,7 @@ export function MonthActions({ month, months }: MonthActionsProps) {
     if (!latest) return;
     setNotice(null);
     createMutation.mutate(
-      { period: nextPeriod(latest.period) },
+      { data: { period: nextPeriod(latest.period) } },
       {
         onSuccess: ({ month: created }) =>
           setNotice({

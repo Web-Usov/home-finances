@@ -16,6 +16,7 @@ import {
   OperationListQuerySchema,
   OperationListResponseSchema,
   OperationMutationResponseSchema,
+  PeriodSchema,
 } from '@family-budget/types';
 import { z } from 'zod';
 import { ApiIfMatch, IfMatch } from '../../common/if-match';
@@ -40,8 +41,13 @@ export class OperationsController {
 
   @Get()
   @ApiOperation({ summary: 'Get operation history' })
-  @ApiQuery({ name: 'period', required: false, description: 'YYYY-MM' })
-  @ApiQuery({ name: 'envelopeId', required: false, description: 'Source or destination envelope' })
+  @ApiQuery({ name: 'period', required: false, description: 'YYYY-MM', schema: zodOpenApiSchema(PeriodSchema) })
+  @ApiQuery({
+    name: 'envelopeId',
+    required: false,
+    description: 'Source or destination envelope',
+    schema: zodOpenApiSchema(z.string().uuid()),
+  })
   @ApiQuery({
     name: 'type',
     required: false,

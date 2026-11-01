@@ -10,7 +10,6 @@ import {
 import { getApiErrorMessage } from '../../src/components/envelopes/types';
 import { HistoryView } from '../../src/components/history/HistoryView';
 import type { HistoryTypeFilter } from '../../src/components/history/HistoryView';
-import type { MonthsListResponse } from '../../src/components/month/types';
 import { isValidPeriod } from '../../src/lib/period';
 import { useMonthStore } from '../../src/stores';
 
@@ -45,7 +44,7 @@ export default function HistoryScreen() {
     setType(TYPES.find((value) => value === paramType) ?? null);
   }, [paramType]);
 
-  const monthsQuery = useMonthsControllerListV1<MonthsListResponse>();
+  const monthsQuery = useMonthsControllerListV1();
   const months = monthsQuery.data?.months ?? [];
   const hasMonths = months.length > 0;
 
