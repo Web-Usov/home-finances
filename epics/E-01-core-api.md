@@ -1,8 +1,8 @@
 ---
 id: E-01
 title: Ядро API: месяцы и операции
-status: planned
-accepted: null
+status: accepted
+accepted: 2026-11-01
 spec: [MON-01, MON-02, MON-03, MON-04, MON-05, MON-06, MON-07, MON-08, MON-09, MON-10, MON-11, MON-12, MON-13, MON-14, MON-15, OP-01, OP-02, OP-03, OP-04, OP-05, OP-06, OP-07, OP-08, OP-09, OP-10, OP-11, OP-12, OP-13, OP-14, OP-15, OP-16, OP-17, OP-18, HIST-07, HIST-08, HIST-09, HIST-10, FIN-05, FIN-06, CALC-13, API-03, API-05, API-06, API-10, API-11, API-14, API-15, API-16, API-17, API-18]
 ---
 
