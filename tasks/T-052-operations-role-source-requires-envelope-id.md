@@ -1,7 +1,7 @@
 ---
 id: T-052
 title: "Operations: role=source without envelopeId is a 422"
-status: todo
+status: in_progress
 epic: E-02
 depends: [T-045]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [HIST-15]
 acceptance: []
 area: api
 size: S
-branch: null
+branch: task/T-052-operations-role-source-requires-envelope-id
 pr: null
 ---
 
