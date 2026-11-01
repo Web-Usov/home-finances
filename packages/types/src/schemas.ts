@@ -257,6 +257,26 @@ export function mutationResponseSchema<T extends z.ZodTypeAny>(data: T) {
   return z.object({ data, warnings: z.array(ApiWarningSchema) });
 }
 
+/** API-01: response of `GET /months`. */
+export const MonthsListResponseSchema = z.object({ months: z.array(MonthSummarySchema) });
+
+/** API-02: response of `POST /months`. */
+export const CreateMonthResponseSchema = z.object({ month: MonthSummarySchema });
+
+/** Envelope with its current balance in integer kopecks (`GET /envelopes`). */
+export const EnvelopeWithBalanceSchema = EnvelopeSchema.extend({ balanceMinor: z.number().int() });
+
+export const EnvelopesListResponseSchema = z.object({ envelopes: z.array(EnvelopeWithBalanceSchema) });
+
+/** Response of `POST /envelopes`. */
+export const CreateEnvelopeResponseSchema = z.object({ envelope: EnvelopeWithBalanceSchema });
+
+/** Response of `PATCH /envelopes/{id}` and `POST /envelopes/{id}/archive`. */
+export const EnvelopeResponseSchema = z.object({ envelope: EnvelopeSchema });
+
+/** Response of `GET /health`. */
+export const HealthResponseSchema = z.object({ status: z.string(), timestamp: z.string() });
+
 /** API-22: `data.summary` is the short summary of the affected month; envelope balances come from the dashboard (API-12). */
 export const MonthSummaryResultSchema = z.object({ summary: MonthSummarySchema });
 

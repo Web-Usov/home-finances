@@ -46,7 +46,7 @@
 
 - [T-044](T-044-shared-working-month-and-free-helpers.md) API: shared working-month and free-funds helpers, dedup yearly uncovered schema — **done** · api · S · depends: T-043, T-008 · [PR](https://github.com/Web-Usov/home-finances/pull/50)
 
-- [T-046](T-046-openapi-months-body-response-query-types.md) OpenAPI: typed POST /months body, GET /months response and query params — **todo** · api · S · depends: T-027, T-037, T-050 · —
+- [T-046](T-046-openapi-months-body-response-query-types.md) OpenAPI: typed POST /months body, GET /months response and query params — **done** · api · S · depends: T-027, T-037, T-050 · [PR](https://github.com/Web-Usov/home-finances/pull/52)
 
 - [T-047](T-047-auto-update-behind-prs-with-auto-merge.md) Auto-update BEHIND PRs with auto-merge (host timer) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/38)
 

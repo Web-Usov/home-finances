@@ -7,7 +7,27 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "API is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         },
         "summary": "Health check",
@@ -22,7 +42,67 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "List of budget months"
+            "description": "List of budget months",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "months": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "period": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "open",
+                              "closed",
+                              "reopened"
+                            ]
+                          },
+                          "incomeMinor": {
+                            "type": "integer"
+                          },
+                          "version": {
+                            "type": "integer"
+                          },
+                          "totalAllocatedMinor": {
+                            "type": "integer"
+                          },
+                          "freeFundsMinor": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "period",
+                          "status",
+                          "incomeMinor",
+                          "version",
+                          "totalAllocatedMinor",
+                          "freeFundsMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "months"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         },
         "summary": "List months and statuses",
@@ -33,9 +113,90 @@
       "post": {
         "operationId": "MonthsController_create_v1",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "period": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                  },
+                  "income": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,2})?$"
+                  }
+                },
+                "required": [
+                  "period"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
-            "description": "Created month"
+            "description": "Created month",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "month": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "period": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "draft",
+                            "open",
+                            "closed",
+                            "reopened"
+                          ]
+                        },
+                        "incomeMinor": {
+                          "type": "integer"
+                        },
+                        "version": {
+                          "type": "integer"
+                        },
+                        "totalAllocatedMinor": {
+                          "type": "integer"
+                        },
+                        "freeFundsMinor": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "period",
+                        "status",
+                        "incomeMinor",
+                        "version",
+                        "totalAllocatedMinor",
+                        "freeFundsMinor"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "month"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         },
         "summary": "Create first or next month",
@@ -670,7 +831,80 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "List of envelopes with balances"
+            "description": "List of envelopes with balances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "envelopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "archived"
+                            ]
+                          },
+                          "createdPeriod": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                          },
+                          "archivedPeriod": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                            "nullable": true
+                          },
+                          "displayOrder": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "balanceMinor": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "status",
+                          "createdPeriod",
+                          "archivedPeriod",
+                          "displayOrder",
+                          "createdAt",
+                          "updatedAt",
+                          "balanceMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "envelopes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         },
         "summary": "Get list of envelopes",
@@ -708,7 +942,77 @@
         },
         "responses": {
           "201": {
-            "description": "Created envelope with calculated balance"
+            "description": "Created envelope with calculated balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "envelope": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "archived"
+                          ]
+                        },
+                        "createdPeriod": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                        },
+                        "archivedPeriod": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                          "nullable": true
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "balanceMinor": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "createdPeriod",
+                        "archivedPeriod",
+                        "displayOrder",
+                        "createdAt",
+                        "updatedAt",
+                        "balanceMinor"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "envelope"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           },
           "404": {
             "description": "MONTH_NOT_FOUND (initial balance without any month)"
@@ -760,7 +1064,73 @@
         },
         "responses": {
           "200": {
-            "description": "Updated envelope"
+            "description": "Updated envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "envelope": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "archived"
+                          ]
+                        },
+                        "createdPeriod": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                        },
+                        "archivedPeriod": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                          "nullable": true
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "createdPeriod",
+                        "archivedPeriod",
+                        "displayOrder",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "envelope"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           },
           "404": {
             "description": "ENVELOPE_NOT_FOUND"
@@ -790,7 +1160,76 @@
         ],
         "responses": {
           "200": {
-            "description": "Archived status or ENVELOPE_NOT_EMPTY error"
+            "description": "Archived envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "envelope": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "archived"
+                          ]
+                        },
+                        "createdPeriod": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                        },
+                        "archivedPeriod": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                          "nullable": true
+                        },
+                        "displayOrder": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "createdPeriod",
+                        "archivedPeriod",
+                        "displayOrder",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "envelope"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ENVELOPE_NOT_EMPTY"
           }
         },
         "summary": "Archive envelope with zero balance",
@@ -1017,14 +1456,20 @@
             "required": false,
             "in": "query",
             "description": "Source or destination envelope",
-            "schema": {}
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           },
           {
             "name": "period",
             "required": false,
             "in": "query",
             "description": "YYYY-MM",
-            "schema": {}
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
           }
         ],
         "responses": {
@@ -1984,7 +2429,10 @@
             "required": false,
             "in": "query",
             "description": "YYYY-MM; defaults to the working month",
-            "schema": {}
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
           }
         ],
         "responses": {
@@ -2262,7 +2710,10 @@
             "required": true,
             "in": "query",
             "description": "YYYY, calendar year",
-            "schema": {}
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}$"
+            }
           }
         ],
         "responses": {
