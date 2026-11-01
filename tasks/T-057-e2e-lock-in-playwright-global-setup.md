@@ -1,7 +1,7 @@
 ---
 id: T-057
 title: "E2E: take the machine-wide lock inside Playwright globalSetup"
-status: in_progress
+status: done
 epic: E-00
 depends: []
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: infra
 size: S
 branch: task/T-057-e2e-lock-in-playwright-global-setup
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/56
 ---
 
 # T-057. E2E: take the machine-wide lock inside Playwright globalSetup
@@ -30,7 +30,7 @@ A direct `playwright test` call is serialized by the same machine-wide `e2e` loc
 - [x] `pnpm e2e:smoke` is green; `docs/testing.md` describes the behaviour
 - [x] `pnpm verify` is green
 - [x] (extended) `task:start --new` allocates ids under a machine-wide `task-id` lock and pushes the claim branch before releasing it; a test with concurrent `--new` calls against a throwaway origin yields distinct ids; `docs/workflow.md` + `docs/testing.md` updated
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
