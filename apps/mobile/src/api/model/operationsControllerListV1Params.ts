@@ -5,9 +5,19 @@
  * API for family budget application — months, envelopes, allocations, operations
  * OpenAPI spec version: 1.0
  */
+import type { OperationsControllerListV1UncoveredOnly } from './operationsControllerListV1UncoveredOnly';
+import type { OperationsControllerListV1Role } from './operationsControllerListV1Role';
 import type { OperationsControllerListV1Type } from './operationsControllerListV1Type';
 
 export type OperationsControllerListV1Params = {
+/**
+ * HIST-15: only operations with an uncovered part greater than zero
+ */
+uncoveredOnly?: OperationsControllerListV1UncoveredOnly;
+/**
+ * HIST-15: with envelopeId, match only operations whose source is that envelope
+ */
+role?: OperationsControllerListV1Role;
 type?: OperationsControllerListV1Type;
 /**
  * Source or destination envelope
