@@ -5,19 +5,19 @@
 
 | ID | **Метод** | **Маршрут** | **Назначение** | **Результат** |
 |----|-----------|-------------|----------------|---------------|
-| **[API-01]** | GET | /api/months | Список месяцев и статусов | Периоды, статусы, краткие итоги |
-| **[API-02]** | POST | /api/months | Создать первый/следующий месяц | Созданный месяц; при необходимости черновик |
-| **[API-03]** | PATCH | /api/months/{period} | Изменить доход | Обновлённая сводка после пересчёта |
-| **[API-04]** | PUT | /api/months/{period}/allocations | Сохранить всю таблицу распределения | Сводка и предупреждения |
-| **[API-05]** | POST | /api/months/{period}/close | Закрыть открытый месяц | Новые статусы текущего и черновика |
-| **[API-06]** | POST | /api/months/{period}/reopen | Открыть закрытый месяц повторно | Диапазон пересчёта и статус |
-| **[API-07]** | GET/POST | /api/envelopes | Получить список / создать конверт | Конверт и рассчитанный баланс |
-| **[API-08]** | PATCH | /api/envelopes/{id} | Переименовать или изменить порядок | Обновлённый конверт |
-| **[API-09]** | POST | /api/envelopes/{id}/archive | Архивировать при нулевом балансе | Статус либо ошибка ENVELOPE_NOT_EMPTY |
-| **[API-10]** | GET/POST | /api/operations | История / создание операции | Операция, результат и новая сводка |
-| **[API-11]** | PATCH/DELETE | /api/operations/{id} | Исправить / удалить операцию | Каскадно пересчитанные результаты |
-| **[API-12]** | GET | /api/dashboard/monthly | Месячный дашборд | Сводка, конверты, предупреждения |
-| **[API-13]** | GET | /api/analytics/yearly | Годовая аналитика | Три обязательных отчёта |
+| **[API-01]** | GET | /api/v1/months | Список месяцев и статусов | Периоды, статусы, краткие итоги |
+| **[API-02]** | POST | /api/v1/months | Создать первый/следующий месяц | Созданный месяц; при необходимости черновик |
+| **[API-03]** | PATCH | /api/v1/months/{period} | Изменить доход | Обновлённая сводка после пересчёта |
+| **[API-04]** | PUT | /api/v1/months/{period}/allocations | Сохранить всю таблицу распределения | Сводка и предупреждения |
+| **[API-05]** | POST | /api/v1/months/{period}/close | Закрыть открытый месяц | Новые статусы текущего и черновика |
+| **[API-06]** | POST | /api/v1/months/{period}/reopen | Открыть закрытый месяц повторно | Диапазон пересчёта и статус |
+| **[API-07]** | GET/POST | /api/v1/envelopes | Получить список / создать конверт | Конверт и рассчитанный баланс |
+| **[API-08]** | PATCH | /api/v1/envelopes/{id} | Переименовать или изменить порядок | Обновлённый конверт |
+| **[API-09]** | POST | /api/v1/envelopes/{id}/archive | Архивировать при нулевом балансе | Статус либо ошибка ENVELOPE_NOT_EMPTY |
+| **[API-10]** | GET/POST | /api/v1/operations | История / создание операции | Операция, результат и новая сводка |
+| **[API-11]** | PATCH/DELETE | /api/v1/operations/{id} | Исправить / удалить операцию | Каскадно пересчитанные результаты |
+| **[API-12]** | GET | /api/v1/dashboard/monthly | Месячный дашборд | Сводка, конверты, предупреждения |
+| **[API-13]** | GET | /api/v1/analytics/yearly | Годовая аналитика | Три обязательных отчёта |
 
 ## Общие правила API
 
@@ -27,14 +27,24 @@
 
 - **[API-16]** ответ мутации содержит актуальную сводку затронутого месяца и массив warnings;
 
-- **[API-17]** ошибки валидации возвращают 422, конфликт статуса/версии — 409;
+- **[API-17]** ошибки валидации возвращают 422, конфликт статуса/версии — 409; отсутствие обязательного заголовка `If-Match` — 428 (API-25);
 
-- **[API-18]** ключевые коды: ALLOCATION_EXCEEDS_INCOME, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE, ENVELOPE_NOT_EMPTY, VERSION_CONFLICT, VALIDATION_ERROR (тело запроса не прошло схему, см. API-17), INVALID_STATUS_TRANSITION (переход статуса месяца недопустим), MONTH_NOT_FOUND, ENVELOPE_NOT_FOUND, ENVELOPE_NAME_DUPLICATE, INVALID_PERIOD;
+- **[API-18]** ключевые коды: ALLOCATION_EXCEEDS_INCOME, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE, ENVELOPE_NOT_EMPTY, VERSION_CONFLICT, PRECONDITION_REQUIRED (в мутации месяца нет заголовка `If-Match`, API-25), VALIDATION_ERROR (тело запроса не прошло схему, см. API-17), INVALID_STATUS_TRANSITION (переход статуса месяца недопустим), MONTH_NOT_FOUND, ENVELOPE_NOT_FOUND, OPERATION_NOT_FOUND, ENVELOPE_NAME_DUPLICATE, INVALID_PERIOD;
 
-- **[API-19]** соответствие кодов HTTP-статусам: 404 — `MONTH_NOT_FOUND`, `ENVELOPE_NOT_FOUND`; 409 — `MONTH_LOCKED`, `VERSION_CONFLICT`, `INVALID_STATUS_TRANSITION`, `TRANSFER_EXCEEDS_BALANCE`, `ENVELOPE_NOT_EMPTY`, `ENVELOPE_NAME_DUPLICATE`; 422 — `VALIDATION_ERROR`, `ALLOCATION_EXCEEDS_INCOME`, `INVALID_PERIOD`. `INVALID_STATUS_TRANSITION` возвращается, например, при закрытии черновика или уже закрытого месяца, при повторном открытии месяца, который не закрыт, и при попытке открыть повторно второй месяц (MON-13);
+- **[API-19]** соответствие кодов HTTP-статусам: 404 — `MONTH_NOT_FOUND`, `ENVELOPE_NOT_FOUND`, `OPERATION_NOT_FOUND`; 409 — `MONTH_LOCKED`, `VERSION_CONFLICT`, `INVALID_STATUS_TRANSITION`, `TRANSFER_EXCEEDS_BALANCE`, `ENVELOPE_NOT_EMPTY`, `ENVELOPE_NAME_DUPLICATE`; 428 — `PRECONDITION_REQUIRED`; 422 — `VALIDATION_ERROR`, `ALLOCATION_EXCEEDS_INCOME`, `INVALID_PERIOD`. `INVALID_STATUS_TRANSITION` возвращается, например, при закрытии черновика или уже закрытого месяца, при повторном открытии месяца, который не закрыт, и при попытке открыть повторно второй месяц (MON-13);
 
-- **[API-20]** `GET /api/months/{period}/reopen-preview` — предпросмотр повторного открытия (MON-12). Запрос только читает данные, не меняет месяц и не требует `version`. Ответ: `{ month: MonthSummary, recalcRange: { from, to } }`, где диапазон вычисляется той же функцией, что и в ответе `POST /api/months/{period}/reopen` (API-06): от `period` до последнего существующего месяца включительно (MON-14). Если месяц нельзя открыть повторно, возвращаются те же ошибки, что и у `POST .../reopen`: 404 `MONTH_NOT_FOUND`, 409 `INVALID_STATUS_TRANSITION` (месяц не закрыт или уже есть повторно открытый месяц, MON-13);
+- **[API-20]** `GET /api/v1/months/{period}/reopen-preview` — предпросмотр повторного открытия (MON-12). Запрос только читает данные, не меняет месяц и не требует заголовка `If-Match`. Ответ: `{ month: MonthSummary, recalcRange: { from, to } }`, где диапазон вычисляется той же функцией, что и в ответе `POST /api/v1/months/{period}/reopen` (API-06): от `period` до последнего существующего месяца включительно (MON-14). Если месяц нельзя открыть повторно, возвращаются те же ошибки, что и у `POST .../reopen`: 404 `MONTH_NOT_FOUND`, 409 `INVALID_STATUS_TRANSITION` (месяц не закрыт или уже есть повторно открытый месяц, MON-13);
 
-- **[API-21]** `POST /api/operations` принимает необязательное поле `period` (`YYYY-MM`) — месяц, в который добавляется операция. Без `period` используется рабочий месяц по умолчанию (MON-16). Поле `version` в теле — версия именно этого месяца (ADR 0005). Целевой месяц должен существовать (иначе 404 `MONTH_NOT_FOUND`) и иметь статус «Черновик», «Открыт» или «Открыт повторно» (иначе 409 `MONTH_LOCKED`, MSG-06). Операция получает следующий `sequence_no` в целевом месяце (OP-16), каскадный пересчёт затрагивает целевой и все последующие месяцы (CALC), ответ содержит сводку целевого месяца (API-16).
+- **[API-21]** `POST /api/v1/operations` принимает необязательное поле `period` (`YYYY-MM`) — месяц, в который добавляется операция. Без `period` используется рабочий месяц по умолчанию (MON-16). Заголовок `If-Match` содержит версию именно этого (целевого) месяца (API-25, ADR 0005). Целевой месяц должен существовать (иначе 404 `MONTH_NOT_FOUND`) и иметь статус «Черновик», «Открыт» или «Открыт повторно» (иначе 409 `MONTH_LOCKED`, MSG-06). Операция получает следующий `sequence_no` в целевом месяце (OP-16), каскадный пересчёт затрагивает целевой и все последующие месяцы (CALC), ответ содержит сводку целевого месяца (API-16).
 
-- **[API-22]** единая форма ответа мутаций месяца (решение Q-04, вариант B): `PATCH /api/months/{period}` (API-03), `PUT /api/months/{period}/allocations` (API-04), `POST /api/operations`, `PATCH`/`DELETE /api/operations/{id}` (API-10, API-11) возвращают `{ data: { summary, ... }, warnings }`, где `summary` — краткая сводка затронутого месяца (`MonthSummary`: id, period, status, доход, версия, распределено, свободно), а `...` — специфичные для операции поля (`operation`, `result`). Остатки конвертов в ответ мутации не входят: клиент получает их из `GET /api/dashboard/monthly` (API-12). Ответы `POST .../close` и `POST .../reopen` (API-05, API-06) сохраняют своё поле `month` (та же `MonthSummary`) рядом со специфичными полями (`promotedDraft`, `recalcRange`).
+- **[API-22]** единая форма ответа мутаций месяца (решение Q-04, вариант B): `PATCH /api/v1/months/{period}` (API-03), `PUT /api/v1/months/{period}/allocations` (API-04), `POST /api/v1/operations`, `PATCH`/`DELETE /api/v1/operations/{id}` (API-10, API-11) возвращают `{ data: { summary, ... }, warnings }`, где `summary` — краткая сводка затронутого месяца (`MonthSummary`: id, period, status, доход, версия, распределено, свободно), а `...` — специфичные для операции поля (`operation`, `result`). Остатки конвертов в ответ мутации не входят: клиент получает их из `GET /api/v1/dashboard/monthly` (API-12). Ответы `POST .../close` и `POST .../reopen` (API-05, API-06) сохраняют своё поле `month` (та же `MonthSummary`) рядом со специфичными полями (`promotedDraft`, `recalcRange`).
+
+- ~~**[API-23]**~~ (отменено 2026-11-01: пути везде записаны полностью с префиксом `/api/v1`, отдельное правило о префиксе не нужно; идентификатор не переиспользуется). Swagger UI доступен по `/api`;
+
+- ~~**[API-24]**~~ (отменено 2026-11-01: версия месяца передаётся единым механизмом API-25, а не query-параметром; идентификатор не переиспользуется). Неизвестная операция при `DELETE /api/v1/operations/{id}` — 404 `OPERATION_NOT_FOUND`;
+
+- **[API-25]** **Оптимистичная блокировка — единый механизм** (ADR 0005, дополнение 2026-11-01). Все изменяющие запросы, привязанные к месяцу, — `PATCH /api/v1/months/{period}` (API-03), `PUT /api/v1/months/{period}/allocations` (API-04), `POST /api/v1/months/{period}/close` (API-05), `POST /api/v1/months/{period}/reopen` (API-06), `POST /api/v1/operations` (API-10, версия целевого месяца, API-21), `PATCH`/`DELETE /api/v1/operations/{id}` (API-11, версия месяца операции) — передают ожидаемую версию месяца в заголовке `If-Match` в виде строкового ETag: `If-Match: "7"`. Поле `version` в теле запросов и query-параметр `?version=` не используются. Запросы создания месяца (`POST /api/v1/months`, API-02) и операции над конвертами (API-07…API-09) заголовка не требуют;
+
+- **[API-26]** ответы на чтение и мутации, привязанные к месяцу (API-03…API-06, API-10…API-12, API-20), возвращают текущую версию месяца в заголовке `ETag: "<version>"`; поле `version` в теле ответа сохраняется для отображения. Для мутаций, затрагивающих несколько месяцев (каскад, CALC), `ETag` — версия целевого месяца запроса после пересчёта. Сервер разрешает браузерному клиенту читать `ETag` и отправлять `If-Match` (CORS: `Access-Control-Expose-Headers: ETag`, `Access-Control-Allow-Headers: If-Match`);
+
+- **[API-27]** ошибки блокировки: мутация месяца без `If-Match` или с значением, не являющимся ETag целого неотрицательного числа, — 428 `PRECONDITION_REQUIRED` (отсутствует) / 422 `VALIDATION_ERROR` (формат нарушен); версия не совпадает с текущей — 409 `VERSION_CONFLICT` (код и статус сохранены из соображений единой доменной модели ошибок вместо 412). Порядок проверок: существование месяца → `If-Match` → статус месяца → бизнес-правила (устаревшая вкладка получает `VERSION_CONFLICT`, даже если месяц успел закрыться). При 409 клиент перечитывает данные и повторяет действие.
