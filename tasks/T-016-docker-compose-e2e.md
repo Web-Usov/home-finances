@@ -1,7 +1,7 @@
 ---
 id: T-016
 title: Delivery: docker compose from scratch and persistence after restart
-status: in_progress
+status: done
 epic: E-06
 depends: [T-014]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-22]
 area: infra
 size: S
 branch: task/T-016-docker-compose-e2e
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/40
 ---
 
 # T-016. Delivery: docker compose from scratch and persistence after restart
