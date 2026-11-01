@@ -1,0 +1,45 @@
+---
+id: T-054
+title: "OperationForm: replace offer when the transfer source changed, preselect archived source"
+status: todo
+epic: E-04
+depends: [T-053]
+blocked_by: []
+spec: [OP-07, HIST-09]
+acceptance: []
+area: mobile
+size: M
+branch: null
+pr: null
+---
+
+# T-054. OperationForm: replace offer when the transfer source changed, preselect archived source
+
+## Goal
+
+When editing a transfer and the user changes its source envelope, the form offers the replace flow correctly, and an archived source envelope is preselected in edit mode instead of being dropped.
+
+## Context
+
+- `OperationForm` and the history edit flow in `apps/mobile` (T-011, T-012). Follow-ups from the T-011/T-012 reviews.
+- Depends on T-053 (same module, structured `available`).
+- Edit semantics: HIST-09 / HIST-13 (balance at the transfer own position after replay).
+
+## Definition of Done
+
+- [ ] `it('HIST-09: changing the transfer source offers the replace flow')` mobile component test passes
+- [ ] `it('HIST-09: edit preselects an archived source envelope')` mobile component test passes
+- [ ] `pnpm verify` is green
+- [ ] Task file updated (status, branch, pr, Result)
+
+## Out of scope
+
+- E2E for the overrun case (T-055).
+
+## Handoff log
+
+<!-- Append-only. One entry per interrupted session: date, what is done, what is next, branch/commit, gotchas. -->
+
+## Result
+
+<!-- Filled at the end: PR link, notes, deviations. -->

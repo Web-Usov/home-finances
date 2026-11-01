@@ -25,3 +25,4 @@
 | [0010](0010-artifact-language-policy.md) | Язык артефактов | Действует |
 | [0011](0011-expo-react-native-web.md) | Клиент: Expo + React Native Web + Expo Router | Действует |
 | [0012](0012-openapi-orval-generated-client.md) | API-клиент генерируется из OpenAPI (Orval) | Действует |
+| [0013](0013-delivery-topology-same-origin-web.md) | Поставка: один compose-стек, веб на том же origin | Предложено |
