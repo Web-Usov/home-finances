@@ -31,19 +31,19 @@ One locking mechanism everywhere (human decision on PR #33, ADR 0005 addendum): 
 
 ## Definition of Done
 
-- [ ] `it('API-25 / API-27: mutation without If-Match answers 428 PRECONDITION_REQUIRED')` for every endpoint listed in API-25 (int/http tests)
-- [ ] `it('API-27: stale If-Match answers 409 VERSION_CONFLICT before the month status is checked')`
-- [ ] `it('API-26: month-scoped reads and mutations return ETag equal to the month version')` incl. a cascade mutation (ETag = target month version after recalculation)
-- [ ] `it('API-27: malformed If-Match answers 422 VALIDATION_ERROR')`
-- [ ] Request schemas no longer contain `version`; `openapi.json` documents `If-Match`; `pnpm api:generate` run, `pnpm api:contract` green
-- [ ] CORS test/assertion: `Access-Control-Expose-Headers` contains `ETag`, `If-Match` is allowed
-- [ ] Mobile component tests: mutations send `If-Match` from the cached version, `ETag` refreshes it, 409 refetches (existing tests updated)
-- [ ] `pnpm e2e:smoke` green (fixtures send `If-Match`); `pnpm e2e:full` green
-- [ ] Docs updated (`docs/architecture.md`, package AGENTS.md); no edits to `docs/spec/**` or `docs/decisions/**`
-- [ ] `pnpm verify` is green
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005)
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('API-25 / API-27: mutation without If-Match answers 428 PRECONDITION_REQUIRED')` for every endpoint listed in API-25 (int/http tests)
+- [x] `it('API-27: stale If-Match answers 409 VERSION_CONFLICT before the month status is checked')`
+- [x] `it('API-26: month-scoped reads and mutations return ETag equal to the month version')` incl. a cascade mutation (ETag = target month version after recalculation)
+- [x] `it('API-27: malformed If-Match answers 422 VALIDATION_ERROR')`
+- [x] Request schemas no longer contain `version`; `openapi.json` documents `If-Match`; `pnpm api:generate` run, `pnpm api:contract` green
+- [x] CORS test/assertion: `Access-Control-Expose-Headers` contains `ETag`, `If-Match` is allowed
+- [x] Mobile component tests: mutations send `If-Match` from the cached version, `ETag` refreshes it, 409 refetches (existing tests updated)
+- [x] `pnpm e2e:smoke` green (fixtures send `If-Match`); `pnpm e2e:full` green
+- [x] Docs updated (`docs/architecture.md`, package AGENTS.md); no edits to `docs/spec/**` or `docs/decisions/**`
+- [x] `pnpm verify` is green
+- [x] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
+- [x] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005)
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -56,4 +56,26 @@ One locking mechanism everywhere (human decision on PR #33, ADR 0005 addendum): 
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Implemented as one vertical slice (types + api + mobile + e2e).
+
+- **Mechanism (`apps/api/src/common/`)**: `if-match.ts` — `@IfMatch()` parameter decorator classifies the header into `ExpectedVersion`
+  (`version` | `missing` | `malformed`), the only place the header is read; `assertExpectedVersion` is called by `lockMonthForMutation` /
+  `lockWorkingMonth` right after the month exists under the T-036 lock, so the order is existence (404) → If-Match (428 / 422 / 409) →
+  status (409 `MONTH_LOCKED`) → business rules (API-27). `@ApiIfMatch()` documents the header and the 428 response. `month-etag.ts` —
+  `@MonthETag()` + global `MonthETagInterceptor` set `ETag: "<version>"` from the response body (`data.summary|data.month|month`).
+  `PRECONDITION_REQUIRED` added to `ApiErrorCode`, `PreconditionRequiredException` (428) and the filter. CORS moved into `configureApp`
+  (`exposedHeaders: ['ETag']`, `allowedHeaders: ['Content-Type', 'If-Match']`).
+- **Header form**: the strong `"7"` is the contract; the weak `W/"7"` is tolerated (proxies may weaken ETags). Bare `7`, `*`, lists, negative, non-integer,
+  leading zeros → 422 `VALIDATION_ERROR`. Missing → 428.
+- **ETag** is set on `GET /dashboard/monthly`, `GET /months/{period}/reopen-preview` (API-20) and every month-scoped mutation. `GET /months` (list) gets
+  none: API-26 does not list API-01.
+- **Schemas**: `version` removed from the create/update operation, income and allocations requests; `CloseMonthRequestSchema`,
+  `ReopenMonthRequestSchema` and `DeleteOperationQuerySchema` deleted (close/reopen/delete have no body/query any more).
+- **Mobile**: `useMonthMutation` + `ifMatch` + `syncMonthVersionFromETag` (`src/lib/`); the Orval mutator accepts per-call options (second argument),
+  an axios response interceptor feeds ETags to the query cache; 428 → generic message.
+- **Tests**: `src/common/if-match.etag.int-spec.ts` (428 / 422 / 409 / ETag / CORS for all seven endpoints, order of checks, cascade ETag),
+  `if-match.spec.ts`, `month-lock.spec.ts`, mobile `monthVersion.test.ts`, `axios-instance.test.ts`, `apiErrors.test.ts`, updated component tests; all
+  existing int/unit/e2e tests send `If-Match`; fixtures, `seed-demo.mjs` and `smoke-compose.sh` too.
+- **Verification**: `pnpm verify` green, `pnpm e2e:smoke` 15/15, `pnpm e2e:full` 24/24.
+- **Not run**: `pnpm smoke:compose` (Docker files untouched; only its API calls were updated to send `If-Match` and the script passes `bash -n`).
+- No follow-ups.
