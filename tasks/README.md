@@ -126,7 +126,7 @@
 
 - [T-054](T-054-operation-form-replace-offer-and-archived-source.md) OperationForm: replace offer when the transfer source changed, preselect archived source — **done** · mobile · M · depends: T-053 · [PR](https://github.com/Web-Usov/home-finances/pull/61)
 
-- [T-055](T-055-e2e-transfer-overrun-on-edit.md) E2E: real transfer overrun on edit — **todo** · mobile · S · depends: T-054 · —
+- [T-055](T-055-e2e-transfer-overrun-on-edit.md) E2E: real transfer overrun on edit — **done** · mobile · S · depends: T-054 · [PR](https://github.com/Web-Usov/home-finances/pull/64)
 
 ## E-05. Годовая аналитика (UI) — accepted, принят 2026-11-01
 
