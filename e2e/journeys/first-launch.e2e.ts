@@ -22,16 +22,15 @@ test.describe('journey: first launch', () => {
       await page.getByPlaceholder('Напр. Продукты').fill(name);
       await page.getByPlaceholder('0.00').fill(balance);
       await page.getByText('Создать', { exact: true }).click();
-      await expect(page.getByText(name, { exact: true })).toBeVisible();
+      // The Month tab stays mounted and now lists the new envelope too (T-048), so match the visible one only.
+      await expect(page.getByText(name, { exact: true }).filter({ visible: true })).toBeVisible();
     }
-    await expect(page.getByText(/^10\s000,00\s₽$/)).toBeVisible();
-    await expect(page.getByText(/^5\s000,00\s₽$/)).toBeVisible();
+    await expect(page.getByText(/^10\s000,00\s₽$/).filter({ visible: true })).toBeVisible();
+    await expect(page.getByText(/^5\s000,00\s₽$/).filter({ visible: true })).toBeVisible();
     await shot(page, testInfo, '03-envelopes-with-balances');
 
     // SCOPE-25: the monthly allocation across all active envelopes.
     await page.getByRole('tablist').getByRole('link', { name: 'Месяц' }).click();
-    // The envelopes tab does not refresh the cached month dashboard yet (follow-up task), so reload to get the editor fields.
-    await page.reload();
     await expect(page.getByRole('heading', { name: 'Январь 2026' })).toBeVisible();
     await saveAllocation(page, { Продукты: '40000', Дом: '20000' });
 

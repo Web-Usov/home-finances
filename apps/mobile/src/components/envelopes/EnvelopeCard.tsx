@@ -6,9 +6,9 @@ import { formatMoneyMinor } from '@family-budget/types';
 import { formatRubles } from '../../lib/money';
 import { EnvelopeRenameForm } from './EnvelopeRenameForm';
 import {
-  getEnvelopesControllerListV1QueryKey,
   useEnvelopesControllerArchiveV1,
 } from '../../api/envelopes/envelopes';
+import { invalidateBudgetData } from '../../lib/queryKeys';
 import { getApiErrorMessage } from './types';
 import type { ApiErrorResponse, EnvelopeWithBalance } from './types';
 
@@ -25,7 +25,7 @@ export function EnvelopeCard({ envelope }: EnvelopeCardProps) {
     mutation: {
       onSuccess: () => {
         setArchiveError(null);
-        queryClient.invalidateQueries({ queryKey: getEnvelopesControllerListV1QueryKey() });
+        void invalidateBudgetData(queryClient);
       },
       onError: (error) => {
         setArchiveError(getApiErrorMessage(error, 'Не удалось архивировать конверт'));
