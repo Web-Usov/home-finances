@@ -1,7 +1,7 @@
 ---
 id: T-071
 title: "Docker: migrate service must run offline (corepack cache readable by USER node)"
-status: todo          # todo | in_progress | review | done | blocked
+status: done          # todo | in_progress | review | done | blocked
 epic: E-06            # epics/E-xx-*.md
 depends: []           # [T-001, T-002] - must be done before this task starts
 blocked_by: []        # [Q-01] - open questions from docs/spec/99-open-questions.md
@@ -9,8 +9,8 @@ spec: [DOD-04, DOD-05]              # rule IDs this task implements, e.g. [OP-05
 acceptance: []        # AC ids this task contributes to, e.g. [AC-06]
 area: infra             # api | mobile | infra | docs | design
 size: S               # S | M  (one agent session, ~300-500 LOC max)
-branch: null          # set when work starts, e.g. task/T-000-slug
-pr: null              # PR URL once opened
+branch: task/T-071-docker-migrate-offline-corepack          # set when work starts, e.g. task/T-000-slug
+pr: https://github.com/Web-Usov/home-finances/pull/63              # PR URL once opened
 ---
 
 # T-071. Docker: migrate service must run offline (corepack cache readable by USER node)
@@ -29,11 +29,11 @@ The compose `migrate` service applies migrations without network access: it no l
 
 Every item must be verifiable by a command or a named test.
 
-- [ ] Running the `migrate` container with the network disabled (e.g. `docker compose run --rm --no-deps --network none`-style check with a reachable DB, or an equivalent documented procedure) applies migrations successfully; the exact command is written into `scripts/smoke-compose.sh` or `docs/testing.md`. If a network-less run is not feasible in CI, document why and verify manually, noting the result in `## Result`.
-- [ ] `docker compose build` and `pnpm smoke:compose` are green.
-- [ ] No pnpm/corepack download is attempted at container start (verified by the offline run).
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Running the `migrate` container with the network disabled (e.g. `docker compose run --rm --no-deps --network none`-style check with a reachable DB, or an equivalent documented procedure) applies migrations successfully; the exact command is written into `scripts/smoke-compose.sh` or `docs/testing.md`. If a network-less run is not feasible in CI, document why and verify manually, noting the result in `## Result`.
+- [x] `docker compose build` and `pnpm smoke:compose` are green.
+- [x] No pnpm/corepack download is attempted at container start (verified by the offline run).
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -46,4 +46,13 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Approach: `migrate` now runs `node_modules/.bin/prisma migrate deploy` directly (WORKDIR `/app/apps/api`); the runtime
+no longer touches pnpm/corepack. Chosen over `COREPACK_HOME=/opt/corepack` because it removes the runtime dependency
+instead of relocating a cache (smaller, no extra image state). `apps/api/Dockerfile` is unchanged (corepack is still used at build time).
+`docker/web/Dockerfile` has no issue: its runtime is plain `node serve-web.mjs`, pnpm is only used in the builder stage.
+
+Offline proof: `docker-compose.smoke.yml` adds service `migrate-offline` (same image/command) on an `internal: true` network that
+reaches postgres but has no outbound route; `scripts/smoke-compose.sh` runs it right after `up` and requires
+"No pending migrations to apply" and no corepack output. Manual control on the built image with `--network none`:
+`node_modules/.bin/prisma --version` works; the old `pnpm exec prisma --version` fails with "Corepack is about to download ...pnpm-9.15.0.tgz".
+`pnpm smoke:compose` passed (isolated project, free ports). Documented in `docs/testing.md`.

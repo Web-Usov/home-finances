@@ -62,6 +62,13 @@ step "project $PROJECT: api :$API_HOST_PORT, web :$WEB_HOST_PORT, postgres :$POS
 step "up --build (postgres + migrate + api + web)"
 "${DC[@]}" up --build -d --wait --wait-timeout 600
 
+step "migrate works offline (T-071): re-run it on an internal network with no outbound route"
+OFFLINE_OUT=$("${DC[@]}" --profile offline run --rm --no-deps migrate-offline 2>&1) || { echo "$OFFLINE_OUT" >&2; exit 1; }
+echo "$OFFLINE_OUT" | tail -3
+echo "$OFFLINE_OUT" | grep -q 'No pending migrations to apply'
+! echo "$OFFLINE_OUT" | grep -qi -e corepack -e 'Corepack is about to download'
+echo "migrate ran offline, nothing downloaded"
+
 step "health (api direct and through the web proxy), web client"
 curl -fsS "$API/health"; echo
 curl -fsS "$WEB/api/v1/health"; echo
