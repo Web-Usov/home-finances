@@ -130,4 +130,4 @@
 
 - [T-048](T-048-mobile-refresh-month-after-envelope-change.md) Refresh the month dashboard after envelope create/rename/archive — **done** · mobile · S · depends: T-015 · [PR](https://github.com/Web-Usov/home-finances/pull/43)
 
-- [T-058](T-058-milestone-reports-e-02-e-06-and-e-01.md) Milestone reports E-02..E-06 and E-01 addendum — **review** · docs · M · depends: — · —
+- [T-058](T-058-milestone-reports-e-02-e-06-and-e-01.md) Milestone reports E-02..E-06 and E-01 addendum — **done** · docs · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/53)

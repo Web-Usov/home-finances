@@ -45,7 +45,7 @@
 | `pnpm spec:check` | OK |
 | `node scripts/spec-check.mjs --strict-coverage` | OK (все `AC-*` со ссылками, исключений нет) |
 | `pnpm tasks:check` | OK |
-| `pnpm verify` | PASSED за 308 с на дереве этого PR (юнит API 280 и mobile 130, интеграционные 282): typecheck, lint, test:unit, test:scripts, spec:check, tasks:check, test:int, build, api:contract |
+| `pnpm verify` | PASSED за 206 с на дереве этого PR (юнит API 327 и mobile 130, интеграционные 282): typecheck, lint, test:unit, test:scripts, spec:check, tasks:check, test:int, build, api:contract |
 | `pnpm e2e:full` | 24 passed (6,2 мин), см. ниже |
 | `pnpm smoke:compose` | passed, см. ниже |
 
