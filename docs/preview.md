@@ -135,6 +135,10 @@ Only ever touch `family_budget_preview`; never the dev DB `family_budget` or `*_
   to e.g. `/srv/finance-preview` (set `PREVIEW_HOME`, re-run the installer) would allow that. The update unit only has
   `NoNewPrivileges` (it needs the shared `/tmp` lock, docker, ssh keys, the pnpm store).
 
+`serve-web.mjs` also accepts `WEB_ROOT=<dir>` (a plain export directory with `version.json` next to `index.html`; used by the
+compose `web` image). The preview keeps its `PREVIEW_HOME/current/.preview/web` layout; `WEB_ROOT` wins when both are set, so the
+preview units need no change.
+
 ## Resources
 
 API ≤ 768 MB (`MemoryMax`), web server ≤ 256 MB; typical use is far below. A build needs ~2 GB RAM and a few minutes, at

@@ -28,12 +28,12 @@ Small infra follow-ups from the T-016/T-050 reviews, closed with one `pnpm smoke
 
 ## Definition of Done
 
-- [ ] `WEB_ROOT` is honoured and `PREVIEW_HOME` still works (`pnpm test:scripts`)
-- [ ] the API container does not run as root (`docker compose run --rm --entrypoint id api -u` is not 0)
-- [ ] watchdog creates `state` when it is missing (test in `scripts/__tests__/`)
-- [ ] `pnpm smoke:compose` passes; output summary pasted into Result
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `WEB_ROOT` is honoured and `PREVIEW_HOME` still works (`pnpm test:scripts`)
+- [x] the API container does not run as root (`docker compose run --rm --entrypoint id api -u` is not 0)
+- [x] watchdog creates `state` when it is missing (test in `scripts/__tests__/`)
+- [x] `pnpm smoke:compose` passes; output summary pasted into Result
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -45,4 +45,9 @@ Small infra follow-ups from the T-016/T-050 reviews, closed with one `pnpm smoke
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+- `serve-web.mjs`: `WEB_ROOT=<dir>` serves a plain export (`/version.json` = `$WEB_ROOT/version.json`); `PREVIEW_HOME` keeps the
+  `current/.preview/web` layout and is unchanged for the systemd units (no unit re-install needed, so the live preview is unaffected). `WEB_ROOT` wins when both are set.
+- `docker/web/Dockerfile`: `WEB_ROOT=/srv/web`, the `current` symlink / nested `.preview` tree is gone.
+- `apps/api/Dockerfile`: `USER node` (uid 1000: `docker compose run --rm --entrypoint id api -u` prints `1000`); files stay root-owned and read-only for the app, prisma client/engines are only read at runtime.
+- `watchdog.sh`: `mkdir -p` of the state dir before writing the counter (test added).
+- `pnpm smoke:compose` (isolated project `fbsmoke1175646`, free ports): build, migrate, API healthy, web + proxy health, web index served, month/envelopes/expense/transfer created, whole stack restarted, operations/statuses/balances identical after restart: `smoke:compose passed` (exit 0).
