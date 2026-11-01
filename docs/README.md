@@ -9,6 +9,7 @@
 | [workflow.md](workflow.md) | EN | Task lifecycle: pick, worktree, implement, ship, review, handoff, milestones; OpenCode agents and commands |
 | [preview.md](preview.md) | EN | Owner's preview environment: auto-deployed master, URLs, updater, logs, DB reset, disable |
 | [ops.md](ops.md) | EN | Host timer that updates BEHIND pull requests with auto-merge: install, status, logs |
+| [design/README.md](design/README.md) | RU | Дизайн-бриф (E-07); дизайн ведётся в Doop отдельной сессией |
 | [archive/](archive/) | mixed | History only: original monolithic `SPECIFICATION.md` and archived `omo` plans/evidence. Line numbers in them are obsolete. |
 
 Related: root [AGENTS.md](../AGENTS.md) (agent entry point), `tasks/` and `epics/` (work items; board in `tasks/README.md`),

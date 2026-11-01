@@ -35,7 +35,7 @@ const boardPath = path.join(tasksDir, 'README.md');
 
 const TASK_STATUS = ['todo', 'in_progress', 'review', 'done', 'blocked'];
 const EPIC_STATUS = ['planned', 'in_progress', 'done', 'accepted'];
-const AREAS = ['api', 'mobile', 'infra', 'docs'];
+const AREAS = ['api', 'mobile', 'infra', 'docs', 'design'];
 const SIZES = ['S', 'M'];
 
 // ---------- frontmatter ----------

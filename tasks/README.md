@@ -145,3 +145,27 @@
 - [T-039](T-039-preview-keep-api-up-restart-always.md) Preview: keep API up (Restart=always, health watchdog) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/34)
 
 - [T-048](T-048-mobile-refresh-month-after-envelope-change.md) Refresh the month dashboard after envelope create/rename/archive — **done** · mobile · S · depends: T-015 · [PR](https://github.com/Web-Usov/home-finances/pull/43)
+
+## E-07. Дизайн — planned
+
+Эпик: [E-07-design.md](../epics/E-07-design.md)
+
+- [T-060](T-060-design-principles-moodboard-references.md) Design: principles, moodboard, references and font proposal — **todo** · design · S · depends: — · —
+
+- [T-061](T-061-design-tokens-and-canvas-guidelines.md) Design: tokens and canvas guidelines (colors, type, spacing, radii, elevation) — **todo** · design · M · depends: T-060 · —
+
+- [T-062](T-062-design-core-components.md) Design: core components with all states — **todo** · design · M · depends: T-061 · —
+
+- [T-063](T-063-design-screens-month-allocation.md) Design: Month screen (all states) and allocation editor — **todo** · design · M · depends: T-062 · —
+
+- [T-064](T-064-design-screens-operation-forms-reopen.md) Design: operation forms and reopen confirmation — **todo** · design · M · depends: T-063 · —
+
+- [T-065](T-065-design-screens-history.md) Design: History screen — **todo** · design · S · depends: T-064 · —
+
+- [T-066](T-066-design-screens-analytics.md) Design: Analytics screen (reports and charts) — **todo** · design · M · depends: T-065 · —
+
+- [T-067](T-067-design-screens-envelopes-states.md) Design: Envelopes screen and empty/error/loading states — **todo** · design · M · depends: T-066 · —
+
+- [T-068](T-068-design-desktop-adaptation.md) Design: desktop adaptation of key screens — **todo** · design · M · depends: T-067 · —
+
+- [T-069](T-069-design-prototype-and-handoff.md) Design: clickable prototype and handoff document — **todo** · design · M · depends: T-068 · —

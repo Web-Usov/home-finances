@@ -7,7 +7,7 @@ depends: []           # [T-001, T-002] - must be done before this task starts
 blocked_by: []        # [Q-01] - open questions from docs/spec/99-open-questions.md
 spec: []              # rule IDs this task implements, e.g. [OP-05, MON-08]
 acceptance: []        # AC ids this task contributes to, e.g. [AC-06]
-area: docs             # api | mobile | infra | docs
+area: docs             # api | mobile | infra | docs | design
 size: S               # S | M  (one agent session, ~300-500 LOC max)
 branch: task/T-059-plan-epic-e-07-design-brief-epic-and          # set when work starts, e.g. task/T-000-slug
 pr: null              # PR URL once opened
@@ -26,28 +26,26 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+Plan the design-only epic E-07: epic file, design brief, design tasks T-060..T-069, and the new `design` task area.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- Owner decision 2026-11-01: start a design-only epic; the design is created by the owner in a separate Doop MCP session; implementation is a later epic.
+- Language rule: epic and brief are Russian, tasks English (`AGENTS.md`).
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `epics/E-07-design.md` (RU): value, key results, scope, milestone acceptance criteria, out of scope.
+- [x] `docs/design/README.md` (RU): brief with principles, anti-patterns and review checklist, platform limits, screen inventory, design kit, Doop process, handoff template, demo data.
+- [x] Tasks T-060..T-069 (EN, epic E-07, area `design`) with owner-checkable DoD and chained `depends`.
+- [x] `design` added to the area enum in `scripts/tasks.mjs`, `scripts/task-start.mjs`, `tasks/_template.md`; test in `scripts/__tests__/task-start.test.mjs`.
+- [x] One-line pointers in `docs/README.md` and `AGENTS.md`.
+- [x] `pnpm tasks:check`, `pnpm tasks:board`, `pnpm spec:check`, `pnpm test:scripts` pass.
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Any design work itself, markup or code.
 
 ## Handoff log
 
@@ -55,4 +53,4 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Planning PR for E-07 (human review). Design tasks T-060..T-069 are `todo` and are executed by the owner in a separate Doop session.
