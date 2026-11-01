@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { BudgetMonth, Prisma } from '@prisma/client';
 import {
-  CloseMonthRequestSchema,
   CreateMonthRequestSchema,
-  ReopenMonthRequestSchema,
   UpdateIncomeRequestSchema,
   formatMoneyMinorRu,
   parseMoneyMinor,
@@ -20,14 +18,13 @@ import { ConflictException, NotFoundException, ValidationException } from '../..
 import { planReopen } from './reopen-plan';
 import { isSingleReopenedViolation } from './reopen-violation';
 import type { MonthSummaryDto } from '../../common/month-summary';
+import type { ExpectedVersion } from '../../common/if-match';
 import { lockAllMonths, lockMonthForMutation } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 
 export type CreateMonthRequest = z.infer<typeof CreateMonthRequestSchema>;
 export type UpdateIncomeRequest = z.infer<typeof UpdateIncomeRequestSchema>;
-export type CloseMonthRequest = z.infer<typeof CloseMonthRequestSchema>;
-export type ReopenMonthRequest = z.infer<typeof ReopenMonthRequestSchema>;
 
 /** Brief per-month totals — the "краткие итоги" of the months API (API-01). */
 export type { MonthSummaryDto };
@@ -183,7 +180,7 @@ export class MonthsService {
 
   /**
    * Change the income of a non-closed month (API-03, API-22: `data.summary`). Optimistic
-   * locking via `version` (DATA-12) is checked before the closed-month lock
+   * locking via the `If-Match` version (DATA-12, API-25) is checked before the closed-month lock
    * (MON-03, NFR-18). The income update and the cascade recalculation commit in one
    * transaction (API-15); the engine increments `version` on all affected
    * months, so the returned summary is re-read after the recalc.
@@ -191,11 +188,12 @@ export class MonthsService {
   async updateIncome(
     period: string,
     dto: UpdateIncomeRequest,
+    expectedVersion: ExpectedVersion,
   ): Promise<MutationResponse<{ summary: MonthSummaryDto }>> {
     const incomeMinor = parseMoneyMinor(dto.income);
     return this.prisma.$transaction(async (tx) => {
       // DATA-12 / MON-03: lock, then version and status under the lock (no window between check and write).
-      const month = await lockMonthForMutation(tx, { period }, { expectedVersion: dto.version });
+      const month = await lockMonthForMutation(tx, { period }, { expectedVersion });
       // FIN-02: income may not drop below what is already allocated (MSG-01).
       const allocatedMinor = await this.sumAllocations(tx, month.id);
       if (incomeMinor < allocatedMinor) {
@@ -226,14 +224,14 @@ export class MonthsService {
    */
   async close(
     period: string,
-    dto: CloseMonthRequest,
+    expectedVersion: ExpectedVersion,
   ): Promise<MutationResponse<CloseMonthResultDto>> {
     return this.prisma.$transaction(async (tx) => {
       // Locks the month and, in ascending period order, every later one (so the draft too).
       const month = await lockMonthForMutation(
         tx,
         { period },
-        { expectedVersion: dto.version, rejectClosed: false },
+        { expectedVersion, rejectClosed: false },
       );
       if (month.status !== 'open' && month.status !== 'reopened') {
         throw new ConflictException(
@@ -284,7 +282,7 @@ export class MonthsService {
    */
   async reopen(
     period: string,
-    dto: ReopenMonthRequest,
+    expectedVersion: ExpectedVersion,
   ): Promise<MutationResponse<ReopenMonthResultDto>> {
     return this.prisma.$transaction(async (tx) => {
       // Locks the target and every later month. MON-13 is checked under that lock: the single
@@ -292,7 +290,7 @@ export class MonthsService {
       const month = await lockMonthForMutation(
         tx,
         { period },
-        { expectedVersion: dto.version, rejectClosed: false },
+        { expectedVersion, rejectClosed: false },
       );
       const alreadyReopened = await tx.budgetMonth.findFirst({ where: { status: 'reopened' } });
       const lastBefore = await tx.budgetMonth.findFirst({ orderBy: { period: 'desc' } });

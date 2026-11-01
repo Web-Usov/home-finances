@@ -142,14 +142,12 @@ export const CreateMonthRequestSchema = z.object({
 
 export const UpdateIncomeRequestSchema = z.object({
   income: MoneyStringSchema,
-  version: z.number().int().nonnegative(),
 });
 
 export const SaveAllocationsRequestSchema = z.object({
   allocations: z.record(z.string().uuid(), MoneyStringSchema),
   /** Optional new month income, saved atomically with the allocations (FIN-02 is checked against it). */
   income: MoneyStringSchema.optional(),
-  version: z.number().int().nonnegative(),
 });
 
 export const CreateEnvelopeRequestSchema = z.object({
@@ -172,8 +170,6 @@ export const CreateOperationRequestSchema = z
     comment: z.string().max(500).optional(),
     /** Target month (API-21); absent = the working month (MON-16). */
     period: PeriodSchema.optional(),
-    /** Optimistic-lock counter of the target month (ADR 0005). */
-    version: z.number().int().nonnegative(),
   })
   .superRefine((value, ctx) => {
     // OP-10: the initial balance is created only together with an envelope.
@@ -215,12 +211,6 @@ export const UpdateOperationRequestSchema = z.object({
   sourceEnvelopeId: z.string().uuid().optional(),
   destinationEnvelopeId: z.string().uuid().optional(),
   comment: z.string().max(500).optional(),
-  version: z.number().int().nonnegative(),
-});
-
-/** API-11: DELETE /operations/:id carries the month `version` as a query parameter (ADR 0005). */
-export const DeleteOperationQuerySchema = z.object({
-  version: z.coerce.number().int().nonnegative(),
 });
 
 /** HIST-11: history filters (the month is selected by `period`). */
@@ -230,13 +220,8 @@ export const OperationListQuerySchema = z.object({
   type: OperationTypeSchema.optional(),
 });
 
-export const ReopenMonthRequestSchema = z.object({
-  version: z.number().int().nonnegative(),
-});
-
-export const CloseMonthRequestSchema = z.object({
-  version: z.number().int().nonnegative(),
-});
+// API-25: the expected month version travels in the `If-Match` header, never in a body or query.
+// Close/reopen therefore have no request body at all.
 
 // ---------------------------------------------------------------------------
 // Response schemas (declared in Swagger so the generated client is typed)

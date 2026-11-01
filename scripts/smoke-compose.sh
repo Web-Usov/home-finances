@@ -47,7 +47,7 @@ wait_healthy() { # service, timeout seconds
   return 1
 }
 
-post() { curl -fsS -X POST "$API$1" -H 'Content-Type: application/json' -d "$2"; }
+post() { curl -fsS -X POST "$API$1" -H 'Content-Type: application/json' ${3:+-H "If-Match: \"$3\""} -d "$2"; }
 json() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log($1)})"; }
 
 # Operations (incl. result rows), month list (statuses, versions) and the dashboard (balances), verbatim.
@@ -73,8 +73,9 @@ post /months '{"period":"2026-01","income":"100000.00"}' >/dev/null
 FOOD=$(post /envelopes '{"name":"Smoke food","initialBalance":"5000.00"}' | json 'j.envelope.id')
 SAVE=$(post /envelopes '{"name":"Smoke savings","initialBalance":"20000.00"}' | json 'j.envelope.id')
 version() { curl -fsS "$API/months" | json "j.months.find(m=>m.period==='2026-01').version"; }
-post /operations "{\"type\":\"expense\",\"sourceEnvelopeId\":\"$FOOD\",\"amount\":\"7000.50\",\"comment\":\"Smoke expense\",\"version\":$(version)}" >/dev/null
-post /operations "{\"type\":\"transfer\",\"sourceEnvelopeId\":\"$SAVE\",\"destinationEnvelopeId\":\"$FOOD\",\"amount\":\"1500.00\",\"comment\":\"Smoke transfer\",\"version\":$(version)}" >/dev/null
+# The expected month version travels in `If-Match: "<version>"` (API-25), the third argument of post().
+post /operations "{\"type\":\"expense\",\"sourceEnvelopeId\":\"$FOOD\",\"amount\":\"7000.50\",\"comment\":\"Smoke expense\"}" "$(version)" >/dev/null
+post /operations "{\"type\":\"transfer\",\"sourceEnvelopeId\":\"$SAVE\",\"destinationEnvelopeId\":\"$FOOD\",\"amount\":\"1500.00\",\"comment\":\"Smoke transfer\"}" "$(version)" >/dev/null
 snapshot "$SNAP_DIR/before.json"
 grep -q 'Smoke expense' "$SNAP_DIR/before.json"
 grep -q 'Smoke transfer' "$SNAP_DIR/before.json"

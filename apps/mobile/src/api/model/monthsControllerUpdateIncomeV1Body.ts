@@ -9,6 +9,4 @@
 export type MonthsControllerUpdateIncomeV1Body = {
   /** @pattern ^\d+(\.\d{1,2})?$ */
   income: string;
-  /** @minimum 0 */
-  version: number;
 };

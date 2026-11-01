@@ -6,10 +6,11 @@
 // not fully covered), a transfer, and the next month as a draft.
 const origin = (process.argv[2] ?? process.env.PREVIEW_API_URL ?? 'http://127.0.0.1:3100').replace(/\/+$/, '');
 
-async function call(method, path, body) {
+// `version` is the expected month version, sent as `If-Match: "<version>"` (API-25).
+async function call(method, path, body, version) {
   const res = await fetch(`${origin}/api/v1${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(version !== undefined ? { 'If-Match': `"${version}"` } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();
@@ -50,16 +51,20 @@ for (const [name, initialBalance] of [
 }
 const id = (name) => envelopes[name];
 
-await call('PUT', `/months/${period}/allocations`, {
-  allocations: {
-    [id('Продукты')]: '35000.00',
-    [id('Коммуналка')]: '18000.00',
-    [id('Отпуск')]: '20000.00',
-    [id('Подушка безопасности')]: '15000.00',
-    [id('Развлечения')]: '8000.00',
+await call(
+  'PUT',
+  `/months/${period}/allocations`,
+  {
+    allocations: {
+      [id('Продукты')]: '35000.00',
+      [id('Коммуналка')]: '18000.00',
+      [id('Отпуск')]: '20000.00',
+      [id('Подушка безопасности')]: '15000.00',
+      [id('Развлечения')]: '8000.00',
+    },
   },
-  version: await monthVersion(period),
-});
+  await monthVersion(period),
+);
 
 const operations = [
   { type: 'expense', source: 'Продукты', amount: '4350.50', comment: 'Супермаркет' },
@@ -69,14 +74,18 @@ const operations = [
   { type: 'transfer', source: 'Подушка безопасности', destination: 'Отпуск', amount: '5000.00', comment: 'В отпускной фонд' },
 ];
 for (const op of operations) {
-  await call('POST', '/operations', {
-    type: op.type,
-    sourceEnvelopeId: id(op.source),
-    ...(op.destination ? { destinationEnvelopeId: id(op.destination) } : {}),
-    amount: op.amount,
-    comment: op.comment,
-    version: await monthVersion(period),
-  });
+  await call(
+    'POST',
+    '/operations',
+    {
+      type: op.type,
+      sourceEnvelopeId: id(op.source),
+      ...(op.destination ? { destinationEnvelopeId: id(op.destination) } : {}),
+      amount: op.amount,
+      comment: op.comment,
+    },
+    await monthVersion(period),
+  );
 }
 
 await call('POST', '/months', { period: next });

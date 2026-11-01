@@ -1,8 +1,10 @@
 import { INestApplication, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import { Reflector } from '@nestjs/core';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
+import { MonthETagInterceptor } from './common/month-etag';
 
-/** Global prefix, versioning, filters shared by main.ts and tooling. */
+/** Global prefix, versioning, filters, ETag interceptor and CORS shared by main.ts and tooling. */
 export function configureApp(app: INestApplication): void {
   app.setGlobalPrefix('api');
 
@@ -12,6 +14,16 @@ export function configureApp(app: INestApplication): void {
   });
 
   app.useGlobalFilters(new DomainExceptionFilter());
+  app.useGlobalInterceptors(new MonthETagInterceptor(new Reflector()));
+
+  // API-26: the browser client reads `ETag` and sends `If-Match` (and the JSON content type).
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: ['Content-Type', 'If-Match'],
+    exposedHeaders: ['ETag'],
+    credentials: false,
+  });
 }
 
 export function createOpenApiDocument(app: INestApplication): OpenAPIObject {

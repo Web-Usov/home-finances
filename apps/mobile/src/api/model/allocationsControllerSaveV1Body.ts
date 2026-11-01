@@ -11,6 +11,4 @@ export type AllocationsControllerSaveV1Body = {
   allocations: AllocationsControllerSaveV1BodyAllocations;
   /** @pattern ^\d+(\.\d{1,2})?$ */
   income?: string;
-  /** @minimum 0 */
-  version: number;
 };

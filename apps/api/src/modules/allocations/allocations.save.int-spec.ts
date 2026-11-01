@@ -5,7 +5,7 @@ import { MonthsModule } from '../months/months.module';
 import { OperationsModule } from '../operations/operations.module';
 import { AllocationsModule } from './allocations.module';
 import { createAllocation, createEnvelope, createMonth, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB + real engine: PUT /months/:period/allocations (API-04, API-22) and the shared summary shape. */
 describe('Allocations save and month mutation response shape (integration)', () => {
@@ -29,8 +29,9 @@ describe('Allocations save and month mutation response shape (integration)', () 
   });
 
   const http = () => request(t.app.getHttpServer());
-  const put = (period: string, body: object) =>
-    http().put(`/api/v1/months/${period}/allocations`).send(body);
+  /** PUT allocations; `version` is the expected month version, sent as `If-Match` (API-25), not in the body. */
+  const put = (period: string, { version, ...body }: { version: number } & Record<string, unknown>) =>
+    http().put(`/api/v1/months/${period}/allocations`).set('If-Match', etag(version)).send(body);
 
   const SUMMARY_KEYS = ['freeFundsMinor', 'id', 'incomeMinor', 'period', 'status', 'totalAllocatedMinor', 'version'];
 
@@ -49,7 +50,8 @@ describe('Allocations save and month mutation response shape (integration)', () 
 
     const income = await http()
       .patch('/api/v1/months/2026-01')
-      .send({ income: '20000.00', version: month.version })
+      .set('If-Match', etag(month.version))
+      .send({ income: '20000.00' })
       .expect(200);
     expect(Object.keys(income.body.data)).toEqual(['summary']);
     expect(Object.keys(income.body.data.summary).sort()).toEqual(SUMMARY_KEYS);
@@ -71,11 +73,11 @@ describe('Allocations save and month mutation response shape (integration)', () 
 
     const created = await http()
       .post('/api/v1/operations')
+      .set('If-Match', etag(allocations.body.data.summary.version))
       .send({
         type: 'expense',
         sourceEnvelopeId: food.id,
         amount: '100.00',
-        version: allocations.body.data.summary.version,
       })
       .expect(201);
     expect(Object.keys(created.body.data.summary).sort()).toEqual(SUMMARY_KEYS);
@@ -83,12 +85,14 @@ describe('Allocations save and month mutation response shape (integration)', () 
     const operationId = created.body.data.operation.id as string;
     const patched = await http()
       .patch(`/api/v1/operations/${operationId}`)
-      .send({ amount: '200.00', version: created.body.data.summary.version })
+      .set('If-Match', etag(created.body.data.summary.version))
+      .send({ amount: '200.00' })
       .expect(200);
     expect(Object.keys(patched.body.data.summary).sort()).toEqual(SUMMARY_KEYS);
 
     const deleted = await http()
-      .delete(`/api/v1/operations/${operationId}?version=${patched.body.data.summary.version}`)
+      .delete(`/api/v1/operations/${operationId}`)
+      .set('If-Match', etag(patched.body.data.summary.version))
       .expect(200);
     expect(Object.keys(deleted.body.data)).toEqual(['summary']);
     expect(Object.keys(deleted.body.data.summary).sort()).toEqual(SUMMARY_KEYS);

@@ -4,7 +4,7 @@ import { EnvelopesModule } from '../src/modules/envelopes/envelopes.module';
 import { MonthsModule } from '../src/modules/months/months.module';
 import { OperationsModule } from '../src/modules/operations/operations.module';
 import { createEnvelope, createMonth, createOperation, resetDb } from './db';
-import { createTestApp, TestApp } from './http';
+import { createTestApp, etag, TestApp } from './http';
 
 export const ROUNDS = 15;
 export const PERIOD = '2026-01';
@@ -63,10 +63,14 @@ export function useRaceHarness() {
     await t?.close();
   });
 
-  async function call(method: string, path: string, body?: object): Promise<Res> {
+  /** `version`, when given, is sent as `If-Match` (API-25) — the expected month version of the racing client. */
+  async function call(method: string, path: string, body?: object, version?: number): Promise<Res> {
     const response = await fetch(`${base}${path}`, {
       method,
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+        ...(version !== undefined ? { 'If-Match': etag(version) } : {}),
+      },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
     const parsed = (await response.json().catch(() => ({}))) as Record<string, unknown>;
@@ -104,26 +108,27 @@ export function useRaceHarness() {
     return { month, food, home, version: await versionOf(), operationId: operation.id };
   }
 
-  const close = (w: World) => () => call('POST', `/api/v1/months/${PERIOD}/close`, { version: w.version });
+  const close = (w: World) => () => call('POST', `/api/v1/months/${PERIOD}/close`, undefined, w.version);
   const allocate = (w: World) => () =>
-    call('PUT', `/api/v1/months/${PERIOD}/allocations`, {
-      allocations: { [w.food.id]: '100.00' },
-      version: w.version,
-    });
+    call('PUT', `/api/v1/months/${PERIOD}/allocations`, { allocations: { [w.food.id]: '100.00' } }, w.version);
   const setIncome = (w: World) => () =>
-    call('PATCH', `/api/v1/months/${PERIOD}`, { income: '20000.00', version: w.version });
+    call('PATCH', `/api/v1/months/${PERIOD}`, { income: '20000.00' }, w.version);
   const spend = (w: World, type: 'expense' | 'adjustment' = 'expense') => () =>
-    call('POST', '/api/v1/operations', {
-      type,
-      ...(type === 'adjustment' ? { sign: '+' } : {}),
-      sourceEnvelopeId: w.food.id,
-      amount: '1.00',
-      version: w.version,
-    });
+    call(
+      'POST',
+      '/api/v1/operations',
+      {
+        type,
+        ...(type === 'adjustment' ? { sign: '+' } : {}),
+        sourceEnvelopeId: w.food.id,
+        amount: '1.00',
+      },
+      w.version,
+    );
   const editOperation = (w: World) => () =>
-    call('PATCH', `/api/v1/operations/${w.operationId}`, { amount: '7.00', version: w.version });
+    call('PATCH', `/api/v1/operations/${w.operationId}`, { amount: '7.00' }, w.version);
   const deleteOperation = (w: World) => () =>
-    call('DELETE', `/api/v1/operations/${w.operationId}?version=${w.version}`);
+    call('DELETE', `/api/v1/operations/${w.operationId}`, undefined, w.version);
   const createEnvelopeWithBalance = (name: string) => () =>
     call('POST', '/api/v1/envelopes', { name, initialBalance: '10.00' });
   const archive = (envelopeId: string) => () => call('POST', `/api/v1/envelopes/${envelopeId}/archive`, {});

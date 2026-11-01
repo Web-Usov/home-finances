@@ -6,7 +6,7 @@ import {
   createMonth,
   resetDb,
 } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB: PATCH /months/:period (API-03) with the cascade in one transaction. */
 describe('Months income update (integration)', () => {
@@ -25,8 +25,9 @@ describe('Months income update (integration)', () => {
     await t?.close();
   });
 
-  const patch = (period: string, body: object) =>
-    request(t.app.getHttpServer()).patch(`/api/v1/months/${period}`).send(body);
+  /** PATCH income; `version` is the expected month version, sent as `If-Match` (API-25), not in the body. */
+  const patch = (period: string, { version, ...body }: { version: number } & Record<string, unknown>) =>
+    request(t.app.getHttpServer()).patch(`/api/v1/months/${period}`).set('If-Match', etag(version)).send(body);
 
   it('API-03 / API-15 / API-16 / API-22 / DATA-12: income change recalculates later months, bumps versions, returns summary + warnings', async () => {
     const jan = await createMonth(t.prisma, { period: '2026-01', status: 'open', incomeMinor: 1_000_000 });
@@ -97,7 +98,7 @@ describe('Months income update (integration)', () => {
   it('API-17: invalid body returns 422 VALIDATION_ERROR', async () => {
     await createMonth(t.prisma, { period: '2026-01' });
 
-    const response = await patch('2026-01', { income: 'abc' }).expect(422);
+    const response = await patch('2026-01', { income: 'abc', version: 1 }).expect(422);
 
     expect(response.body.error).toBe('VALIDATION_ERROR');
   });

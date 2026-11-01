@@ -16,8 +16,12 @@ export class ApiFixture {
     private readonly apiUrl: string,
   ) {}
 
-  private async post<T>(path: string, data: unknown): Promise<T> {
-    const res = await this.request.post(`${this.apiUrl}/api/v1${path}`, { data });
+  /** `version`, when given, is the expected month version sent as `If-Match` (API-25). */
+  private async post<T>(path: string, data?: unknown, version?: number): Promise<T> {
+    const res = await this.request.post(`${this.apiUrl}/api/v1${path}`, {
+      ...(data !== undefined ? { data } : {}),
+      ...(version !== undefined ? { headers: { 'If-Match': `"${version}"` } } : {}),
+    });
     if (!res.ok()) throw new Error(`POST ${path} -> ${res.status()}: ${await res.text()}`);
     return (await res.json()) as T;
   }
@@ -33,7 +37,7 @@ export class ApiFixture {
     const { months } = (await list.json()) as { months: { period: string; version: number }[] };
     const month = months.find((m) => m.period === period);
     if (!month) throw new Error(`month ${period} does not exist`);
-    return this.post(`/months/${period}/close`, { version: month.version });
+    return this.post(`/months/${period}/close`, undefined, month.version);
   }
 
   createEnvelope(name: string, initialBalance?: string) {
@@ -49,7 +53,7 @@ export class ApiFixture {
     const { months } = (await list.json()) as { months: { period: string; version: number }[] };
     const month = months.find((m) => m.period === period);
     if (!month) throw new Error(`month ${period} does not exist`);
-    return this.post('/operations', { ...body, period, version: month.version });
+    return this.post('/operations', { ...body, period }, month.version);
   }
 
   /** Truncates all tables of the e2e schema (keeps the Prisma migrations table). */

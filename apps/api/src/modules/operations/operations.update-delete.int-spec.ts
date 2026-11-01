@@ -5,7 +5,7 @@ import { EnvelopesModule } from '../envelopes/envelopes.module';
 import { MonthsModule } from '../months/months.module';
 import { OperationsModule } from './operations.module';
 import { createEnvelope, createMonth, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB + real engine: PATCH/DELETE /operations/:id (API-11) with the cascade in one transaction. */
 describe('Operations update and delete (integration)', () => {
@@ -29,9 +29,13 @@ describe('Operations update and delete (integration)', () => {
   });
 
   const http = () => request(t.app.getHttpServer());
-  const patch = (id: string, body: object) => http().patch(`/api/v1/operations/${id}`).send(body);
+  /** PATCH an operation; `version` is the expected month version, sent as `If-Match` (API-25), not in the body. */
+  const patch = (id: string, { version, ...body }: { version?: number } & Record<string, unknown>) => {
+    const req = http().patch(`/api/v1/operations/${id}`);
+    return (version === undefined ? req : req.set('If-Match', etag(version))).send(body);
+  };
   const del = (id: string, version: number | string) =>
-    http().delete(`/api/v1/operations/${id}?version=${version}`);
+    http().delete(`/api/v1/operations/${id}`).set('If-Match', etag(version));
 
   async function monthVersion(id: string): Promise<number> {
     return (await t.prisma.budgetMonth.findUniqueOrThrow({ where: { id } })).version;
@@ -44,7 +48,8 @@ describe('Operations update and delete (integration)', () => {
     const home = await createEnvelope(t.prisma, { name: 'Home' });
     await http()
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [food.id]: '10000.00' }, version: month.version })
+      .set('If-Match', etag(month.version))
+      .send({ allocations: { [food.id]: '10000.00' } })
       .expect(200);
     return { month, food, home };
   }
@@ -54,7 +59,8 @@ describe('Operations update and delete (integration)', () => {
     const version = await monthVersion(monthId);
     const response = await http()
       .post('/api/v1/operations')
-      .send({ ...body, version })
+      .set('If-Match', etag(version))
+      .send({ ...body })
       .expect(201);
     return response.body.data.operation as { id: string; sequenceNo: number };
   }
@@ -91,7 +97,8 @@ describe('Operations update and delete (integration)', () => {
     const { month, food, home } = await setup();
     await http()
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [food.id]: '5000.00', [home.id]: '5000.00' }, version: await monthVersion(month.id) })
+      .set('If-Match', etag(await monthVersion(month.id)))
+      .send({ allocations: { [food.id]: '5000.00', [home.id]: '5000.00' } })
       .expect(200);
     const op = await addOperation(month.id, {
       type: 'expense',
@@ -208,7 +215,7 @@ describe('Operations update and delete (integration)', () => {
   it('HIST-10 / AC-14: update and delete in a closed month return MONTH_LOCKED', async () => {
     const { month, food } = await setup();
     const op = await addOperation(month.id, { type: 'expense', sourceEnvelopeId: food.id, amount: '100.00' });
-    await http().post('/api/v1/months/2026-01/close').send({ version: await monthVersion(month.id) }).expect(200);
+    await http().post('/api/v1/months/2026-01/close').set('If-Match', etag(await monthVersion(month.id))).expect(200);
     const version = await monthVersion(month.id);
 
     expect((await patch(op.id, { amount: '1.00', version }).expect(409)).body.error).toBe('MONTH_LOCKED');
@@ -221,8 +228,8 @@ describe('Operations update and delete (integration)', () => {
   it('HIST-07: allowed in a reopened month', async () => {
     const { month, food } = await setup();
     const op = await addOperation(month.id, { type: 'expense', sourceEnvelopeId: food.id, amount: '100.00' });
-    await http().post('/api/v1/months/2026-01/close').send({ version: await monthVersion(month.id) }).expect(200);
-    await http().post('/api/v1/months/2026-01/reopen').send({ version: await monthVersion(month.id) }).expect(200);
+    await http().post('/api/v1/months/2026-01/close').set('If-Match', etag(await monthVersion(month.id))).expect(200);
+    await http().post('/api/v1/months/2026-01/reopen').set('If-Match', etag(await monthVersion(month.id))).expect(200);
 
     await patch(op.id, { amount: '1.00', version: await monthVersion(month.id) }).expect(200);
     await del(op.id, await monthVersion(month.id)).expect(200);
@@ -296,10 +303,10 @@ describe('Operations update and delete (integration)', () => {
     expect((await patch(missing, { amount: '1.00', version }).expect(404)).body.error).toBe('OPERATION_NOT_FOUND');
     expect((await del(missing, version).expect(404)).body.error).toBe('OPERATION_NOT_FOUND');
     expect((await patch(op.id, { amount: 'abc', version }).expect(422)).body.error).toBe('VALIDATION_ERROR');
-    expect((await patch(op.id, { amount: '1.00' }).expect(422)).body.error).toBe('VALIDATION_ERROR');
+    expect((await patch(op.id, { amount: '1.00' }).expect(428)).body.error).toBe('PRECONDITION_REQUIRED');
     expect((await patch('not-a-uuid', { amount: '1.00', version }).expect(422)).body.error).toBe('VALIDATION_ERROR');
     expect((await del(op.id, 'x').expect(422)).body.error).toBe('VALIDATION_ERROR');
-    expect((await http().delete(`/api/v1/operations/${op.id}`).expect(422)).body.error).toBe('VALIDATION_ERROR');
+    expect((await http().delete(`/api/v1/operations/${op.id}`).expect(428)).body.error).toBe('PRECONDITION_REQUIRED');
   });
 
   it('DATA-09 / OP-10: destination only for transfers; the initial balance is not editable or deletable', async () => {
@@ -329,7 +336,7 @@ describe('Operations update and delete (integration)', () => {
 
     const closed = await http()
       .post('/api/v1/months/2026-01/close')
-      .send({ version: await monthVersion(month.id) })
+      .set('If-Match', etag(await monthVersion(month.id)))
       .expect(200);
 
     expect(closed.body.data.month.status).toBe('closed');
@@ -350,7 +357,7 @@ describe('Operations update and delete (integration)', () => {
 
     await http()
       .post('/api/v1/months/2026-01/close')
-      .send({ version: await monthVersion(month.id) })
+      .set('If-Match', etag(await monthVersion(month.id)))
       .expect(200);
   });
 });

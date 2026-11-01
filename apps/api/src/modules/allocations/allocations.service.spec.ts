@@ -1,4 +1,5 @@
 import type { Allocation, BudgetMonth, Envelope } from '@prisma/client';
+import { expectVersion } from '../../common/if-match';
 import {
   ConflictException,
   NotFoundException,
@@ -155,8 +156,7 @@ describe('AllocationsService', () => {
 
       const result = await service.save('2026-08', {
         allocations: { [ENV_A]: '50000.00', [ENV_B]: '25000.00' },
-        version: 3,
-      });
+      }, expectVersion(3));
 
       expect(mock.allocation.deleteMany).toHaveBeenCalledWith({ where: { monthId: 'month-1' } });
       expect(mock.allocation.createMany).toHaveBeenCalledWith({
@@ -190,7 +190,7 @@ describe('AllocationsService', () => {
     it('DATA-12 / MON-03: locks the month row FOR UPDATE on the transaction client before any write', async () => {
       stubSaveDefaults(mock, engine);
 
-      await service.save('2026-08', { allocations: { [ENV_A]: '100.00' }, version: 3 });
+      await service.save('2026-08', { allocations: { [ENV_A]: '100.00' } }, expectVersion(3));
 
       expect(mock.$queryRaw).toHaveBeenCalledTimes(1);
       expect(mock.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
@@ -205,8 +205,7 @@ describe('AllocationsService', () => {
 
       const result = await service.save('2026-08', {
         allocations: { [ENV_A]: '60000.00', [ENV_B]: '40000.00' },
-        version: 3,
-      });
+      }, expectVersion(3));
 
       expect(result.data.summary.totalAllocatedMinor).toBe(10_000_000);
       expect(result.data.summary.freeFundsMinor).toBe(0);
@@ -218,8 +217,7 @@ describe('AllocationsService', () => {
 
       const promise = service.save('2026-08', {
         allocations: { [ENV_A]: '60000.00', [ENV_B]: '40001.00' },
-        version: 3,
-      });
+      }, expectVersion(3));
 
       await expect(promise).rejects.toBeInstanceOf(ValidationException);
       await expect(promise).rejects.toMatchObject({
@@ -238,8 +236,7 @@ describe('AllocationsService', () => {
 
       const promise = service.save('2026-08', {
         allocations: { [ENV_A]: '100.00' },
-        version: 2,
-      });
+      }, expectVersion(2));
 
       await expect(promise).rejects.toBeInstanceOf(ConflictException);
       await expect(promise).rejects.toMatchObject({
@@ -255,7 +252,7 @@ describe('AllocationsService', () => {
       mock.budgetMonth.findUnique.mockResolvedValue(makeMonth({ status: 'closed' }));
 
       await expect(
-        service.save('2026-08', { allocations: {}, version: 99 }),
+        service.save('2026-08', { allocations: {} }, expectVersion(99)),
       ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
     });
 
@@ -264,8 +261,7 @@ describe('AllocationsService', () => {
 
       const promise = service.save('2026-08', {
         allocations: { [ENV_A]: '100.00' },
-        version: 3,
-      });
+      }, expectVersion(3));
 
       await expect(promise).rejects.toBeInstanceOf(ConflictException);
       await expect(promise).rejects.toMatchObject({
@@ -282,8 +278,7 @@ describe('AllocationsService', () => {
 
       const promise = service.save('2026-08', {
         allocations: { [ENV_A]: '100.00' },
-        version: 3,
-      });
+      }, expectVersion(3));
 
       await expect(promise).rejects.toBeInstanceOf(NotFoundException);
       await expect(promise).rejects.toMatchObject({
@@ -300,8 +295,7 @@ describe('AllocationsService', () => {
 
       const promise = service.save('2026-08', {
         allocations: { [ENV_A]: '100.00', [ENV_B]: '200.00' },
-        version: 3,
-      });
+      }, expectVersion(3));
 
       await expect(promise).rejects.toBeInstanceOf(NotFoundException);
       await expect(promise).rejects.toMatchObject({
@@ -322,8 +316,7 @@ describe('AllocationsService', () => {
 
       const promise = service.save('2026-08', {
         allocations: { [ENV_A]: '100.00', [ENV_B]: '200.00' },
-        version: 3,
-      });
+      }, expectVersion(3));
 
       await expect(promise).rejects.toBeInstanceOf(NotFoundException);
       await expect(promise).rejects.toMatchObject({
@@ -340,7 +333,7 @@ describe('AllocationsService', () => {
       stubSaveDefaults(mock, engine);
       mock.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: null } });
 
-      const result = await service.save('2026-08', { allocations: {}, version: 3 });
+      const result = await service.save('2026-08', { allocations: {} }, expectVersion(3));
 
       expect(mock.allocation.deleteMany).toHaveBeenCalledWith({ where: { monthId: 'month-1' } });
       expect(mock.allocation.createMany).not.toHaveBeenCalled();
@@ -359,8 +352,7 @@ describe('AllocationsService', () => {
       const result = await service.save('2026-08', {
         allocations: { [ENV_A]: '50000.00', [ENV_B]: '25000.00' },
         income: '80000.00',
-        version: 3,
-      });
+      }, expectVersion(3));
 
       expect(mock.budgetMonth.update).toHaveBeenCalledWith({
         where: { id: 'month-1' },
@@ -381,8 +373,7 @@ describe('AllocationsService', () => {
       const promise = service.save('2026-08', {
         allocations: { [ENV_A]: '50000.00', [ENV_B]: '25000.00' },
         income: '70000.00',
-        version: 3,
-      });
+      }, expectVersion(3));
 
       await expect(promise).rejects.toMatchObject({
         code: 'ALLOCATION_EXCEEDS_INCOME',
@@ -397,7 +388,7 @@ describe('AllocationsService', () => {
     it('FIN-02: a lowered income is accepted when the new allocations fit it, even if the old ones would not', async () => {
       stubSaveDefaults(mock, engine);
 
-      await service.save('2026-08', { allocations: { [ENV_A]: '100.00' }, income: '100.00', version: 3 });
+      await service.save('2026-08', { allocations: { [ENV_A]: '100.00' }, income: '100.00' }, expectVersion(3));
 
       expect(mock.budgetMonth.update).toHaveBeenCalledWith({
         where: { id: 'month-1' },

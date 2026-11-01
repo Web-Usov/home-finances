@@ -4,7 +4,7 @@ import { EnvelopesModule } from '../envelopes/envelopes.module';
 import { MonthsModule } from '../months/months.module';
 import { OperationsModule } from './operations.module';
 import { createEnvelope, createMonth, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB + real engine: POST /operations with an explicit `period` (API-21). */
 describe('Operations create with period (integration)', () => {
@@ -24,7 +24,11 @@ describe('Operations create with period (integration)', () => {
   });
 
   const http = () => request(t.app.getHttpServer());
-  const post = (body: object) => http().post('/api/v1/operations').send(body);
+  /** POST an operation; `version` is the expected month version, sent as `If-Match` (API-25), not in the body. */
+  const post = (request: object) => {
+    const { version, ...body } = request as { version: number };
+    return http().post('/api/v1/operations').set('If-Match', etag(version)).send(body);
+  };
 
   async function monthOf(period: string) {
     return t.prisma.budgetMonth.findUniqueOrThrow({ where: { period } });
@@ -49,7 +53,8 @@ describe('Operations create with period (integration)', () => {
     const food = await createEnvelope(t.prisma, { name: 'Food' });
     await http()
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [food.id]: '10000.00' }, version: (await monthOf('2026-01')).version })
+      .set('If-Match', etag((await monthOf('2026-01')).version))
+      .send({ allocations: { [food.id]: '10000.00' } })
       .expect(200);
     return { food };
   }

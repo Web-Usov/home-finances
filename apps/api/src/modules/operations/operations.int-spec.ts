@@ -3,7 +3,7 @@ import { AllocationsModule } from '../allocations/allocations.module';
 import { EnvelopesModule } from '../envelopes/envelopes.module';
 import { OperationsModule } from './operations.module';
 import { createEnvelope, createMonth, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB + real engine: POST/GET /operations (API-10) with the cascade in one transaction. */
 describe('Operations list and create (integration)', () => {
@@ -23,7 +23,11 @@ describe('Operations list and create (integration)', () => {
   });
 
   const http = () => request(t.app.getHttpServer());
-  const post = (body: object) => http().post('/api/v1/operations').send(body);
+  /** POST an operation; `version` is the expected month version, sent as `If-Match` (API-25), not in the body. */
+  const post = ({ version, ...body }: { version?: number } & Record<string, unknown>) => {
+    const req = http().post('/api/v1/operations');
+    return (version === undefined ? req : req.set('If-Match', etag(version))).send(body);
+  };
 
   /** Open 2026-01 month (income 10 000 ₽) with an envelope allocated `allocatedMinor`, via the API. */
   async function setup(allocatedMinor = 1_000_000, monthOverrides: Parameters<typeof createMonth>[1] = {}) {
@@ -33,7 +37,8 @@ describe('Operations list and create (integration)', () => {
     const amount = (allocatedMinor / 100).toFixed(2);
     await http()
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [food.id]: amount }, version: month.version })
+      .set('If-Match', etag(month.version))
+      .send({ allocations: { [food.id]: amount } })
       .expect(200);
     const fresh = await t.prisma.budgetMonth.findUniqueOrThrow({ where: { id: month.id } });
     return { month: fresh, food, home };
@@ -282,7 +287,6 @@ describe('Operations list and create (integration)', () => {
     const bodies = [
       { ...base, type: 'expense', amount: 'abc' },
       { ...base, type: 'expense', amount: '-5.00' },
-      { type: 'expense', sourceEnvelopeId: food.id, amount: '1.00' }, // no version
       { ...base, type: 'transfer' }, // no destination
       { ...base, type: 'transfer', destinationEnvelopeId: food.id }, // same envelope
       { ...base, type: 'adjustment' }, // no sign

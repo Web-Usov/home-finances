@@ -12,12 +12,6 @@ async function bootstrap() {
 
   configureApp(app);
 
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: false,
-  });
-
   // Swagger / OpenAPI
   const document = createOpenApiDocument(app);
   SwaggerModule.setup('api', app, document, {

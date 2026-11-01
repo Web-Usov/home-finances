@@ -1,4 +1,5 @@
 import React from 'react';
+import { ifMatchOf } from '../../../test/ifMatch';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { renderWithProviders } from '../../../test/render';
@@ -66,6 +67,10 @@ function lastBody(): Record<string, unknown> {
   return (call?.[0] as { data: Record<string, unknown> }).data;
 }
 
+function lastIfMatch(): string | undefined {
+  return ifMatchOf(mockRequest.mock.calls[mockRequest.mock.calls.length - 1]);
+}
+
 function postCalls() {
   return mockRequest.mock.calls.filter(([config]) => (config as { method?: string }).method === 'POST');
 }
@@ -77,7 +82,7 @@ describe('OperationForm', () => {
     mockRequest.mockReset();
   });
 
-  it('AC-05 / UI-16 / API-21: an expense within the balance sends the displayed month, its version and the amount', async () => {
+  it('AC-05 / UI-16 / API-21 / API-25: an expense within the balance sends the displayed month, its version in If-Match and the amount', async () => {
     mockRequest.mockResolvedValue(created());
     const { onSaved } = renderForm('expense', { period: '2026-03', version: 7 });
 
@@ -93,8 +98,8 @@ describe('OperationForm', () => {
       sourceEnvelopeId: 'e-food',
       amount: '3000.00',
       period: '2026-03',
-      version: 7,
     });
+    expect(lastIfMatch()).toBe('"7"');
   });
 
   it('API-21 / UI-16: a reopened month is addressed by period and its own version', async () => {
@@ -106,7 +111,8 @@ describe('OperationForm', () => {
     press('Сохранить списание');
 
     await waitFor(() => expect(postCalls()).toHaveLength(1));
-    expect(lastBody()).toMatchObject({ period: '2025-12', version: 11 });
+    expect(lastBody()).toMatchObject({ period: '2025-12' });
+    expect(lastIfMatch()).toBe('"11"');
   });
 
   it('MSG-02 / OP-06 / AC-06: an expense above the balance warns with the available amount and is saved in full after confirmation', async () => {
@@ -230,8 +236,8 @@ describe('OperationForm', () => {
       destinationEnvelopeId: 'e-food',
       amount: '6000.00',
       period: '2026-02',
-      version: 4,
     });
+    expect(lastIfMatch()).toBe('"4"');
   });
 
   it('MSG-03: with nothing available the transfer refusal offers no replacement button', async () => {

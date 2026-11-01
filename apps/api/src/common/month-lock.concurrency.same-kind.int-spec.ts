@@ -86,8 +86,8 @@ describe('month row lock: same-kind concurrent mutations (integration)', () => {
       }
       const [v1, v2] = [await h.versionOf('2026-01'), await h.versionOf('2026-02')];
       const fire = [
-        () => h.call('POST', '/api/v1/months/2026-01/reopen', { version: v1 }),
-        () => h.call('POST', '/api/v1/months/2026-02/reopen', { version: v2 }),
+        () => h.call('POST', '/api/v1/months/2026-01/reopen', undefined, v1),
+        () => h.call('POST', '/api/v1/months/2026-02/reopen', undefined, v2),
       ];
       if (round % 2 === 1) fire.reverse();
       const res = await Promise.all(fire.map((f) => f()));
@@ -107,7 +107,7 @@ describe('month row lock: same-kind concurrent mutations (integration)', () => {
       await h.prisma().budgetMonth.update({ where: { period: PERIOD }, data: { status: 'closed' } });
       const version = await h.versionOf();
       const res = await Promise.all(
-        [0, 1].map(() => h.call('POST', `/api/v1/months/${PERIOD}/reopen`, { version })),
+        [0, 1].map(() => h.call('POST', `/api/v1/months/${PERIOD}/reopen`, undefined, version)),
       );
       const label = JSON.stringify(res.map((r) => [r.status, r.error]));
 

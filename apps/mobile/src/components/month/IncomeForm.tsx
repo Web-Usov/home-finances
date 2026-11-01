@@ -3,15 +3,11 @@ import { Pressable, Text, View } from 'react-native';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQueryClient } from '@tanstack/react-query';
-import type { AxiosError } from 'axios';
 import { MoneyStringSchema } from '@family-budget/types';
 import { FormInput } from '../FormInput';
-import { useMonthsControllerUpdateIncomeV1 } from '../../api/months/months';
+import { useUpdateIncome } from './useMonthMutations';
 import { describeMonthError } from '../../lib/apiErrors';
 import { normalizeMoneyInput } from '../../lib/money';
-import type { ApiErrorResponse } from '../envelopes/types';
-import { invalidateBudgetData } from '../../lib/queryKeys';
 
 /** Form-level schema: the typed text must normalise to a canonical `MoneyStringSchema` value. */
 const incomeFormSchema = z.object({
@@ -30,31 +26,24 @@ interface IncomeFormProps {
   onDone: () => void;
 }
 
-/** Change the month income (UI-02, API-03). Sends the month `version`; a conflict refetches the month. */
+/** Change the month income (UI-02, API-03). Sends the month version as `If-Match`; the settled request refetches the month data. */
 export function IncomeForm({ period, version, initialIncome, onDone }: IncomeFormProps) {
-  const queryClient = useQueryClient();
   const methods = useForm<IncomeFormValues>({
     resolver: zodResolver(incomeFormSchema),
     defaultValues: { income: initialIncome },
   });
   const { handleSubmit, setError, formState } = methods;
 
-  const mutation = useMonthsControllerUpdateIncomeV1<AxiosError<ApiErrorResponse>>({
-    mutation: {
-      onSuccess: async () => {
-        await invalidateBudgetData(queryClient);
-        onDone();
-      },
-      onError: (error) => {
-        const { code, message } = describeMonthError(error, 'Не удалось изменить доход');
-        setError('root', { message });
-        if (code === 'VERSION_CONFLICT') void invalidateBudgetData(queryClient);
-      },
-    },
-  });
+  const mutation = useUpdateIncome();
 
   const onSubmit = (values: IncomeFormValues) => {
-    mutation.mutate({ period, data: { income: normalizeMoneyInput(values.income), version } });
+    mutation.mutate(
+      { period, version, data: { income: normalizeMoneyInput(values.income) } },
+      {
+        onSuccess: onDone,
+        onError: (error) => setError('root', { message: describeMonthError(error, 'Не удалось изменить доход').message }),
+      },
+    );
   };
 
   return (

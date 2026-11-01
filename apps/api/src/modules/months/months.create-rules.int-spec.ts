@@ -4,7 +4,7 @@ import { EnvelopesModule } from '../envelopes/envelopes.module';
 import { OperationsModule } from '../operations/operations.module';
 import { MonthsModule } from './months.module';
 import { createEnvelope, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB: which statuses POST /months assigns and which periods it accepts (MON-02, MON-05..MON-07). */
 describe('Months creation rules and the open status (integration)', () => {
@@ -72,21 +72,24 @@ describe('Months creation rules and the open status (integration)', () => {
 
     await http()
       .patch('/api/v1/months/2026-01')
-      .send({ income: '2000.00', version: await versionOf('2026-01') })
+      .set('If-Match', etag(await versionOf('2026-01')))
+      .send({ income: '2000.00' })
       .expect(200);
     await http()
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [envelope.id]: '500.00' }, version: await versionOf('2026-01') })
+      .set('If-Match', etag(await versionOf('2026-01')))
+      .send({ allocations: { [envelope.id]: '500.00' } })
       .expect(200);
     await http()
       .post('/api/v1/operations')
-      .send({ type: 'expense', sourceEnvelopeId: envelope.id, amount: '100.00', version: await versionOf('2026-01') })
+      .set('If-Match', etag(await versionOf('2026-01')))
+      .send({ type: 'expense', sourceEnvelopeId: envelope.id, amount: '100.00' })
       .expect(201);
     expect((await row('2026-01'))!.status).toBe('open');
 
     const closed = await http()
       .post('/api/v1/months/2026-01/close')
-      .send({ version: await versionOf('2026-01') })
+      .set('If-Match', etag(await versionOf('2026-01')))
       .expect(200);
     expect(closed.body.data.month).toMatchObject({ period: '2026-01', status: 'closed' });
   });

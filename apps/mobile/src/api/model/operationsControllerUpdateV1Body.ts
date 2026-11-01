@@ -13,6 +13,4 @@ export type OperationsControllerUpdateV1Body = {
   destinationEnvelopeId?: string;
   /** @maxLength 500 */
   comment?: string;
-  /** @minimum 0 */
-  version: number;
 };

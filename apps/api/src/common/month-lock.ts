@@ -1,5 +1,6 @@
 import type { MonthStatus, Prisma } from '@prisma/client';
 import { ConflictException, NotFoundException } from './exceptions';
+import { assertExpectedVersion, type ExpectedVersion } from './if-match';
 
 /** Satisfied by an interactive transaction client (the lock only lives as long as the transaction). */
 type TxClient = Prisma.TransactionClient;
@@ -14,8 +15,11 @@ export interface LockedMonth {
 }
 
 export interface LockMonthOptions {
-  /** Optimistic lock (DATA-12, ADR 0005): a different stored version → VERSION_CONFLICT. */
-  expectedVersion?: number;
+  /**
+   * Optimistic lock (DATA-12, ADR 0005, API-25): the parsed `If-Match` header. Checked right after the month
+   * exists: missing → 428, malformed → 422, a different stored version → 409 VERSION_CONFLICT (API-27).
+   */
+  expectedVersion?: ExpectedVersion;
   /**
    * Reject a closed month with MONTH_LOCKED (MON-03, MSG-06). Default true. Close/reopen pass false:
    * their status rules are INVALID_STATUS_TRANSITION, checked by the caller after the lock.
@@ -31,7 +35,7 @@ type MonthRef = { period: string } | { id: string };
  * writer (DATA-12, MON-03, CALC-13).
  *
  * Checks, in the documented order: existence (MONTH_NOT_FOUND) → `expectedVersion`
- * (VERSION_CONFLICT) → closed (MONTH_LOCKED).
+ * (PRECONDITION_REQUIRED / VALIDATION_ERROR / VERSION_CONFLICT, API-27) → closed (MONTH_LOCKED).
  *
  * Lock scope and order: the cascade of a mutation rewrites and bumps `version` of the target AND of
  * every later month (ADR 0004/0005), so the target and all later months are locked together with
@@ -73,13 +77,9 @@ export async function lockMonthForMutation(
       `Месяц не найден: ${'period' in ref ? ref.period : ref.id}`,
     );
   }
-  const period = month.period;
 
-  if (expectedVersion !== undefined && month.version !== expectedVersion) {
-    throw new ConflictException(
-      'VERSION_CONFLICT',
-      `Данные месяца ${period} изменились. Обновите данные и повторите.`,
-    );
+  if (expectedVersion !== undefined) {
+    assertExpectedVersion(expectedVersion, month);
   }
   if (rejectClosed && month.status === 'closed') {
     throw new ConflictException(
@@ -151,11 +151,8 @@ export async function lockWorkingMonth(
     );
   }
   const month = current.id === first.id ? first : await lockMonthForMutation(tx, { id: current.id }, { rejectClosed: false });
-  if (options.expectedVersion !== undefined && month.version !== options.expectedVersion) {
-    throw new ConflictException(
-      'VERSION_CONFLICT',
-      `Данные месяца ${month.period} изменились. Обновите данные и повторите.`,
-    );
+  if (options.expectedVersion !== undefined) {
+    assertExpectedVersion(options.expectedVersion, month);
   }
   if ((options.rejectClosed ?? true) && month.status === 'closed') {
     throw new ConflictException(

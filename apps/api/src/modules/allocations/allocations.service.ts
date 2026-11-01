@@ -9,6 +9,7 @@ import {
 } from '@family-budget/types';
 import { z } from 'zod';
 import { NotFoundException, ValidationException } from '../../common/exceptions';
+import type { ExpectedVersion } from '../../common/if-match';
 import { lockMonthForMutation } from '../../common/month-lock';
 import { buildMonthSummary, type MonthSummaryDto } from '../../common/month-summary';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -29,7 +30,7 @@ type DbClient = Prisma.TransactionClient;
  *   once at the boundary via parseMoneyMinor (never float).
  * - An optional `income` in the request is saved together with the allocations (one transaction, one
  *   version check, one cascade); FIN-02 is validated against the NEW income (UI-11, API-04).
- * - Check order is lock month → version → status → Σ ≤ income → envelopes, all inside the
+ * - Check order is lock month → If-Match version → status → Σ ≤ income → envelopes, all inside the
  *   transaction under `lockMonthForMutation` (DATA-12): a stale tab reports VERSION_CONFLICT even when the month closed meanwhile.
  * - Archived envelopes are rejected (ENV-12): they are excluded from new
  *   allocations, so for the write path an archived id is as unavailable as an
@@ -51,15 +52,12 @@ export class AllocationsService {
   async save(
     period: string,
     dto: SaveAllocationsRequest,
+    expectedVersion: ExpectedVersion,
   ): Promise<MutationResponse<{ summary: MonthSummaryDto }>> {
     const { summary, warnings } = await this.prisma.$transaction(async (tx) => {
       // DATA-12 / MON-03: existence → version → status, checked under FOR UPDATE inside the
       // transaction, so a concurrent writer cannot slip between the check and the write.
-      const month = await lockMonthForMutation(
-        tx,
-        { period },
-        { expectedVersion: dto.version },
-      );
+      const month = await lockMonthForMutation(tx, { period }, { expectedVersion });
 
       const amountByEnvelopeId = new Map<string, number>();
       for (const [envelopeId, amount] of Object.entries(dto.allocations)) {

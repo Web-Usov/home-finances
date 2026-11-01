@@ -23,6 +23,8 @@ import type {
 import { customAxiosInstance } from '.././axios-instance';
 
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 /**
@@ -30,14 +32,14 @@ import { customAxiosInstance } from '.././axios-instance';
  */
 export const healthControllerHealthV1 = (
     
- signal?: AbortSignal
+ options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
       return customAxiosInstance<void>(
       {url: `/api/v1/health`, method: 'GET', signal
     },
-      );
+      options);
     }
   
 
@@ -50,16 +52,16 @@ export const getHealthControllerHealthV1QueryKey = () => {
     }
 
     
-export const getHealthControllerHealthV1QueryOptions = <TData = Awaited<ReturnType<typeof healthControllerHealthV1>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof healthControllerHealthV1>>, TError, TData>>, }
+export const getHealthControllerHealthV1QueryOptions = <TData = Awaited<ReturnType<typeof healthControllerHealthV1>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof healthControllerHealthV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getHealthControllerHealthV1QueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof healthControllerHealthV1>>> = ({ signal }) => healthControllerHealthV1(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof healthControllerHealthV1>>> = ({ signal }) => healthControllerHealthV1(requestOptions, signal);
 
       
 
@@ -79,7 +81,7 @@ export function useHealthControllerHealthV1<TData = Awaited<ReturnType<typeof he
           TError,
           Awaited<ReturnType<typeof healthControllerHealthV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useHealthControllerHealthV1<TData = Awaited<ReturnType<typeof healthControllerHealthV1>>, TError = unknown>(
@@ -89,11 +91,11 @@ export function useHealthControllerHealthV1<TData = Awaited<ReturnType<typeof he
           TError,
           Awaited<ReturnType<typeof healthControllerHealthV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useHealthControllerHealthV1<TData = Awaited<ReturnType<typeof healthControllerHealthV1>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof healthControllerHealthV1>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof healthControllerHealthV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -101,7 +103,7 @@ export function useHealthControllerHealthV1<TData = Awaited<ReturnType<typeof he
  */
 
 export function useHealthControllerHealthV1<TData = Awaited<ReturnType<typeof healthControllerHealthV1>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof healthControllerHealthV1>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof healthControllerHealthV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 

@@ -11,6 +11,7 @@ import {
 } from '@family-budget/types';
 import { z } from 'zod';
 import { ConflictException, NotFoundException, ValidationException } from '../../common/exceptions';
+import type { ExpectedVersion } from '../../common/if-match';
 import { lockMonthForMutation, lockWorkingMonth } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
@@ -94,7 +95,10 @@ export class OperationsService {
    * open → reopened → draft).
    * Check order: month exists → version → month status → envelopes → business rules.
    */
-  async create(dto: CreateOperationRequest): Promise<MutationResponse<OperationMutationData>> {
+  async create(
+    dto: CreateOperationRequest,
+    expectedVersion: ExpectedVersion,
+  ): Promise<MutationResponse<OperationMutationData>> {
     const requestedMinor = parseMoneyMinor(dto.amount);
 
     return this.prisma.$transaction(async (tx) => {
@@ -102,8 +106,8 @@ export class OperationsService {
       // API-21: an explicit period locks that month and all later ones (ascending); otherwise MON-16.
       const candidate =
         dto.period !== undefined
-          ? await lockMonthForMutation(tx, { period: dto.period }, { expectedVersion: dto.version })
-          : await lockWorkingMonth(tx, { expectedVersion: dto.version });
+          ? await lockMonthForMutation(tx, { period: dto.period }, { expectedVersion })
+          : await lockWorkingMonth(tx, { expectedVersion });
       if (candidate === null) {
         throw new NotFoundException(
           'MONTH_NOT_FOUND',
@@ -158,9 +162,10 @@ export class OperationsService {
   async update(
     id: string,
     dto: UpdateOperationRequest,
+    expectedVersion: ExpectedVersion,
   ): Promise<MutationResponse<OperationMutationData>> {
     return this.prisma.$transaction(async (tx) => {
-      const { operation: current, period } = await this.lockOperationMonth(tx, id, dto.version);
+      const { operation: current, period } = await this.lockOperationMonth(tx, id, expectedVersion);
 
       if (current.type !== 'transfer' && dto.destinationEnvelopeId !== undefined) {
         throw new ValidationException(
@@ -226,9 +231,9 @@ export class OperationsService {
    * HIST-07 / OP-18 / API-11: delete an operation. The `sequence_no` gap stays; the month and all
    * later months are recalculated in the same transaction (the result row goes with the operation).
    */
-  async remove(id: string, version: number): Promise<MutationResponse<OperationDeleteData>> {
+  async remove(id: string, expectedVersion: ExpectedVersion): Promise<MutationResponse<OperationDeleteData>> {
     return this.prisma.$transaction(async (tx) => {
-      const { operation } = await this.lockOperationMonth(tx, id, version);
+      const { operation } = await this.lockOperationMonth(tx, id, expectedVersion);
 
       await tx.operation.delete({ where: { id } });
 
@@ -246,7 +251,7 @@ export class OperationsService {
   private async lockOperationMonth(
     db: DbClient,
     id: string,
-    version: number,
+    expectedVersion: ExpectedVersion,
   ): Promise<{ operation: Operation; period: string }> {
     const notFound = () => new NotFoundException('OPERATION_NOT_FOUND', `Операция не найдена: ${id}`);
     const found = await db.operation.findUnique({
@@ -256,7 +261,7 @@ export class OperationsService {
     if (found === null) {
       throw notFound();
     }
-    await lockMonthForMutation(db, { id: found.monthId }, { expectedVersion: version });
+    await lockMonthForMutation(db, { id: found.monthId }, { expectedVersion });
 
     // re-read under the lock: a concurrent delete of the same operation has committed by now
     const operation = await db.operation.findUnique({ where: { id } });

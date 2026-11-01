@@ -19,6 +19,4 @@ export type OperationsControllerCreateV1Body = {
   comment?: string;
   /** @pattern ^\d{4}-\d{2}$ */
   period?: string;
-  /** @minimum 0 */
-  version: number;
 };

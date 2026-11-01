@@ -78,7 +78,7 @@
 
 - [T-041](T-041-draft-copies-income.md) Months: new month copies income from the previous month — **todo** · api · S · depends: T-032, T-027 · —
 
-- [T-050](T-050-if-match-etag-optimistic-locking.md) Optimistic locking via If-Match / ETag headers for all month-scoped mutations — **todo** · api · M · depends: — · —
+- [T-050](T-050-if-match-etag-optimistic-locking.md) Optimistic locking via If-Match / ETag headers for all month-scoped mutations — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/46)
 
 ## E-02. Отчётность API — planned
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { ifMatchOf } from '../../../test/ifMatch';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AxiosError, AxiosHeaders } from 'axios';
@@ -102,14 +103,17 @@ const OPERATIONS: HistoryOperation[] = [
 
 interface Calls {
   list: Record<string, unknown>[];
-  patch: { url?: string; data?: Record<string, unknown> }[];
-  del: { url?: string; params?: Record<string, unknown> }[];
+  patch: { url?: string; data?: Record<string, unknown>; ifMatch?: string }[];
+  del: { url?: string; params?: Record<string, unknown>; ifMatch?: string }[];
 }
 
 /** Routes the mocked axios instance: the list honours the `type`/`envelopeId` params like the API would. */
 function mockApi(operations: HistoryOperation[] = OPERATIONS): Calls {
   const calls: Calls = { list: [], patch: [], del: [] };
-  mockRequest.mockImplementation((async (config: { url?: string; method?: string; params?: Record<string, unknown>; data?: Record<string, unknown> }) => {
+  mockRequest.mockImplementation((async (
+    config: { url?: string; method?: string; params?: Record<string, unknown>; data?: Record<string, unknown> },
+    options?: unknown,
+  ) => {
     if (config.method === 'GET') {
       calls.list.push(config.params ?? {});
       const { type, envelopeId } = config.params ?? {};
@@ -122,10 +126,10 @@ function mockApi(operations: HistoryOperation[] = OPERATIONS): Calls {
       };
     }
     if (config.method === 'PATCH') {
-      calls.patch.push(config);
+      calls.patch.push({ ...config, ifMatch: ifMatchOf([config, options]) });
       return { data: { operation: {}, result: {}, summary: {} }, warnings: [] };
     }
-    calls.del.push(config);
+    calls.del.push({ ...config, ifMatch: ifMatchOf([config, options]) });
     return { data: { summary: {} }, warnings: [] };
   }) as never);
   return calls;
@@ -211,7 +215,7 @@ describe('HistoryView', () => {
     expect(calls.list[calls.list.length - 1]).toEqual({ period: '2026-01', envelopeId: 'e-home', type: 'transfer' });
   });
 
-  it('HIST-08 / OP-17: editing sends PATCH with the month version and the new values, the type stays fixed', async () => {
+  it('HIST-08 / OP-17 / API-25: editing sends PATCH with the month version in If-Match and the new values, the type stays fixed', async () => {
     const calls = mockApi();
     renderHistory({ version: 7 });
     await screen.findByLabelText('Операция 1: Списание');
@@ -229,8 +233,8 @@ describe('HistoryView', () => {
       amount: '2500.50',
       sourceEnvelopeId: 'e-food',
       comment: 'Исправлено',
-      version: 7,
     });
+    expect(calls.patch[0]?.ifMatch).toBe('"7"');
     expect(await screen.findByText('Операция изменена.')).toBeTruthy();
   });
 
@@ -251,10 +255,11 @@ describe('HistoryView', () => {
     expect(calls.patch).toHaveLength(0);
     fireEvent.press(offer);
     await waitFor(() => expect(calls.patch).toHaveLength(1));
-    expect(calls.patch[0]?.data).toMatchObject({ amount: '6000.00', version: 7 });
+    expect(calls.patch[0]?.data).toMatchObject({ amount: '6000.00' });
+    expect(calls.patch[0]?.ifMatch).toBe('"7"');
   });
 
-  it('HIST-07 / OP-18: delete asks for confirmation and sends DELETE with the month version', async () => {
+  it('HIST-07 / OP-18 / API-25: delete asks for confirmation and sends DELETE with the month version in If-Match', async () => {
     const calls = mockApi();
     renderHistory({ version: 5 });
     await screen.findByLabelText('Операция 1: Списание');
@@ -270,7 +275,8 @@ describe('HistoryView', () => {
     press('Подтвердить удаление');
     await waitFor(() => expect(calls.del).toHaveLength(1));
     expect(calls.del[0]?.url).toBe('/api/v1/operations/op-1');
-    expect(calls.del[0]?.params).toEqual({ version: 5 });
+    expect(calls.del[0]?.params).toBeUndefined();
+    expect(calls.del[0]?.ifMatch).toBe('"5"');
     expect(await screen.findByText('Операция удалена.')).toBeTruthy();
   });
 

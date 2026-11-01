@@ -1,9 +1,10 @@
 import React from 'react';
+import { ifMatchOf } from '../../../test/ifMatch';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { renderWithProviders } from '../../../test/render';
 import { customAxiosInstance } from '../../api/axios-instance';
-import { MONTH_LOCKED_MESSAGE } from '../../lib/apiErrors';
+import { MONTH_LOCKED_MESSAGE, PRECONDITION_REQUIRED_MESSAGE } from '../../lib/apiErrors';
 import { makeDashboard, makeMonth } from '../../../test/monthFixtures';
 import { MonthDashboard } from './MonthDashboard';
 import type { MonthSummary } from './types';
@@ -161,7 +162,7 @@ describe('MonthDashboard', () => {
     expect(await screen.findByText('Черновик февраля 2026 создан.')).toBeTruthy();
   });
 
-  it('MON-08: closing sends the month version and reports the promoted draft', async () => {
+  it('MON-08 / API-25: closing sends the month version in If-Match and reports the promoted draft', async () => {
     mockRequest.mockResolvedValue({
       data: { month: makeMonth('2026-01', 'closed', 4), promotedDraft: makeMonth('2026-02', 'open') },
       warnings: [],
@@ -174,9 +175,10 @@ describe('MonthDashboard', () => {
       expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({
         url: '/api/v1/months/2026-01/close',
         method: 'POST',
-        data: { version: 3 },
       }),
     );
+    expect(mockRequest.mock.calls[0]?.[0]).not.toHaveProperty('data');
+    expect(ifMatchOf(mockRequest.mock.calls[0])).toBe('"3"');
     expect(await screen.findByText('Январь 2026 закрыт. Февраль 2026 теперь открыт.')).toBeTruthy();
   });
 
@@ -198,6 +200,22 @@ describe('MonthDashboard', () => {
     expect(keys).toEqual(
       expect.arrayContaining([['/api/v1/dashboard/monthly'], ['/api/v1/months']]),
     );
+  });
+
+  it('API-27: a 428 PRECONDITION_REQUIRED shows a generic error and refetches the month data', async () => {
+    mockRequest.mockImplementation(((config: { url?: string }) =>
+      config.url?.endsWith('/close')
+        ? Promise.reject(apiError(428, 'PRECONDITION_REQUIRED', 'Не передан заголовок If-Match'))
+        : Promise.resolve(undefined)) as never);
+    const { queryClient } = renderDashboard('open');
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
+
+    fireEvent.press(button('Закрыть'));
+
+    expect(await screen.findByText(PRECONDITION_REQUIRED_MESSAGE)).toBeTruthy();
+    expect(screen.queryByText(/If-Match/)).toBeNull();
+    const keys = invalidate.mock.calls.map(([filters]) => filters?.queryKey);
+    expect(keys).toEqual(expect.arrayContaining([['/api/v1/dashboard/monthly']]));
   });
 
   it('MON-12 / AC-15: reopen shows the recalculation range from the preview before confirming', async () => {
@@ -226,9 +244,9 @@ describe('MonthDashboard', () => {
       expect(mockRequest.mock.calls[1]?.[0]).toMatchObject({
         url: '/api/v1/months/2026-01/reopen',
         method: 'POST',
-        data: { version: 3 },
       }),
     );
+    expect(ifMatchOf(mockRequest.mock.calls[1])).toBe('"3"');
     // The reopen response stays authoritative: its range is reported afterwards.
     expect(await screen.findByText('Январь 2026 открыт повторно. Пересчитаны месяцы с января 2026 по февраль 2026.')).toBeTruthy();
   });
@@ -272,8 +290,9 @@ describe('MonthDashboard', () => {
     expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({
       url: '/api/v1/months/2026-01',
       method: 'PATCH',
-      data: { income: '120000', version: 3 },
+      data: { income: '120000' },
     });
+    expect(ifMatchOf(mockRequest.mock.calls[0])).toBe('"3"');
   });
 
   it('MSG-01: a rejected income shows the API message', async () => {

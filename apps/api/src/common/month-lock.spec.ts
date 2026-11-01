@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { expectVersion } from './if-match';
 import { lockAllMonths, lockMonthForMutation, lockWorkingMonth } from './month-lock';
 
 type Row = { id: string; period: string; status: string; incomeMinor: number; version: number };
@@ -22,7 +23,7 @@ describe('lockMonthForMutation', () => {
     const { tx, client } = createTx();
     tx.$queryRaw.mockResolvedValue([row(), row({ id: 'm-09', period: '2026-09', status: 'draft' })]);
 
-    const month = await lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: 3 });
+    const month = await lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: expectVersion(3) });
 
     expect(month.id).toBe('m-08');
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
@@ -46,12 +47,12 @@ describe('lockMonthForMutation', () => {
     const { tx, client } = createTx();
     tx.$queryRaw.mockResolvedValueOnce([]);
     await expect(
-      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: 99 }),
+      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: expectVersion(99) }),
     ).rejects.toMatchObject({ statusCode: 404, code: 'MONTH_NOT_FOUND' });
 
     tx.$queryRaw.mockResolvedValueOnce([row({ period: '2026-09', status: 'closed' })]);
     await expect(
-      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: 99 }),
+      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: expectVersion(99) }),
     ).rejects.toMatchObject({ code: 'MONTH_NOT_FOUND' });
 
     tx.$queryRaw.mockResolvedValueOnce([]);
@@ -65,8 +66,25 @@ describe('lockMonthForMutation', () => {
     tx.$queryRaw.mockResolvedValue([row({ status: 'closed', version: 5 })]);
 
     await expect(
-      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: 3 }),
+      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: expectVersion(3) }),
     ).rejects.toMatchObject({ statusCode: 409, code: 'VERSION_CONFLICT' });
+  });
+
+  it('API-27: a missing If-Match → 428 PRECONDITION_REQUIRED, a malformed one → 422 VALIDATION_ERROR, both after existence', async () => {
+    const { tx, client } = createTx();
+    tx.$queryRaw.mockResolvedValue([row({ status: 'closed' })]);
+
+    await expect(
+      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: { kind: 'missing' } }),
+    ).rejects.toMatchObject({ statusCode: 428, code: 'PRECONDITION_REQUIRED' });
+    await expect(
+      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: { kind: 'malformed', raw: '7' } }),
+    ).rejects.toMatchObject({ statusCode: 422, code: 'VALIDATION_ERROR' });
+
+    tx.$queryRaw.mockResolvedValue([]);
+    await expect(
+      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: { kind: 'missing' } }),
+    ).rejects.toMatchObject({ statusCode: 404, code: 'MONTH_NOT_FOUND' });
   });
 
   it('MON-03 / MSG-06: a closed month with the right version → MONTH_LOCKED with the spec message', async () => {
@@ -74,7 +92,7 @@ describe('lockMonthForMutation', () => {
     tx.$queryRaw.mockResolvedValue([row({ status: 'closed' })]);
 
     await expect(
-      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: 3 }),
+      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: expectVersion(3) }),
     ).rejects.toMatchObject({
       statusCode: 409,
       code: 'MONTH_LOCKED',
@@ -87,7 +105,7 @@ describe('lockMonthForMutation', () => {
     tx.$queryRaw.mockResolvedValue([row({ status: 'closed' })]);
 
     await expect(
-      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: 3, rejectClosed: false }),
+      lockMonthForMutation(client, { period: '2026-08' }, { expectedVersion: expectVersion(3), rejectClosed: false }),
     ).resolves.toMatchObject({ status: 'closed' });
   });
 
@@ -124,7 +142,7 @@ describe('lockWorkingMonth', () => {
     tx.budgetMonth.findMany.mockResolvedValue([draft, open]);
     tx.$queryRaw.mockResolvedValue([row()]);
 
-    const month = await lockWorkingMonth(client, { expectedVersion: 3 });
+    const month = await lockWorkingMonth(client, { expectedVersion: expectVersion(3) });
 
     expect(month?.id).toBe('m-08');
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
@@ -152,7 +170,7 @@ describe('lockWorkingMonth', () => {
       .mockResolvedValueOnce([row({ status: 'closed', version: 4 }), promotedRow]) // range lock from m-08
       .mockResolvedValueOnce([promotedRow]); // lock by the id of the promoted month
 
-    const month = await lockWorkingMonth(client, { expectedVersion: 7 });
+    const month = await lockWorkingMonth(client, { expectedVersion: expectVersion(7) });
 
     expect(month).toMatchObject({ id: 'm-09', version: 7 });
   });
@@ -176,10 +194,10 @@ describe('lockWorkingMonth', () => {
     tx.budgetMonth.findFirst.mockResolvedValue({ id: 'm-08', period: '2026-08' });
     tx.$queryRaw.mockResolvedValue([row({ status: 'closed', version: 5 })]);
 
-    await expect(lockWorkingMonth(client, { expectedVersion: 3 })).rejects.toMatchObject({
+    await expect(lockWorkingMonth(client, { expectedVersion: expectVersion(3) })).rejects.toMatchObject({
       code: 'VERSION_CONFLICT',
     });
-    await expect(lockWorkingMonth(client, { expectedVersion: 5 })).rejects.toMatchObject({
+    await expect(lockWorkingMonth(client, { expectedVersion: expectVersion(5) })).rejects.toMatchObject({
       code: 'MONTH_LOCKED',
     });
     await expect(lockWorkingMonth(client, { rejectClosed: false })).resolves.toMatchObject({
