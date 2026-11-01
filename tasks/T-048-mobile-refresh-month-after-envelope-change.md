@@ -1,7 +1,7 @@
 ---
 id: T-048
 title: Refresh the month dashboard after envelope create/rename/archive
-status: todo
+status: in_progress
 epic: E-06
 depends: [T-015]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [SCOPE-24, SCOPE-25]
 acceptance: [AC-01, AC-18]
 area: mobile
 size: S
-branch: null
+branch: task/T-048-mobile-refresh-month-after-envelope-change
 pr: null
 ---
 
