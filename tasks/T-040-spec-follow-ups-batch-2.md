@@ -26,7 +26,7 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-Process planner follow-ups 9-20 (`/root/.opencode/plan/planner-followups.md`): spec edits for the gaps that need a human decision and tasks T-041..T-046 for the pure code work.
+Process planner follow-ups 9-20 (`/root/.opencode/plan/planner-followups.md`): spec edits for the gaps that need a human decision and tasks T-041..T-046, T-050 for the pure code work.
 
 ## Context
 

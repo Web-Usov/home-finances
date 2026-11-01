@@ -46,7 +46,7 @@
 
 - [T-044](T-044-shared-working-month-and-free-helpers.md) API: shared working-month and free-funds helpers, dedup yearly uncovered schema — **todo** · api · S · depends: T-043, T-008 · —
 
-- [T-046](T-046-openapi-months-body-response-query-types.md) OpenAPI: typed POST /months body, GET /months response and query params — **todo** · api · S · depends: T-027, T-037 · —
+- [T-046](T-046-openapi-months-body-response-query-types.md) OpenAPI: typed POST /months body, GET /months response and query params — **todo** · api · S · depends: T-027, T-037, T-050 · —
 
 - [T-047](T-047-auto-update-behind-prs-with-auto-merge.md) Auto-update BEHIND PRs with auto-merge (host timer) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/38)
 
@@ -78,6 +78,8 @@
 
 - [T-041](T-041-draft-copies-income.md) Months: new month copies income from the previous month — **todo** · api · S · depends: T-032, T-027 · —
 
+- [T-050](T-050-if-match-etag-optimistic-locking.md) Optimistic locking via If-Match / ETag headers for all month-scoped mutations — **todo** · api · M · depends: — · —
+
 ## E-02. Отчётность API — planned
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)
@@ -104,13 +106,13 @@
 
 - [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **done** · mobile · M · depends: T-004, T-009, T-025, T-026 · [PR](https://github.com/Web-Usov/home-finances/pull/35)
 
-- [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **done** · mobile · M · depends: T-005, T-011, T-046 · [PR](https://github.com/Web-Usov/home-finances/pull/39)
+- [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **done** · mobile · M · depends: T-005, T-011 · [PR](https://github.com/Web-Usov/home-finances/pull/39)
 
 ## E-05. Годовая аналитика (UI) — planned
 
 Эпик: [E-05-analytics-ui.md](../epics/E-05-analytics-ui.md)
 
-- [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **done** · mobile · M · depends: T-008, T-012, T-045, T-046 · [PR](https://github.com/Web-Usov/home-finances/pull/41)
+- [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **done** · mobile · M · depends: T-008, T-012 · [PR](https://github.com/Web-Usov/home-finances/pull/41)
 
 ## E-06. Приёмка MVP и поставка — planned
 

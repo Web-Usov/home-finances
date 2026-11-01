@@ -3,7 +3,7 @@ id: T-046
 title: "OpenAPI: typed POST /months body, GET /months response and query params"
 status: todo
 epic: E-00
-depends: [T-027, T-037]
+depends: [T-027, T-037, T-050]
 blocked_by: []
 spec: [API-01, API-02, API-12, API-14]
 acceptance: []

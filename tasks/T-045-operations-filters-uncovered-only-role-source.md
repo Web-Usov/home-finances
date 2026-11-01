@@ -23,7 +23,7 @@ Analytics drill-down keys (REP-10) open exactly the history rows behind a report
 
 - `OperationListQuerySchema` / `AnalyticsDrillDownSchema` in `packages/types/src/schemas.ts`; `operations.service.ts` list; `reporting.service.ts` drill-down keys (T-008).
 - Spec: HIST-15 (new). Today `type=adjustment` also returns positive adjustments and `envelopeId` matches the destination of a transfer, so the list is a superset of the number.
-- UI T-013 depends on this task.
+- The analytics screen (T-013) is already done and links with the old keys; switching its drill-down links to the new filters is part of this task (small mobile change in the analytics screen, with its component test).
 
 ## Definition of Done
 
@@ -37,7 +37,7 @@ Analytics drill-down keys (REP-10) open exactly the history rows behind a report
 
 ## Out of scope
 
-- Mobile screens (T-012, T-013).
+- Other mobile changes.
 
 ## Handoff log
 

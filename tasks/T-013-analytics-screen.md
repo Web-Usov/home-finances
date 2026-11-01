@@ -3,7 +3,7 @@ id: T-013
 title: Mobile: yearly analytics screen
 status: done
 epic: E-05
-depends: [T-008, T-012, T-045, T-046]
+depends: [T-008, T-012]
 blocked_by: []
 spec: [UI-04, REP-01, REP-02, REP-03, REP-05, REP-06, REP-07, REP-08, REP-09, REP-10, NFR-22]
 acceptance: [AC-20]
@@ -23,7 +23,7 @@ The "Analytics" tab shows the year selector and three reports with tables and ch
 
 - Placeholder: `apps/mobile/app/(tabs)/analytics.tsx`. API: `GET /analytics/yearly` (T-008), generated hook in `apps/mobile/src/api/reporting`.
 - Charts must work in Expo web (React Native Web); pick a lightweight library compatible with Expo SDK in use and record the choice in the Result section (propose an ADR to the planner if it is a significant dependency).
-- Drill-down uses the history route params introduced in T-012 and the `uncoveredOnly` / `role=source` filters of HIST-15 (T-045), so the opened rows match the report number.
+- Drill-down uses the history route params introduced in T-012.
 - Tables must be keyboard/screen-reader friendly (NFR-22).
 
 ## Definition of Done
