@@ -9,7 +9,7 @@ import type { OperationsControllerCreateV1201DataSummaryStatus } from './operati
 
 export type OperationsControllerCreateV1201DataSummary = {
   id: string;
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   period: string;
   status: OperationsControllerCreateV1201DataSummaryStatus;
   incomeMinor: number;

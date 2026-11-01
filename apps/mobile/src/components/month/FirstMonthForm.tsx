@@ -11,7 +11,7 @@ import { isValidPeriod, todayPeriod } from '../../lib/period';
 import { useCreateMonth } from './useMonthMutations';
 
 const firstMonthSchema = z.object({
-  period: z.string().refine(isValidPeriod, 'Введите месяц как ГГГГ-ММ, например 2026-01'),
+  period: z.string().refine(isValidPeriod, 'Введите месяц как ГГГГ-ММ (месяц от 01 до 12), например 2026-01'),
   income: z
     .string()
     .refine(

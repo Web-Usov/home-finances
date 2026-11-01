@@ -9,7 +9,7 @@ import type { MonthsControllerReopenV1200DataMonthStatus } from './monthsControl
 
 export type MonthsControllerReopenV1200DataMonth = {
   id: string;
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   period: string;
   status: MonthsControllerReopenV1200DataMonthStatus;
   incomeMinor: number;

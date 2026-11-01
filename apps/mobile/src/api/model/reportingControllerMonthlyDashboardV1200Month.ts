@@ -9,7 +9,7 @@ import type { ReportingControllerMonthlyDashboardV1200MonthStatus } from './repo
 
 export type ReportingControllerMonthlyDashboardV1200Month = {
   id: string;
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   period: string;
   status: ReportingControllerMonthlyDashboardV1200MonthStatus;
   version: number;

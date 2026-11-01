@@ -4,7 +4,7 @@ import { MonthSummaryResponseSchema, SaveAllocationsRequestSchema } from '@famil
 import { ApiIfMatch, IfMatch } from '../../common/if-match';
 import type { ExpectedVersion } from '../../common/if-match';
 import { MONTH_ETAG_HEADERS, MonthETag } from '../../common/month-etag';
-import { ZodValidationPipe } from '../../common/pipes';
+import { PeriodParamPipe, ZodValidationPipe } from '../../common/pipes';
 import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { AllocationsService } from './allocations.service';
 import type { SaveAllocationsRequest } from './allocations.service';
@@ -34,7 +34,7 @@ export class AllocationsController {
   @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or MONTH_LOCKED' })
   @ApiResponse({ status: 422, description: 'ALLOCATION_EXCEEDS_INCOME' })
   save(
-    @Param('period') period: string,
+    @Param('period', PeriodParamPipe) period: string,
     @Body(new ZodValidationPipe(SaveAllocationsRequestSchema)) dto: SaveAllocationsRequest,
     @IfMatch() expectedVersion: ExpectedVersion,
   ) {
