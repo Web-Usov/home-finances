@@ -47,6 +47,9 @@ RUN pnpm --filter @family-budget/api exec prisma generate
 COPY --from=builder /app/packages/types/dist ./packages/types/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
+# Run as the unprivileged `node` user. Files stay root-owned and world-readable (the app only reads them);
+# the prisma generate output lives under node_modules, which is also only read at runtime.
 WORKDIR /app/apps/api
 EXPOSE 3000
+USER node
 CMD ["node", "dist/main"]
