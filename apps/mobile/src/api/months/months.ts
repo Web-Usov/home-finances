@@ -26,6 +26,9 @@ import type {
 
 import type {
   MonthsControllerCloseV1200,
+  MonthsControllerCreateV1201,
+  MonthsControllerCreateV1Body,
+  MonthsControllerListV1200,
   MonthsControllerReopenPreviewV1200,
   MonthsControllerReopenV1200,
   MonthsControllerUpdateIncomeV1200,
@@ -48,7 +51,7 @@ export const monthsControllerListV1 = (
 ) => {
       
       
-      return customAxiosInstance<void>(
+      return customAxiosInstance<MonthsControllerListV1200>(
       {url: `/api/v1/months`, method: 'GET', signal
     },
       options);
@@ -135,13 +138,15 @@ export function useMonthsControllerListV1<TData = Awaited<ReturnType<typeof mont
  * @summary Create first or next month
  */
 export const monthsControllerCreateV1 = (
-    
+    monthsControllerCreateV1Body: MonthsControllerCreateV1Body,
  options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
-      return customAxiosInstance<void>(
-      {url: `/api/v1/months`, method: 'POST', signal
+      return customAxiosInstance<MonthsControllerCreateV1201>(
+      {url: `/api/v1/months`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: monthsControllerCreateV1Body, signal
     },
       options);
     }
@@ -149,8 +154,8 @@ export const monthsControllerCreateV1 = (
 
 
 export const getMonthsControllerCreateV1MutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCreateV1>>, TError,void, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCreateV1>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCreateV1>>, TError,{data: MonthsControllerCreateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCreateV1>>, TError,{data: MonthsControllerCreateV1Body}, TContext> => {
 
 const mutationKey = ['monthsControllerCreateV1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -162,10 +167,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof monthsControllerCreateV1>>, void> = () => {
-          
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof monthsControllerCreateV1>>, {data: MonthsControllerCreateV1Body}> = (props) => {
+          const {data} = props ?? {};
 
-          return  monthsControllerCreateV1(requestOptions)
+          return  monthsControllerCreateV1(data,requestOptions)
         }
 
         
@@ -174,18 +179,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type MonthsControllerCreateV1MutationResult = NonNullable<Awaited<ReturnType<typeof monthsControllerCreateV1>>>
-    
+    export type MonthsControllerCreateV1MutationBody = MonthsControllerCreateV1Body
     export type MonthsControllerCreateV1MutationError = unknown
 
     /**
  * @summary Create first or next month
  */
 export const useMonthsControllerCreateV1 = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCreateV1>>, TError,void, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof monthsControllerCreateV1>>, TError,{data: MonthsControllerCreateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof monthsControllerCreateV1>>,
         TError,
-        void,
+        {data: MonthsControllerCreateV1Body},
         TContext
       > => {
 

@@ -9,6 +9,7 @@
 export type ReportingControllerYearlyAnalyticsV1Params = {
 /**
  * YYYY, calendar year
+ * @pattern ^\d{4}$
  */
-year: unknown;
+year: string;
 };

@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import type { MonthSummarySchema } from '@family-budget/types';
 import type { z } from 'zod';
+import { freeFundsMinor } from './free-funds';
 
 export type MonthSummaryDto = z.infer<typeof MonthSummarySchema>;
 
@@ -28,6 +29,6 @@ export async function buildMonthSummary(
     incomeMinor: month.incomeMinor,
     version: month.version,
     totalAllocatedMinor,
-    freeFundsMinor: month.incomeMinor - totalAllocatedMinor,
+    freeFundsMinor: freeFundsMinor(month.incomeMinor, totalAllocatedMinor),
   };
 }

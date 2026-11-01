@@ -1,6 +1,7 @@
 import type { MonthStatus, Prisma } from '@prisma/client';
 import { ConflictException, NotFoundException } from './exceptions';
 import { assertExpectedVersion, type ExpectedVersion } from './if-match';
+import { pickWorkingMonth } from './working-month';
 
 /** Satisfied by an interactive transaction client (the lock only lives as long as the transaction). */
 type TxClient = Prisma.TransactionClient;
@@ -119,9 +120,7 @@ export async function findWorkingMonth(tx: TxClient): Promise<{ id: string; peri
     select: { id: true, period: true, status: true },
   });
   return (
-    mutableMonths.find((m) => m.status === 'open') ??
-    mutableMonths.find((m) => m.status === 'reopened') ??
-    mutableMonths.find((m) => m.status === 'draft') ??
+    pickWorkingMonth(mutableMonths) ??
     (await tx.budgetMonth.findFirst({ orderBy: { period: 'desc' }, select: { id: true, period: true } }))
   );
 }

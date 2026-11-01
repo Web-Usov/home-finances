@@ -20,6 +20,10 @@ import type {
   UseQueryResult
 } from '@tanstack/react-query';
 
+import type {
+  HealthControllerHealthV1200
+} from '.././model';
+
 import { customAxiosInstance } from '.././axios-instance';
 
 
@@ -36,7 +40,7 @@ export const healthControllerHealthV1 = (
 ) => {
       
       
-      return customAxiosInstance<void>(
+      return customAxiosInstance<HealthControllerHealthV1200>(
       {url: `/api/v1/health`, method: 'GET', signal
     },
       options);

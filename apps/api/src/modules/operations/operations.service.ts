@@ -11,6 +11,7 @@ import {
 } from '@family-budget/types';
 import { z } from 'zod';
 import { ConflictException, NotFoundException, ValidationException } from '../../common/exceptions';
+import { freeFundsMinor } from '../../common/free-funds';
 import type { ExpectedVersion } from '../../common/if-match';
 import { lockMonthForMutation, lockWorkingMonth } from '../../common/month-lock';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -389,7 +390,7 @@ export class OperationsService {
       incomeMinor: month.incomeMinor,
       version: month.version,
       totalAllocatedMinor,
-      freeFundsMinor: month.incomeMinor - totalAllocatedMinor,
+      freeFundsMinor: freeFundsMinor(month.incomeMinor, totalAllocatedMinor),
     };
   }
 }
