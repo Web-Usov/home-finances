@@ -1,7 +1,7 @@
 ---
 id: T-041
 title: "Months: new month copies income from the previous month"
-status: in_progress
+status: done
 epic: E-01
 depends: [T-032, T-027]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-02]
 area: api
 size: S
 branch: task/T-041-draft-copies-income
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/47
 ---
 
 # T-041. Months: new month copies income from the previous month
