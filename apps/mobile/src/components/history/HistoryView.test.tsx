@@ -135,21 +135,28 @@ function mockApi(operations: HistoryOperation[] = OPERATIONS): Calls {
   return calls;
 }
 
-function renderHistory(overrides: Partial<Dashboard['month']> = {}, filters: { envelopeId?: string; type?: HistoryTypeFilter } = {}) {
+function renderHistory(
+  overrides: Partial<Dashboard['month']> = {},
+  filters: { envelopeId?: string; type?: HistoryTypeFilter; uncoveredOnly?: boolean; roleSource?: boolean } = {},
+) {
   const onEnvelopeChange = jest.fn();
   const onTypeChange = jest.fn();
+  const onClear = jest.fn();
   const utils = renderWithProviders(
     <HistoryView
       dashboard={makeDashboardWithEnvelopes(overrides)}
       months={[makeMonth('2025-12', 'closed'), makeMonth('2026-01', 'open')]}
       envelopeId={filters.envelopeId ?? null}
       type={filters.type ?? null}
+      uncoveredOnly={filters.uncoveredOnly ?? false}
+      roleSource={filters.roleSource ?? false}
+      onClearUncoveredOnly={onClear}
       onPeriodChange={jest.fn()}
       onEnvelopeChange={onEnvelopeChange}
       onTypeChange={onTypeChange}
     />,
   );
-  return { ...utils, onEnvelopeChange, onTypeChange };
+  return { ...utils, onEnvelopeChange, onTypeChange, onClear };
 }
 
 const press = (name: string) => fireEvent.press(screen.getByRole('button', { name }));
@@ -185,6 +192,32 @@ describe('HistoryView', () => {
     expect(screen.getByText(`⚠ Не покрыто: 4${NBSP}000,00${NBSP}₽`)).toBeTruthy();
     // A fully covered row has no uncovered line.
     expect(screen.getAllByText(/Не покрыто/)).toHaveLength(1);
+  });
+
+  it('HIST-15 / REP-10: uncoveredOnly + role=source go to the list query and show a clearable chip', async () => {
+    const calls = mockApi();
+    const { onClear } = renderHistory({}, { envelopeId: 'e-home', type: 'transfer', uncoveredOnly: true, roleSource: true });
+
+    await screen.findByLabelText('Операция 2: Перевод');
+    expect(calls.list[0]).toEqual({
+      period: '2026-01',
+      envelopeId: 'e-home',
+      type: 'transfer',
+      uncoveredOnly: 'true',
+      role: 'source',
+    });
+    expect(screen.getByText(/Только непокрытые/)).toBeTruthy();
+    press('Только непокрытые. Сбросить фильтр');
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('HIST-15: without the drill-down filters there is no chip and no extra query params', async () => {
+    const calls = mockApi();
+    renderHistory({}, { envelopeId: 'e-home' });
+
+    await screen.findByLabelText('Операция 2: Перевод');
+    expect(calls.list[0]).toEqual({ period: '2026-01', envelopeId: 'e-home' });
+    expect(screen.queryByText(/Только непокрытые/)).toBeNull();
   });
 
   it('UI-03: filters by envelope and type narrow the list', async () => {

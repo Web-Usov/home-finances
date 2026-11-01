@@ -47,7 +47,7 @@ export class ApiFixture {
   /** Creates an operation in `period` with that month's current version (arrange-only; amounts are ruble strings). */
   async createOperation(
     period: string,
-    body: { type: 'expense' | 'transfer' | 'adjustment'; sourceEnvelopeId: string; destinationEnvelopeId?: string; amount: string; comment?: string },
+    body: { type: 'expense' | 'transfer' | 'adjustment'; sourceEnvelopeId: string; destinationEnvelopeId?: string; sign?: '+' | '-'; amount: string; comment?: string },
   ) {
     const list = await this.request.get(`${this.apiUrl}/api/v1/months`);
     const { months } = (await list.json()) as { months: { period: string; version: number }[] };

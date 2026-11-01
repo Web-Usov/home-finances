@@ -14,9 +14,12 @@ test.describe('analytics', { tag: '@smoke' }, () => {
   test('AC-20 / REP-01 / REP-10: three yearly reports; an uncovered value opens the matching history rows', async ({ page, api }, testInfo) => {
     await api.createMonth(JAN, '100000.00');
     const { envelope } = await api.createEnvelope('Продукты', '1000.00');
-    await api.createEnvelope('Отпуск', '5000.00');
+    const { envelope: vacation } = await api.createEnvelope('Отпуск', '5000.00');
     await api.createMonth(`${YEAR}-02`);
     await api.createOperation(JAN, { type: 'expense', sourceEnvelopeId: envelope.id, amount: '3000.00', comment: 'Большая покупка' });
+    // HIST-15 noise: a covered expense and a positive adjustment must not appear behind the uncovered number
+    await api.createOperation(JAN, { type: 'expense', sourceEnvelopeId: vacation.id, amount: '100.00', comment: 'Покрытая покупка' });
+    await api.createOperation(JAN, { type: 'adjustment', sign: '+', sourceEnvelopeId: envelope.id, amount: '500.00', comment: 'Плюс' });
 
     await page.goto(`/analytics?year=${YEAR}`);
     await expect(page.getByRole('heading', { name: String(YEAR), exact: true })).toBeVisible();
@@ -82,8 +85,16 @@ test.describe('analytics', { tag: '@smoke' }, () => {
     await page.getByRole('link', { name: new RegExp(`^Январь ${YEAR}, списания`) }).click();
     await expect(page).toHaveURL(/\/history/);
     await expect(page.getByRole('heading', { name: `Январь ${YEAR}` })).toBeVisible();
-    await expect(page.getByLabel(/^Операция \d+: Списание/)).toContainText('Большая покупка');
+    // HIST-15 / REP-10: exactly the one uncovered operation, filter chip visible
+    const rows = page.getByLabel(/^Операция \d+:/);
+    await expect(rows).toHaveCount(1);
+    await expect(rows).toContainText('Большая покупка');
+    await expect(page.getByRole('button', { name: 'Только непокрытые. Сбросить фильтр' })).toBeVisible();
     await shot(page, testInfo, '7-analytics-drilldown-history');
+    // the chip clears the filter: the type filter stays and both January expenses are listed
+    await page.getByRole('button', { name: 'Только непокрытые. Сбросить фильтр' }).click();
+    await expect(rows).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Только непокрытые. Сбросить фильтр' })).toHaveCount(0);
 
     // The shared period switcher keeps its title on one line at 360 px.
     const title = page.getByRole('heading', { name: `Январь ${YEAR}` });

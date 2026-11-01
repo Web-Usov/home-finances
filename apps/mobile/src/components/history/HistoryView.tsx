@@ -61,9 +61,14 @@ interface HistoryViewProps {
   months: MonthSummary[];
   envelopeId: string | null;
   type: HistoryTypeFilter | null;
+  /** HIST-15: only operations with an uncovered part (analytics drill-down). */
+  uncoveredOnly?: boolean;
+  /** HIST-15: `envelopeId` matches the source envelope only (analytics drill-down). */
+  roleSource?: boolean;
   onPeriodChange: (period: string) => void;
   onEnvelopeChange: (envelopeId: string | null) => void;
   onTypeChange: (type: HistoryTypeFilter | null) => void;
+  onClearUncoveredOnly?: () => void;
 }
 
 /**
@@ -76,9 +81,12 @@ export function HistoryView({
   months,
   envelopeId,
   type,
+  uncoveredOnly = false,
+  roleSource = false,
   onPeriodChange,
   onEnvelopeChange,
   onTypeChange,
+  onClearUncoveredOnly,
 }: HistoryViewProps) {
   const { month, envelopes } = dashboard;
   const closed = month.status === 'closed';
@@ -92,6 +100,8 @@ export function HistoryView({
     period: month.period,
     ...(envelopeId !== null ? { envelopeId } : {}),
     ...(type !== null ? { type } : {}),
+    ...(uncoveredOnly ? { uncoveredOnly: 'true' as const } : {}),
+    ...(roleSource && envelopeId !== null ? { role: 'source' as const } : {}),
   });
   const operations: HistoryOperation[] = list.data?.operations ?? [];
   const envelopeNames = Object.fromEntries(envelopes.map((envelope) => [envelope.envelopeId, envelope.name]));
@@ -143,6 +153,18 @@ export function HistoryView({
           onChange={onEnvelopeChange}
         />
         <FilterChips label="Тип" options={TYPE_OPTIONS} value={type} onChange={onTypeChange} />
+        {uncoveredOnly && (
+          <View className="mt-3 flex-row flex-wrap gap-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Только непокрытые. Сбросить фильтр"
+              onPress={onClearUncoveredOnly}
+              className="flex-row items-center rounded-lg border border-primary-600 bg-primary-50 px-3 py-2"
+            >
+              <Text className="text-sm text-gray-900">Только непокрытые ✕</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {closed && (

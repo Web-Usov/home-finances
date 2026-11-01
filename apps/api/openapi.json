@@ -974,6 +974,31 @@
         "operationId": "OperationsController_list_v1",
         "parameters": [
           {
+            "name": "uncoveredOnly",
+            "required": false,
+            "in": "query",
+            "description": "HIST-15: only operations with an uncovered part greater than zero",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "description": "HIST-15: with envelopeId, match only operations whose source is that envelope",
+            "schema": {
+              "enum": [
+                "source"
+              ],
+              "type": "string"
+            }
+          },
+          {
             "name": "type",
             "required": false,
             "in": "query",

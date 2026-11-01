@@ -47,6 +47,18 @@ export class OperationsController {
     required: false,
     enum: ['expense', 'transfer', 'adjustment', 'initial_balance'],
   })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    enum: ['source'],
+    description: 'HIST-15: with envelopeId, match only operations whose source is that envelope',
+  })
+  @ApiQuery({
+    name: 'uncoveredOnly',
+    required: false,
+    enum: ['true', 'false'],
+    description: 'HIST-15: only operations with an uncovered part greater than zero',
+  })
   @ApiOkResponse({
     description: 'Operations with results, ordered by period and sequence_no',
     schema: zodOpenApiSchema(OperationListResponseSchema),

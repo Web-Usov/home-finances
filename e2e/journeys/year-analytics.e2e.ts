@@ -27,5 +27,17 @@ test.describe('journey: analytics after the year', () => {
     await shot(page, testInfo, '01-year-income-report');
     await page.getByRole('heading', { name: 'Непокрытые операции' }).scrollIntoViewIfNeeded();
     await shot(page, testInfo, '02-year-uncovered-report');
+
+    // REP-10 / HIST-15: each month's uncovered number opens exactly the rows it is made of (one operation each)
+    for (const [month, comment] of [['Январь', 'Январь'], ['Декабрь', 'Декабрь']] as const) {
+      await page.goto(`/analytics?year=${YEAR}`);
+      await page.getByRole('link', { name: new RegExp(`^${month} ${YEAR}, всего`) }).click();
+      await expect(page.getByRole('heading', { name: `${month} ${YEAR}` })).toBeVisible();
+      const rows = page.getByLabel(/^Операция \d+:/);
+      await expect(rows).toHaveCount(1);
+      await expect(rows).toContainText(comment);
+      await expect(page.getByRole('button', { name: 'Только непокрытые. Сбросить фильтр' })).toBeVisible();
+      await shot(page, testInfo, `03-year-drilldown-${month}`);
+    }
   });
 });
