@@ -52,6 +52,8 @@
 
 - [T-049](T-049-language-rule-russian-for-everything.md) Language rule: Russian for everything the human reviews or decides — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/44)
 
+- [T-051](T-051-spec-follow-ups-batch-3.md) Spec follow-ups batch 3 — **in_progress** · docs · S · depends: — · —
+
 ## E-01. Ядро API: месяцы и операции — accepted, принят 2026-11-01
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
