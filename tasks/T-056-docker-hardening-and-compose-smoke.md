@@ -1,7 +1,7 @@
 ---
 id: T-056
 title: "Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke"
-status: todo
+status: in_progress
 epic: E-00
 depends: [T-050]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: []
 acceptance: [AC-22]
 area: infra
 size: S
-branch: null
+branch: task/T-056-docker-hardening-and-compose-smoke
 pr: null
 ---
 
