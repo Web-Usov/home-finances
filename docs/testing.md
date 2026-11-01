@@ -51,7 +51,7 @@ pnpm --filter @family-budget/api exec jest path/to/file.spec.ts -t "part of test
 ```
 
 `pnpm test:scripts` runs the tests of the repo tooling (`scripts/__tests__/*.test.mjs`, Node's built-in `node --test`, no
-dependencies) for `with-lock`, `task-start` and `task-clean`; it is a step of both `verify:quick` and `verify`. Add a
+dependencies) for `with-lock` (and `scripts/lib/lock.mjs`, the e2e lock of the Playwright config), `task-start` (including concurrent `--new` calls against a throwaway origin) and `task-clean`; it is a step of both `verify:quick` and `verify`. Add a
 `<script>.test.mjs` there when you change a script; keep decision logic in exported pure functions and spawn the script
 against a temp dir / throwaway git repo for the rest.
 
@@ -275,12 +275,22 @@ every run; open a trace with `pnpm --filter @family-budget/e2e exec playwright s
 
 ### Machine-wide lock and resources
 
-`pnpm e2e:smoke` and `pnpm e2e:full` run through `scripts/with-lock.mjs`: a lockfile `<os.tmpdir()>/family-budget-e2e.lock`
-(`{ pid, cwd, started }`) serializes e2e runs of all agents and worktrees on the machine. If another run holds it, the
-command prints who holds it every 30s and waits (up to 90 min, `WITH_LOCK_TIMEOUT_MIN`); a lock whose pid is dead, or that is
-empty/unparsable and older than 10s, is stale and is taken over automatically (atomic rename, so concurrent waiters cannot both
-win). The command is started without a shell, in its own process group; SIGINT/SIGTERM are forwarded to that whole group and the
-lock is released only after the child has exited (exit code 128+signal). Do not delete the lockfile of a live run.
+Every e2e run on the machine is serialized by one lockfile `<os.tmpdir()>/family-budget-e2e.lock` (`{ pid, cwd, started }`),
+whichever way it is started: `pnpm e2e:smoke` / `pnpm e2e:full` (through `scripts/with-lock.mjs`) **and a direct
+`playwright test`** (the Playwright config takes the same lock itself, `e2e/support/e2e-lock.mjs`, over `scripts/lib/lock.mjs`).
+The config takes it at load time rather than in `globalSetup` because Playwright starts the `webServer`s (API + Expo web export,
+the heavy part) before `globalSetup`; `global-teardown.ts` releases it (and so does process exit). Re-entrancy: the holder lists
+the lock name in env `FAMILY_BUDGET_LOCKS_HELD`, which children inherit (Playwright workers and web servers, or `playwright test`
+under `with-lock.mjs`), and asking for a name that is already listed is a no-op, so nothing deadlocks by taking it twice.
+If another run holds it, the command prints who holds it every 30s and waits (up to 90 min, `WITH_LOCK_TIMEOUT_MIN`); a lock whose
+pid is dead (a crashed or killed run), or that is empty/unparsable and older than 10s, is stale and is taken over automatically
+(atomic rename, so concurrent waiters cannot both win). `with-lock.mjs` starts its command without a shell, in its own process
+group; SIGINT/SIGTERM are forwarded to that whole group and the lock is released only after the child has exited (exit code
+128+signal). Do not delete the lockfile of a live run. Side effect: any `playwright test` invocation that loads the config
+(including `--list`) waits for the lock too.
+
+The same module backs the `task-id` lock of `pnpm task:start --new` (`docs/workflow.md`, "Filing new work"): ids are allocated and the claim
+branch is pushed under it.
 
 An e2e run needs **~2 GB of free RAM** (API + Expo web export + Chromium; the script warns when less is free), and the first web
 export on a machine can take several minutes (Metro cold cache; later runs are faster but `--clear` is always used). Do not start

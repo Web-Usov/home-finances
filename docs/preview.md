@@ -39,7 +39,7 @@ Each slot holds its own `node_modules`, `apps/api/dist` and `.preview/web` (Expo
 (`scripts/preview/update.sh` of the live slot):
 
 1. `git fetch`; if `origin/master` equals `state/deployed-sha` nothing happens.
-2. Otherwise it waits for the machine-wide `e2e` lock (`scripts/with-lock.mjs`, so it never builds together with an agent's
+2. Otherwise it waits for the machine-wide `e2e` lock (`scripts/with-lock.mjs` + `scripts/lib/lock.mjs`, both taken from the target sha, so it never builds together with an agent's
    e2e run) and runs at `nice 19` / idle I/O priority.
 3. In the **inactive** slot: checkout the sha, `pnpm install --frozen-lockfile --prefer-offline`, build types + API,
    `expo export` for web, `prisma migrate deploy` on `family_budget_preview` (database is created if missing),

@@ -15,6 +15,10 @@
  * task files of any local/remote ref, or in a task branch name, plus one) and then claims it in the same commit. Use it for follow-up work discovered
  * while implementing or reviewing; fill in Goal/Context/DoD in the worktree afterwards.
  *
+ * Id race: `--new` runs under the machine-wide lock `task-id` (scripts/lib/lock.mjs) from `git fetch` until the claim branch is
+ * pushed to origin (right after the claim commit), so a concurrent `--new` fetches after that push and sees the id as taken.
+ * The lock is therefore held through `pnpm install` and the commit hooks of the claim commit (minutes under load); other `--new` calls wait.
+ *
  * If a step fails after the worktree was created, the worktree and branch are removed again so that a retry starts
  * clean; `--keep` leaves them in place for debugging. `TASK_START_SKIP_INSTALL=1` skips `pnpm install` (tests only).
  */
@@ -23,6 +27,7 @@ import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter } from './tasks.mjs';
+import { acquireSync } from './lib/lock.mjs';
 
 const AREAS = ['api', 'mobile', 'infra', 'docs'];
 const SIZES = ['S', 'M'];
@@ -132,6 +137,15 @@ function main() {
   // main checkout = parent of the common .git dir (works from any worktree)
   const mainDir = path.dirname(git(['rev-parse', '--path-format=absolute', '--git-common-dir'], process.cwd()));
 
+  let idLock = null;
+  if (creating) {
+    try {
+      idLock = acquireSync('task-id');
+    } catch (e) {
+      die(e.message);
+    }
+  }
+
   console.log('git fetch origin ...');
   git(['fetch', 'origin'], mainDir);
 
@@ -192,6 +206,11 @@ function main() {
     run('git', ['add', 'tasks'], wtPath);
     const subject = creating ? `chore(tasks): add and start ${id} [${id}]` : `chore(tasks): start ${id} [${id}]`;
     run('git', ['commit', '-m', subject], wtPath);
+    // Publish the claim while still holding the task-id lock, so concurrent `--new` scans see this id.
+    if (creating) {
+      run('git', ['push', '-u', 'origin', branch], wtPath);
+      idLock.release();
+    }
   } catch (e) {
     console.error(`\ntask:start: failed after the worktree was created: ${e.message}`);
     if (opts.keep) {
@@ -211,6 +230,7 @@ function main() {
     process.exit(1);
   }
 
+  idLock?.release();
   console.log(`\n✔ ${id} claimed.\nWorktree: ${wtPath}\nBranch:   ${branch}\nContinue there: cd ${wtPath}`);
   if (creating) console.log(`Fill in Goal / Context / Definition of Done in tasks/${id}-${slug}.md before implementing.`);
 }
