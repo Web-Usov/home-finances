@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { ConflictException, NotFoundException, ValidationException } from '../../common/exceptions';
 import { planReopen } from './reopen-plan';
 import { isSingleReopenedViolation } from './reopen-violation';
+import { freeFundsMinor } from '../../common/free-funds';
 import type { MonthSummaryDto } from '../../common/month-summary';
 import type { ExpectedVersion } from '../../common/if-match';
 import { lockAllMonths, lockMonthForMutation } from '../../common/month-lock';
@@ -52,7 +53,7 @@ function toSummary(month: BudgetMonth, totalAllocatedMinor: number): MonthSummar
     incomeMinor: month.incomeMinor,
     version: month.version,
     totalAllocatedMinor,
-    freeFundsMinor: month.incomeMinor - totalAllocatedMinor,
+    freeFundsMinor: freeFundsMinor(month.incomeMinor, totalAllocatedMinor),
   };
 }
 

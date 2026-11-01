@@ -27,11 +27,11 @@ One pure `pickWorkingMonth(months)` (open > reopened > draft, MON-16) and one `f
 
 ## Definition of Done
 
-- [ ] Unit tests for both helpers (`it('MON-16: ...')`, `it('FIN-11: ...')`) incl. negative free funds
-- [ ] No behavior change: existing tests pass; `pnpm api:contract` shows no drift
-- [ ] `pnpm verify` is green
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Unit tests for both helpers (`it('MON-16: ...')`, `it('FIN-11: ...')`) incl. negative free funds
+- [x] No behavior change: existing tests pass; `pnpm api:contract` shows no drift
+- [x] `pnpm verify` is green
+- [x] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -43,4 +43,7 @@ One pure `pickWorkingMonth(months)` (open > reopened > draft, MON-16) and one `f
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Added `pickWorkingMonth` (`common/working-month.ts`) and `freeFundsMinor` (`common/free-funds.ts`) with unit tests.
+- `pickWorkingMonth`: used by `reporting.service.findMonthOrThrow` and `month-lock.findWorkingMonth` (the only two own copies; `envelopes` and `operations` already delegate to `lockWorkingMonth`, so they pick it up through `month-lock`).
+- `freeFundsMinor`: used by reporting (dashboard, yearly income rows and totals), `months.service.toSummary`, `operations.service` summary, `common/month-summary.ts`. Allocations validate through `validateAllocations` (types), no inline `income - allocated`.
+- `YearlyUncoveredValueSchema` is now an alias of `DashboardUncoveredSchema`; `openapi.json` and the generated client are unchanged.
