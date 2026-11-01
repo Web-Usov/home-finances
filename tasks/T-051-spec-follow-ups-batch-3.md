@@ -7,7 +7,7 @@ depends: []           # [T-001, T-002] - must be done before this task starts
 blocked_by: []        # [Q-01] - open questions from docs/spec/99-open-questions.md
 spec: []              # rule IDs this task implements, e.g. [OP-05, MON-08]
 acceptance: []        # AC ids this task contributes to, e.g. [AC-06]
-area: docs             # api | mobile | infra | docs
+area: docs
 size: S               # S | M  (one agent session, ~300-500 LOC max)
 branch: task/T-051-spec-follow-ups-batch-3          # set when work starts, e.g. task/T-000-slug
 pr: null              # PR URL once opened
@@ -26,33 +26,28 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+Clarify five small spec points (API-25, API-27, MON-17, HIST-15) and propose ADR 0013 (delivery topology); file the resulting code/infra tasks T-052..T-057.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- Planner follow-ups 21-23. Spec: API-25, API-27, MON-17, HIST-15. ADR proposal from T-016.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Spec edits applied in docs/spec (RU, no new IDs)
+- [x] ADR 0013 added with status «Предложено» and listed in docs/decisions/README.md
+- [x] Tasks T-052..T-057 created as todo
+- [x] `pnpm spec:check`, `pnpm tasks:check`, `pnpm verify:quick` green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Any code, test or config change (done by T-052..T-057).
 
 ## Handoff log
 
-<!-- Append-only. One entry per interrupted session: date, what is done, what is next, branch/commit, gotchas. -->
+<!-- Append-only. -->
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Spec clarifications applied (see PR body for the questions); ADR 0013 proposed; new tasks: T-052 (HIST-15 422), T-053 (available field), T-054 (form replace offer + archived source), T-055 (e2e overrun on edit), T-056 (docker hardening + smoke:compose), T-057 (e2e lock in globalSetup).
