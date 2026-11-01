@@ -1,7 +1,7 @@
 ---
 id: T-041
 title: "Months: new month copies income from the previous month"
-status: todo
+status: in_progress
 epic: E-01
 depends: [T-032, T-027]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [MON-17, MON-01, MON-07, FIN-02, SCOPE-29]
 acceptance: [AC-02]
 area: api
 size: S
-branch: null
+branch: task/T-041-draft-copies-income
 pr: null
 ---
 
