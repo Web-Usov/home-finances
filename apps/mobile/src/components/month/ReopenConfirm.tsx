@@ -5,33 +5,46 @@ import { formatPeriodGenitive, formatPeriodLower } from '../../lib/period';
 interface ReopenConfirmProps {
   period: string;
   /**
-   * Months that the reopening will recalculate (MON-12). The preview endpoint (T-024) is not available yet,
-   * so callers pass nothing today and the dialog falls back to a generic warning; the range of the
-   * performed reopening is reported afterwards from the reopen response.
+   * Months that the reopening will recalculate (MON-12), from the preview endpoint (API-20). Advisory: the
+   * reopen response stays authoritative and its range is reported afterwards.
    */
   recalcRange?: { from: string; to: string } | null;
+  /** The preview is being fetched: the range is not known yet and confirming is disabled. */
+  loading?: boolean;
+  /** The preview was refused (404 / 409): its message replaces the range and confirming is disabled. */
+  error?: string | null;
   pending: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 /** Inline confirmation before reopening a closed month (MON-12, AC-15). */
-export function ReopenConfirm({ period, recalcRange, pending, onConfirm, onCancel }: ReopenConfirmProps) {
+export function ReopenConfirm({ period, recalcRange, loading = false, error = null, pending, onConfirm, onCancel }: ReopenConfirmProps) {
+  const canConfirm = !pending && !loading && !error;
   return (
     <View className="mt-3 rounded-lg border border-amber-600 bg-amber-50 p-3">
       <Text className="text-base font-semibold text-gray-900 mb-1">
         Открыть {formatPeriodLower(period)} повторно?
       </Text>
-      <Text className="text-sm text-gray-800 mb-3">
-        {recalcRange
-          ? `Будут пересчитаны месяцы с ${formatPeriodGenitive(recalcRange.from)} по ${formatPeriodLower(recalcRange.to)}.`
-          : 'Все последующие месяцы будут пересчитаны.'}
-      </Text>
+      {error ? (
+        <Text accessibilityRole="alert" className="text-sm text-danger mb-3">
+          {error}
+        </Text>
+      ) : (
+        <Text className="text-sm text-gray-800 mb-3">
+          {loading
+            ? 'Определяем, какие месяцы будут пересчитаны…'
+            : recalcRange
+              ? `Будут пересчитаны месяцы с ${formatPeriodGenitive(recalcRange.from)} по ${formatPeriodLower(recalcRange.to)}.`
+              : 'Все последующие месяцы будут пересчитаны.'}
+        </Text>
+      )}
       <View className="flex-row gap-2">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Подтвердить повторное открытие"
-          disabled={pending}
+          accessibilityState={{ disabled: !canConfirm }}
+          disabled={!canConfirm}
           onPress={onConfirm}
           className="flex-1 rounded-lg bg-primary-600 py-3 active:bg-primary-700 disabled:opacity-50"
         >

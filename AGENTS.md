@@ -31,7 +31,7 @@ docs/                spec, decisions (ADR), architecture, archive
 e2e/                 Playwright workspace (@family-budget/e2e)
 scripts/             repo tooling (verify, api-contract, spec-check, tasks, smoke-compose)
 tasks/, epics/       work items: detailed tasks (EN), epics (RU); tasks/README.md is the generated board
-docker-compose.yml   PostgreSQL 16 + one-shot `migrate` + API
+docker-compose.yml   PostgreSQL 16 + one-shot `migrate` + API + `web` (Expo export served by serve-web.mjs, docker/web/Dockerfile)
 ```
 
 ## Commands
@@ -71,6 +71,7 @@ Run it before declaring work done. Test details: `docs/testing.md`.
 | Testing strategy and commands | `docs/testing.md` |
 | Agent workflow (one task = one branch = one PR) | `docs/workflow.md` |
 | Owner's preview (auto-deployed master, URLs, logs, reset) | `docs/preview.md` |
+| Host ops (timer that updates BEHIND auto-merge PRs) | `docs/ops.md` |
 | Work items | `tasks/` (detailed, EN), `epics/` (RU); board in `tasks/README.md` |
 | DB schema | `apps/api/prisma/schema.prisma` |
 | Domain types / error codes | `packages/types/src/` |
@@ -115,6 +116,7 @@ Agents (`.opencode/agents/`): `implementer`, `reviewer`, `planner`, `qa`. Comman
 - After editing `packages/types` run the root `pnpm typecheck` (turbo builds the types package first); `pnpm --filter api typecheck`
   alone sees the stale `dist` of the types package.
 - The turbo cache is shared across worktrees: replayed logs may show paths of other worktrees; harmless.
+- Ports 3100 (preview API) and 8100 (preview web) are reserved for the preview (`docs/preview.md`): never bind, reuse or kill them from tests, dev servers or agents.
 - Commit headers are at most 100 characters; pre-commit checks the working tree, so stage everything you commit.
 - Claim a task with `pnpm task:start T-xxx`, clean up after the merge with `pnpm task:clean T-xxx`.
 

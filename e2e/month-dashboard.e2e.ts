@@ -83,6 +83,9 @@ test.describe('month dashboard', { tag: '@smoke' }, () => {
 
     await button(page, 'Открыть повторно').click();
     await expect(page.getByText('Открыть январь 2026 повторно?')).toBeVisible();
+    // MON-12 / API-20: the range from the preview is shown before confirming.
+    await expect(page.getByText('Будут пересчитаны месяцы с января 2026 по февраль 2026.')).toBeVisible();
+    await expect(button(page, 'Подтвердить повторное открытие')).toBeEnabled();
     await shot(page, testInfo, '5-reopen-confirmation');
 
     await button(page, 'Подтвердить повторное открытие').click();

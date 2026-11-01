@@ -1,0 +1,18 @@
+[Unit]
+Description=Family Budget: update BEHIND pull requests that have auto-merge enabled
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Uses the owner's gh auth (/root/.config/gh), so it runs as root and must see /root.
+Environment=HOME=/root
+Environment=PATH=@PATH@
+ExecStart=@REPO_DIR@/scripts/ops/auto-update-prs.sh
+TimeoutStartSec=2min
+Nice=10
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectControlGroups=yes

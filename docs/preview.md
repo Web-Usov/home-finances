@@ -17,6 +17,10 @@ The web bundle is exported with `EXPO_PUBLIC_API_URL=same-origin` (client base U
 so the app works from any IP or hostname. Unset/other values keep the dev/e2e behaviour
 (`apps/mobile/src/lib/apiBaseUrl.ts`).
 
+**Ports 3100 (API) and 8100 (web) are reserved for the preview.** Tests, e2e runs, dev servers and agents must never bind,
+reuse or kill them (e2e takes OS-assigned free ports and `reuseExistingServer: false`; local dev API uses 3000). Never run
+`kill`/`fuser -k`/`kill-port` against these ports; use `systemctl restart family-budget-preview-api` instead.
+
 ## Layout (`/root/workspace/finance-preview`, outside the repo checkouts)
 
 ```
@@ -54,7 +58,7 @@ backwards compatible (as for any deploy).
 ## Status and logs
 
 ```bash
-systemctl status family-budget-preview-api family-budget-preview-web family-budget-preview-update.timer
+systemctl status family-budget-preview-api family-budget-preview-web family-budget-preview-update.timer family-budget-preview-watchdog.timer
 journalctl -u family-budget-preview-api -f           # API logs
 journalctl -u family-budget-preview-web -f           # web server / proxy
 journalctl -u family-budget-preview-update -n 100    # last deploys (build output, failures)
@@ -63,6 +67,35 @@ cat /root/workspace/finance-preview/state/{deployed-sha,failed-sha,last-failure}
 systemctl start family-budget-preview-update         # deploy now instead of waiting for the timer
 /root/workspace/finance-preview/current/scripts/preview/update.sh --force   # retry a sha that failed
 ```
+
+## Availability (restart policy, watchdog, OOM)
+
+- API and web units use `Restart=always`, `RestartSec=3` (start limit 20 starts per 5 minutes). `Restart=always` matters:
+  with `on-failure` a clean exit (code 0, or a stray `SIGTERM`, which systemd counts as success) left the unit `inactive` and
+  `/api` returned 502 until someone started it (incident 2026-10-31 22:15). A deliberate `systemctl stop` is still respected.
+- `family-budget-preview-watchdog.timer` runs `scripts/preview/watchdog.sh` every minute: `GET 127.0.0.1:3100/api/v1/health`;
+  after 2 consecutive failures it runs `systemctl restart family-budget-preview-api` and logs it
+  (`journalctl -u family-budget-preview-watchdog`). An `inactive` (stopped on purpose) unit is left alone.
+- OOM priority (`OOMScoreAdjust`): api and web `-200` (last victims), the update unit and the builds it spawns `+500`
+  (first victims). On memory pressure the kernel/oomd should therefore kill a build or test run before the preview.
+
+## Troubleshooting
+
+**`/api` returns 502 (or the page loads but data does not):** the web server is up but the API is not.
+
+```bash
+systemctl status family-budget-preview-api                       # active? when did it exit, which code/signal?
+journalctl -u family-budget-preview-api -n 100 --no-pager         # last logs; look for stop/exit/OOM lines
+journalctl -u family-budget-preview-watchdog -n 20 --no-pager     # did the watchdog restart it?
+journalctl -k --since -1h | grep -i -E 'oom|killed process'       # kernel OOM kills
+ss -ltnp 'sport = :3100'                                          # who owns the port (EADDRINUSE in the API log?)
+curl -fsS http://127.0.0.1:3100/api/v1/health                     # API directly (bypassing the proxy)
+systemctl restart family-budget-preview-api                       # fix; the watchdog does this itself within ~2 minutes
+```
+
+If the API starts but crashes right away, check `DATABASE_URL`/the DB container (`docker ps`, `family-budget-db`) and the last
+deploy (`journalctl -u family-budget-preview-update -n 100`, `state/last-failure`). If the page itself does not load, check
+`family-budget-preview-web` the same way.
 
 ## Demo data
 
@@ -85,9 +118,9 @@ Only ever touch `family_budget_preview`; never the dev DB `family_budget` or `*_
 ## Install, disable, remove
 
 - Install / re-install units (as root, idempotent): `scripts/preview/install-systemd.sh` (first deploy included;
-  `--no-deploy` to skip). Unit templates: `scripts/preview/systemd/`.
+  `--no-deploy` to skip). It refuses to run from a task worktree: run it from the main checkout. Unit templates: `scripts/preview/systemd/`.
 - Pause auto-updates: `systemctl disable --now family-budget-preview-update.timer`.
-- Stop the preview: `systemctl disable --now family-budget-preview-update.timer family-budget-preview-web family-budget-preview-api`.
+- Stop the preview: `systemctl disable --now family-budget-preview-update.timer family-budget-preview-watchdog.timer family-budget-preview-web family-budget-preview-api`.
 - Remove completely: stop as above, delete `/etc/systemd/system/family-budget-preview-*`, `systemctl daemon-reload`,
   `rm -rf /root/workspace/finance-preview`, optionally `DROP DATABASE family_budget_preview`.
 - Deploy another ref (for testing): set `PREVIEW_REF=origin/<branch>` in `preview.env` (default `origin/master`).

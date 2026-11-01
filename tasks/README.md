@@ -26,7 +26,7 @@
 
 - [T-026](T-026-money-ru-messages.md) ru-RU money formatting in server messages — **done** · api · S · depends: T-005, T-025, T-020 · [PR](https://github.com/Web-Usov/home-finances/pull/32)
 
-- [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **todo** · api · S · depends: T-006 · —
+- [T-028](T-028-single-reopened-month-db.md) Enforce a single reopened month in the database (MON-13 race) — **done** · api · S · depends: T-006 · [PR](https://github.com/Web-Usov/home-finances/pull/36)
 
 - [T-029](T-029-version-check-in-tx.md) Re-check month version inside the transaction in allocations.save and other mutations — **done** · api · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/25)
 
@@ -47,6 +47,8 @@
 - [T-044](T-044-shared-working-month-and-free-helpers.md) API: shared working-month and free-funds helpers, dedup yearly uncovered schema — **todo** · api · S · depends: T-043, T-008 · —
 
 - [T-046](T-046-openapi-months-body-response-query-types.md) OpenAPI: typed POST /months body, GET /months response and query params — **todo** · api · S · depends: T-027, T-037 · —
+
+- [T-047](T-047-auto-update-behind-prs-with-auto-merge.md) Auto-update BEHIND PRs with auto-merge (host timer) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/38)
 
 ## E-01. Ядро API: месяцы и операции — planned
 
@@ -92,21 +94,21 @@
 
 - [T-010](T-010-allocation-editor.md) Mobile: allocation editor with live totals and overflow block — **done** · mobile · M · depends: T-009, T-027 · [PR](https://github.com/Web-Usov/home-finances/pull/24)
 
-- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **todo** · mobile · S · depends: T-009, T-024 · —
+- [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **done** · mobile · S · depends: T-009, T-024 · [PR](https://github.com/Web-Usov/home-finances/pull/37)
 
 ## E-04. Операции и история (UI) — planned
 
 Эпик: [E-04-operations-ui.md](../epics/E-04-operations-ui.md)
 
-- [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **todo** · mobile · M · depends: T-004, T-009, T-025, T-026 · —
+- [T-011](T-011-operation-forms.md) Mobile: expense, transfer and adjustment forms — **done** · mobile · M · depends: T-004, T-009, T-025, T-026 · [PR](https://github.com/Web-Usov/home-finances/pull/35)
 
-- [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **todo** · mobile · M · depends: T-005, T-011, T-046 · —
+- [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **done** · mobile · M · depends: T-005, T-011, T-046 · [PR](https://github.com/Web-Usov/home-finances/pull/39)
 
 ## E-05. Годовая аналитика (UI) — planned
 
 Эпик: [E-05-analytics-ui.md](../epics/E-05-analytics-ui.md)
 
-- [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **todo** · mobile · M · depends: T-008, T-012, T-045, T-046 · —
+- [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **done** · mobile · M · depends: T-008, T-012, T-045, T-046 · [PR](https://github.com/Web-Usov/home-finances/pull/41)
 
 ## E-06. Приёмка MVP и поставка — planned
 
@@ -114,8 +116,12 @@
 
 - [T-014](T-014-ac-test-coverage.md) Acceptance: tests for AC-01..AC-22 and strict spec coverage — **done** · api · M · depends: T-005, T-006, T-007, T-008 · [PR](https://github.com/Web-Usov/home-finances/pull/22)
 
-- [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **todo** · mobile · M · depends: T-010, T-012, T-013 · —
+- [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **done** · mobile · M · depends: T-010, T-012, T-013 · [PR](https://github.com/Web-Usov/home-finances/pull/42)
 
-- [T-016](T-016-docker-compose-e2e.md) Delivery: docker compose from scratch and persistence after restart — **todo** · infra · S · depends: T-014 · —
+- [T-016](T-016-docker-compose-e2e.md) Delivery: docker compose from scratch and persistence after restart — **done** · infra · S · depends: T-014 · [PR](https://github.com/Web-Usov/home-finances/pull/40)
 
 - [T-038](T-038-preview-environment-auto-deploy-master.md) Preview environment: auto-deploy master for the owner — **done** · infra · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/28)
+
+- [T-039](T-039-preview-keep-api-up-restart-always.md) Preview: keep API up (Restart=always, health watchdog) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/34)
+
+- [T-048](T-048-mobile-refresh-month-after-envelope-change.md) Refresh the month dashboard after envelope create/rename/archive — **done** · mobile · S · depends: T-015 · [PR](https://github.com/Web-Usov/home-finances/pull/43)

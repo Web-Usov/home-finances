@@ -3,12 +3,21 @@
 #   scripts/preview/install-systemd.sh [--no-deploy]
 # - creates $PREVIEW_HOME (default /root/workspace/finance-preview) and preview.env if missing
 # - renders scripts/preview/systemd/*.service|timer into /etc/systemd/system, reloads systemd
-# - runs the first deploy (unless --no-deploy or a release already exists), then enables web, api and the 2-minute update timer
+# - runs the first deploy (unless --no-deploy or a release already exists), then enables web, api, the 2-minute update timer and the 1-minute health watchdog timer
+# Refuses to run from a task worktree (run it from the main checkout).
 # Env: PREVIEW_HOME, PREVIEW_REF (written into a NEW preview.env only; used to deploy a branch before it is merged)
 set -euo pipefail
 
-[ "$(id -u)" = 0 ] || { echo "run as root" >&2; exit 1; }
 here=$(cd "$(dirname "$0")" && pwd)
+# Refuse to run from a task worktree (its path is removed after the merge, leaving units that point nowhere):
+# the toplevel must equal the parent of the shared git dir, i.e. the MAIN checkout.
+git_common=$(git -C "$here" rev-parse --path-format=absolute --git-common-dir) || { echo "not inside a git checkout" >&2; exit 1; }
+MAIN_DIR=$(dirname "$git_common")
+if [ "$(git -C "$here" rev-parse --show-toplevel)" != "$MAIN_DIR" ]; then
+  echo "refusing to install from a worktree ($here); run it from the main checkout $MAIN_DIR" >&2
+  exit 1
+fi
+[ "$(id -u)" = 0 ] || { echo "run as root" >&2; exit 1; }
 PREVIEW_HOME=${PREVIEW_HOME:-/root/workspace/finance-preview}
 UNIT_DIR=/etc/systemd/system
 NODE_BIN=$(command -v node)
@@ -41,5 +50,5 @@ if [ "${1:-}" != "--no-deploy" ] && [ ! -L "$PREVIEW_HOME/current" ]; then
 fi
 
 systemctl enable --now family-budget-preview-web.service family-budget-preview-api.service
-systemctl enable --now family-budget-preview-update.timer
-systemctl --no-pager --lines=0 status family-budget-preview-web.service family-budget-preview-api.service family-budget-preview-update.timer || true
+systemctl enable --now family-budget-preview-update.timer family-budget-preview-watchdog.timer
+systemctl --no-pager --lines=0 status family-budget-preview-web.service family-budget-preview-api.service family-budget-preview-update.timer family-budget-preview-watchdog.timer || true

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { allocationsControllerSaveV1 } from '../../api/allocations/allocations';
 import type { ApiErrorResponse } from '../envelopes/types';
-import { invalidateMonthData } from './useMonthMutations';
+import { invalidateBudgetData } from '../../lib/queryKeys';
 
 export interface SaveAllocationsInput {
   period: string;
@@ -23,6 +23,6 @@ export function useSaveAllocations() {
     mutationKey: ['saveAllocations'],
     mutationFn: ({ period, version, allocations, income }) =>
       allocationsControllerSaveV1(period, { allocations, version, ...(income !== undefined ? { income } : {}) }),
-    onSettled: () => invalidateMonthData(queryClient),
+    onSettled: () => invalidateBudgetData(queryClient),
   });
 }
