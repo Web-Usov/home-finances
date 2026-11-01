@@ -50,6 +50,8 @@
 
 - [T-047](T-047-auto-update-behind-prs-with-auto-merge.md) Auto-update BEHIND PRs with auto-merge (host timer) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/38)
 
+- [T-049](T-049-language-rule-russian-for-everything.md) Language rule: Russian for everything the human reviews or decides — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/44)
+
 ## E-01. Ядро API: месяцы и операции — planned
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)

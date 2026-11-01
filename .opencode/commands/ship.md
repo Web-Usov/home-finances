@@ -15,10 +15,13 @@ Branch and status: !`git branch --show-current && git status --short | head -20`
    - `pnpm verify` is green (and `pnpm e2e:smoke` if the task `area` is mobile or it has e2e DoD items).
    - Every Definition of Done item is satisfied and ticked (`- [x]`); `## Result` is filled (the task check enforces both for `done`).
    - Protected paths: `git diff origin/master --name-only | grep -E '^(docs/spec|docs/decisions|epics)/'`. An implementation
-     task must have none (stop and report).
+     task must have none (stop and report); a planner task that has some ships with the Russian human-review template (step 3).
 2. Commit anything left (`type(scope): subject [T-xxx]`; stage everything, pre-commit checks the working tree), then
    `git push -u origin <branch>`.
-3. Build the PR body from `.github/pull_request_template.md` (task link, epic, spec rule IDs, what changed, how verified
+3. Language: if the PR needs human review (the protected-paths check lists `docs/spec/**`, `docs/decisions/**` or `epics/**`,
+   or it is a milestone report), build the body from `.github/PULL_REQUEST_TEMPLATE/human-review.md` in RUSSIAN, starting
+   with `⚠️ Требуется ревью человека`, and in the final message say (in Russian) that the human must merge. Otherwise use the
+   English `.github/pull_request_template.md`. The PR title is always English. Build the PR body from the chosen template (task link, epic, spec rule IDs, what changed, how verified
    with the exact commands and named tests, checklist ticked) and run
    `gh pr create --title "type(scope): subject [T-xxx]" --body-file <file>`. Title format is the squash commit subject
    (header at most 100 chars).
