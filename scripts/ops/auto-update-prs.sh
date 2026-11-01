@@ -4,6 +4,7 @@
 # GitHub does not update the branch itself, and a GITHUB_TOKEN workflow could not do it either (its pushes do not trigger CI).
 # This script runs on the host (timer, scripts/ops/systemd) with the owner's `gh` auth and calls the update-branch REST
 # endpoint (merge method only, never rebase). Idempotent: does nothing when no PR needs an update.
+# Exits non-zero after processing all PRs if any update-branch call failed, and on gh/jq errors.
 # Env: REPO (owner/name; default derived from `gh repo view`), DRY_RUN=1 (log only, no API call).
 set -euo pipefail
 
@@ -15,7 +16,11 @@ log() { echo "auto-update-prs: $*"; }
 repo=${REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}
 prs=$(gh pr list --repo "$repo" --state open --limit 100 --json number,autoMergeRequest,mergeStateStatus,isDraft,headRefName)
 
+# Not a process substitution: a jq failure must abort the script (set -e), not silently yield an empty list.
+rows=$(jq -r '.[] | select(.autoMergeRequest != null and (.isDraft | not)) | [.number, .mergeStateStatus, .headRefName] | @tsv' <<<"$prs")
+
 updated=0
+failed=0
 while IFS=$'\t' read -r number state head; do
   [ -n "$number" ] || continue
   case "$state" in
@@ -29,10 +34,15 @@ while IFS=$'\t' read -r number state head; do
         updated=$((updated + 1))
       else
         log "#$number ($head) was BEHIND: update-branch FAILED" >&2
+        failed=$((failed + 1))
       fi
       ;;
     DIRTY) log "#$number ($head) has merge conflicts: skipped, the author must resolve them" ;;
   esac
-done < <(jq -r '.[] | select(.autoMergeRequest != null and (.isDraft | not)) | [.number, .mergeStateStatus, .headRefName] | @tsv' <<<"$prs")
+done <<<"$rows"
 
+if [ "$failed" -gt 0 ]; then
+  log "$failed update-branch call(s) failed" >&2
+  exit 1
+fi
 [ "$updated" -gt 0 ] || log "nothing to update"

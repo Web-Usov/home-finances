@@ -2,13 +2,21 @@
 # Installs the ops timers on this host (run as root, re-runnable):
 #   scripts/ops/install-systemd.sh
 # Renders scripts/ops/systemd/*.service|timer into /etc/systemd/system, reloads systemd and enables the 2-minute timer.
-# The units run scripts from the checkout this installer lives in; install from a stable checkout (the main one on master),
-# not from a task worktree that gets removed. Needs `gh` authenticated for root (/root/.config/gh).
+# The units run scripts from the main checkout; the installer refuses to run from a task worktree.
+# Needs `gh` authenticated for root (/root/.config/gh).
 set -euo pipefail
 
-[ "$(id -u)" = 0 ] || { echo "run as root" >&2; exit 1; }
 here=$(cd "$(dirname "$0")" && pwd)
-REPO_DIR=$(cd "$here/../.." && pwd)
+# Refuse to run from a task worktree (its path is removed after the merge, leaving units that point nowhere):
+# the toplevel must equal the parent of the shared git dir, i.e. the MAIN checkout.
+git_common=$(git -C "$here" rev-parse --path-format=absolute --git-common-dir) || { echo "not inside a git checkout" >&2; exit 1; }
+MAIN_DIR=$(dirname "$git_common")
+if [ "$(git -C "$here" rev-parse --show-toplevel)" != "$MAIN_DIR" ]; then
+  echo "refusing to install from a worktree ($here); run it from the main checkout $MAIN_DIR" >&2
+  exit 1
+fi
+[ "$(id -u)" = 0 ] || { echo "run as root" >&2; exit 1; }
+REPO_DIR=$MAIN_DIR
 UNIT_DIR=/etc/systemd/system
 GH_BIN=$(command -v gh) || { echo "gh not found" >&2; exit 1; }
 # systemd's default PATH lacks user-level tools; the script needs gh, jq and bash.

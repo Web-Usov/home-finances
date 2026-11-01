@@ -14,12 +14,12 @@ merge plus build time) and has its own demo data. Language: English. Task: T-038
 
 One public port (8100). The API listens only on `127.0.0.1:3100`; the web server proxies everything under `/api` to it.
 The web bundle is exported with `EXPO_PUBLIC_API_URL=same-origin` (client base URL is empty, requests go to the page origin),
-so the app works from any IP or hostname.
+so the app works from any IP or hostname. Unset/other values keep the dev/e2e behaviour
+(`apps/mobile/src/lib/apiBaseUrl.ts`).
 
 **Ports 3100 (API) and 8100 (web) are reserved for the preview.** Tests, e2e runs, dev servers and agents must never bind,
 reuse or kill them (e2e takes OS-assigned free ports and `reuseExistingServer: false`; local dev API uses 3000). Never run
-`kill`/`fuser -k`/`kill-port` against these ports; use `systemctl restart family-budget-preview-api` instead. Unset/other values keep the dev/e2e behaviour
-(`apps/mobile/src/lib/apiBaseUrl.ts`).
+`kill`/`fuser -k`/`kill-port` against these ports; use `systemctl restart family-budget-preview-api` instead.
 
 ## Layout (`/root/workspace/finance-preview`, outside the repo checkouts)
 
@@ -118,9 +118,9 @@ Only ever touch `family_budget_preview`; never the dev DB `family_budget` or `*_
 ## Install, disable, remove
 
 - Install / re-install units (as root, idempotent): `scripts/preview/install-systemd.sh` (first deploy included;
-  `--no-deploy` to skip). Unit templates: `scripts/preview/systemd/`.
+  `--no-deploy` to skip). It refuses to run from a task worktree: run it from the main checkout. Unit templates: `scripts/preview/systemd/`.
 - Pause auto-updates: `systemctl disable --now family-budget-preview-update.timer`.
-- Stop the preview: `systemctl disable --now family-budget-preview-update.timer family-budget-preview-web family-budget-preview-api`.
+- Stop the preview: `systemctl disable --now family-budget-preview-update.timer family-budget-preview-watchdog.timer family-budget-preview-web family-budget-preview-api`.
 - Remove completely: stop as above, delete `/etc/systemd/system/family-budget-preview-*`, `systemctl daemon-reload`,
   `rm -rf /root/workspace/finance-preview`, optionally `DROP DATABASE family_budget_preview`.
 - Deploy another ref (for testing): set `PREVIEW_REF=origin/<branch>` in `preview.env` (default `origin/master`).
