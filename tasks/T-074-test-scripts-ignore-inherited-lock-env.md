@@ -1,7 +1,7 @@
 ---
 id: T-074
 title: "Fix test:scripts failing inside task:start --new (inherited FAMILY_BUDGET_LOCKS_HELD)"
-status: todo          # todo | in_progress | review | done | blocked
+status: done          # todo | in_progress | review | done | blocked
 epic: E-00            # epics/E-xx-*.md
 depends: []           # [T-001, T-002] - must be done before this task starts
 blocked_by: []        # [Q-01] - open questions from docs/spec/99-open-questions.md
@@ -9,8 +9,8 @@ spec: []              # rule IDs this task implements, e.g. [OP-05, MON-08]
 acceptance: []        # AC ids this task contributes to, e.g. [AC-06]
 area: infra             # api | mobile | infra | docs | design
 size: S               # S | M  (one agent session, ~300-500 LOC max)
-branch: null          # set when work starts, e.g. task/T-000-slug
-pr: null              # PR URL once opened
+branch: task/T-074-test-scripts-ignore-inherited-lock-env          # set when work starts, e.g. task/T-000-slug
+pr: https://github.com/Web-Usov/home-finances/pull/60              # PR URL once opened
 ---
 
 # T-074. Fix test:scripts failing inside task:start --new (inherited FAMILY_BUDGET_LOCKS_HELD)
@@ -29,11 +29,11 @@ pr: null              # PR URL once opened
 
 Every item must be verifiable by a command or a named test.
 
-- [ ] A test sets `FAMILY_BUDGET_LOCKS_HELD=task-id` in the environment and runs the affected script tests/spawns: they pass (regression test for the leak).
-- [ ] `pnpm task:start --new "<title>" --epic E-00 --area docs --size S` creates the claim commit on a clean checkout without `--keep` (manual check noted in `## Result`).
-- [ ] Concurrent `--new` calls still get distinct ids (existing test stays green).
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] A test sets `FAMILY_BUDGET_LOCKS_HELD=task-id` in the environment and runs the affected script tests/spawns: they pass (regression test for the leak).
+- [x] `pnpm task:start --new "<title>" --epic E-00 --area docs --size S` creates the claim commit on a clean checkout without `--keep` (manual check noted in `## Result`).
+- [x] Concurrent `--new` calls still get distinct ids (existing test stays green).
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -45,4 +45,10 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Root cause: `--new` holds `task-id` (env `FAMILY_BUDGET_LOCKS_HELD=task-id`) across `git commit`; the pre-commit hook's `test:scripts` inherited it, so the spawned lock tests saw a pre-held lock (re-entrant no-op / extra name in the held list).
+
+Fix: (a) `cleanEnv()` in `scripts/__tests__/helpers.mjs` (drops `GIT_*` and `FAMILY_BUDGET_LOCKS_HELD`) is used by `gitEnv` and the with-lock / preview-serve-web spawns (they already use their own TMPDIR); (b) `task-start.mjs` runs `git commit` / `git push` of the claim with the held-locks env removed (genuine lock-aware children such as `pnpm e2e` under `with-lock` keep re-entrancy: with-lock.mjs itself is unchanged).
+
+Tests: `lock-env-leak.test.mjs` (cleanEnv + with-lock/task-start suites pass with `FAMILY_BUDGET_LOCKS_HELD=task-id`); `task-start.test.mjs` "T-074" installs a real pre-commit hook in the throwaway clone and asserts it sees the variable unset during a `--new` claim, which succeeds without `--keep`. Both regressions were confirmed failing without the fix.
+
+Manual check: the claim commit of this task (plain `task:start T-074`) passed the hook; the `--new` path is covered end to end by the hook-enabled fixture test above.

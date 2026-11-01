@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { installGuards, makeTmp, waitFor } from './helpers.mjs';
+import { cleanEnv, installGuards, makeTmp, waitFor } from './helpers.mjs';
 
 const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'with-lock.mjs');
 installGuards();
@@ -14,7 +14,7 @@ function sandbox() {
   return {
     tmp,
     lock: path.join(tmp, 'family-budget-t.lock'),
-    env: { ...process.env, TMPDIR: tmp, WITH_LOCK_POLL_MS: '30' },
+    env: cleanEnv({ TMPDIR: tmp, WITH_LOCK_POLL_MS: '30' }),
   };
 }
 
