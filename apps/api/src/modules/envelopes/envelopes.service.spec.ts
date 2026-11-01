@@ -521,7 +521,9 @@ describe('EnvelopesService', () => {
         code: 'ENVELOPE_NOT_EMPTY',
         statusCode: 409,
       });
-            await expect(service.archive('env-1')).rejects.toThrow('баланс 1\u00A0500,50 ₽.'); // MSG-05 / MSG-07
+      await expect(service.archive('env-1')).rejects.toThrow(
+        'Сначала обнулите конверт. Текущий остаток: 1\u00A0500,50 ₽.',
+      ); // MSG-05 / MSG-07
       expect(mock.envelope.update).not.toHaveBeenCalled();
     });
 

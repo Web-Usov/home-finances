@@ -1,7 +1,7 @@
 ---
 id: T-043
 title: "Envelopes: align MSG-05 text with the spec, test negative closing warning"
-status: todo
+status: done
 epic: E-00
 depends: [T-026]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [MSG-05, MSG-07, ENV-11]
 acceptance: []
 area: api
 size: S
-branch: null
-pr: null
+branch: task/T-043-msg-05-text-and-negative-closing-warning
+pr: https://github.com/Web-Usov/home-finances/pull/45
 ---
 
 # T-043. Envelopes: align MSG-05 text with the spec, test negative closing warning
@@ -28,11 +28,11 @@ The archive error message uses the spec wording of MSG-05 and the ARCHIVED_ENVEL
 
 ## Definition of Done
 
-- [ ] `it('MSG-05 / MSG-07: archive of a non-empty envelope answers the verbatim text')` updated in `envelopes.http.spec.ts`
-- [ ] `it('ENV-11: ARCHIVED_ENVELOPE_WITH_BALANCE warns when the closing balance of an archived envelope is negative')` in the engine spec
-- [ ] `pnpm verify` is green
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('MSG-05 / MSG-07: archive of a non-empty envelope answers the verbatim text')` updated in `envelopes.http.spec.ts`
+- [x] `it('ENV-11: ARCHIVED_ENVELOPE_WITH_BALANCE warns when the closing balance of an archived envelope is negative')` in the engine spec
+- [x] `pnpm verify` is green
+- [x] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -44,4 +44,6 @@ The archive error message uses the spec wording of MSG-05 and the ARCHIVED_ENVEL
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+ENVELOPE_NOT_EMPTY now answers the verbatim MSG-05 text `Сначала обнулите конверт. Текущий остаток: X ₽.` with the ru-RU amount (MSG-07).
+Updated the assertions in `envelopes.service.spec.ts`, `envelopes.http.spec.ts` and `e2e/journeys/archive-envelope.e2e.ts`; the mobile client only renders the server message, so no UI change.
+Added the ENV-11 / CALC-12 engine test for a negative closing balance (warning text shows `−300,00 ₽`).
