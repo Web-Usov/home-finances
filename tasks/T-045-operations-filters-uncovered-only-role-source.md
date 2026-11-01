@@ -1,7 +1,7 @@
 ---
 id: T-045
 title: "Operations: uncoveredOnly and role=source filters for analytics drill-down"
-status: in_progress
+status: done
 epic: E-02
 depends: [T-008, T-025]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-20]
 area: api
 size: M
 branch: task/T-045-operations-filters-uncovered-only-role-source
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/49
 ---
 
 # T-045. Operations: uncoveredOnly and role=source filters for analytics drill-down
