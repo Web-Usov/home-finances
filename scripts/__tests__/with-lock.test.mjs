@@ -135,3 +135,87 @@ test('SIGINT while waiting for the lock exits 130 without touching the holder lo
   assert.equal((await r.exit).code, 130);
   assert.equal(JSON.parse(fs.readFileSync(sb.lock, 'utf8')).pid, process.pid);
 });
+
+test('nested with-lock of the same name does not deadlock and does not take the lock twice', async () => {
+  const sb = sandbox();
+  const r = run(sb, [process.execPath, script, 't', '--', 'sh', '-c', 'exit 3'], { env: { WITH_LOCK_TIMEOUT_MIN: '0.02' } });
+  const res = await r.exit;
+  assert.equal(res.code, 3, r.stderr);
+  assert.match(r.stderr, /already held by an ancestor/);
+  assert.equal(fs.existsSync(sb.lock), false);
+});
+
+test('the child of with-lock sees the held lock name in FAMILY_BUDGET_LOCKS_HELD', async () => {
+  const sb = sandbox();
+  const out = path.join(sb.tmp, 'held');
+  const js = `require('fs').writeFileSync(${JSON.stringify(out)}, process.env.FAMILY_BUDGET_LOCKS_HELD || '')`;
+  assert.equal((await run(sb, [process.execPath, '-e', js]).exit).code, 0);
+  assert.equal(fs.readFileSync(out, 'utf8'), 't');
+});
+
+// ---- Playwright side: e2e/support/e2e-lock.mjs (called from playwright.config.ts) ----
+
+const e2eLock = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'e2e', 'support', 'e2e-lock.mjs');
+
+/** A node process that takes the e2e lock like the Playwright config does, then holds it for `holdMs` and releases it. */
+function runE2e(sb, holdMs, extraEnv = {}) {
+  const js = `
+    const { acquireE2eLock, releaseE2eLock } = await import(${JSON.stringify(e2eLock)});
+    acquireE2eLock();
+    console.log('GOT');
+    await new Promise((r) => setTimeout(r, ${holdMs}));
+    releaseE2eLock();
+  `;
+  const p = spawn(process.execPath, ['--input-type=module', '-e', js], { env: { ...sb.env, ...extraEnv }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const out = { stdout: '', stderr: '', exit: new Promise((r) => p.on('close', (code) => r(code))), proc: p };
+  p.stdout.on('data', (d) => (out.stdout += d));
+  p.stderr.on('data', (d) => (out.stderr += d));
+  return out;
+}
+
+const e2eLockFile = (sb) => path.join(sb.tmp, 'family-budget-e2e.lock');
+
+test('a second Playwright-style invocation waits while the first holds the e2e lock, then proceeds', async () => {
+  const sb = sandbox();
+  const a = runE2e(sb, 600);
+  assert.ok(await waitFor(() => a.stdout.includes('GOT')), 'A got the lock');
+  assert.equal(JSON.parse(fs.readFileSync(e2eLockFile(sb), 'utf8')).pid, a.proc.pid);
+  const b = runE2e(sb, 0);
+  await new Promise((r) => setTimeout(r, 250));
+  assert.equal(b.stdout.includes('GOT'), false, 'B must wait while A holds the lock');
+  assert.equal(await a.exit, 0);
+  assert.equal(await b.exit, 0);
+  assert.ok(b.stdout.includes('GOT'));
+  assert.equal(fs.existsSync(e2eLockFile(sb)), false);
+});
+
+test('Playwright-style lock under with-lock e2e does not deadlock (re-entrant)', async () => {
+  const sb = sandbox();
+  const js = `
+    const { acquireE2eLock, releaseE2eLock } = await import(${JSON.stringify(e2eLock)});
+    acquireE2eLock(); releaseE2eLock(); console.log('DONE');
+  `;
+  const p = spawn(process.execPath, [script, 'e2e', '--', process.execPath, '--input-type=module', '-e', js], {
+    env: { ...sb.env, WITH_LOCK_TIMEOUT_MIN: '0.02' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stdout = '';
+  p.stdout.on('data', (d) => (stdout += d));
+  const code = await new Promise((r) => p.on('close', r));
+  assert.equal(code, 0);
+  assert.match(stdout, /DONE/);
+  assert.equal(fs.existsSync(e2eLockFile(sb)), false);
+});
+
+test('a crashed Playwright run (dead pid) leaves a stale e2e lock that the next run takes over; process exit releases the lock', async () => {
+  const sb = sandbox();
+  fs.writeFileSync(e2eLockFile(sb), JSON.stringify({ pid: deadPid(), cwd: '/x', started: 'then' }));
+  const a = runE2e(sb, 0);
+  assert.equal(await a.exit, 0);
+  assert.match(a.stderr, /taking over/);
+  // exits without calling releaseE2eLock: the exit handler still frees the lock
+  const js = `const { acquireE2eLock } = await import(${JSON.stringify(e2eLock)}); acquireE2eLock();`;
+  const p = spawn(process.execPath, ['--input-type=module', '-e', js], { env: sb.env, stdio: 'ignore' });
+  assert.equal(await new Promise((r) => p.on('close', r)), 0);
+  assert.equal(fs.existsSync(e2eLockFile(sb)), false);
+});

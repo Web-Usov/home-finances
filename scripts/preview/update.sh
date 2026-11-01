@@ -67,6 +67,13 @@ main() {
   echo "deploying $target (was ${deployed:-none}) from $PREVIEW_REF"
   # Heavy build: wait for the machine-wide lock shared with e2e runs, at idle CPU/IO priority.
   git -C "$MIRROR" show "$target:scripts/with-lock.mjs" > "$STATE/with-lock.mjs"
+  # with-lock.mjs imports ./lib/lock.mjs (absent in older targets, whose with-lock.mjs is self-contained)
+  mkdir -p "$STATE/lib"
+  if git -C "$MIRROR" cat-file -e "$target:scripts/lib/lock.mjs" 2>/dev/null; then
+    git -C "$MIRROR" show "$target:scripts/lib/lock.mjs" > "$STATE/lib/lock.mjs"
+  else
+    rm -f "$STATE/lib/lock.mjs"
+  fi
   rm -f "$STATE/build-started"
   if nice -n 19 ionice -c3 node "$STATE/with-lock.mjs" e2e -- nice -n 19 ionice -c3 "$0" --build "$target"; then
     rm -f "$STATE/failed-sha"

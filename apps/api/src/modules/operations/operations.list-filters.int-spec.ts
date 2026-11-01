@@ -138,6 +138,11 @@ describe('Operations list filters (integration)', () => {
     expect(await list({ period: '2026-02', uncoveredOnly: 'true' })).toEqual([]);
   });
 
+  it('HIST-15: role=source without envelopeId returns 422 VALIDATION_ERROR', async () => {
+    const res = await http().get('/api/v1/operations').query({ period: '2026-01', role: 'source' }).expect(422);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+  });
+
   it('HIST-15 / API-17: invalid role or uncoveredOnly is a 422 VALIDATION_ERROR', async () => {
     await http().get('/api/v1/operations').query({ role: 'destination' }).expect(422);
     await http().get('/api/v1/operations').query({ uncoveredOnly: 'yes' }).expect(422);

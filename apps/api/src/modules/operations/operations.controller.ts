@@ -58,7 +58,8 @@ export class OperationsController {
     name: 'role',
     required: false,
     enum: ['source'],
-    description: 'HIST-15: with envelopeId, match only operations whose source is that envelope',
+    description:
+      'HIST-15: match only operations whose source is the envelopeId envelope; requires envelopeId (422 VALIDATION_ERROR otherwise)',
   })
   @ApiQuery({
     name: 'uncoveredOnly',

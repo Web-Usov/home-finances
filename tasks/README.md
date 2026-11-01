@@ -56,7 +56,7 @@
 
 - [T-056](T-056-docker-hardening-and-compose-smoke.md) Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke — **done** · infra · S · depends: T-050 · [PR](https://github.com/Web-Usov/home-finances/pull/55)
 
-- [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **todo** · infra · S · depends: — · —
+- [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/56)
 
 ## E-01. Ядро API: месяцы и операции — accepted, принят 2026-11-01
 
@@ -96,7 +96,7 @@
 
 - [T-045](T-045-operations-filters-uncovered-only-role-source.md) Operations: uncoveredOnly and role=source filters for analytics drill-down — **done** · api · M · depends: T-008, T-025 · [PR](https://github.com/Web-Usov/home-finances/pull/49)
 
-- [T-052](T-052-operations-role-source-requires-envelope-id.md) Operations: role=source without envelopeId is a 422 — **todo** · api · S · depends: T-045 · —
+- [T-052](T-052-operations-role-source-requires-envelope-id.md) Operations: role=source without envelopeId is a 422 — **done** · api · S · depends: T-045 · [PR](https://github.com/Web-Usov/home-finances/pull/54)
 
 ## E-03. Экран «Месяц» и редактор распределения — planned
 
