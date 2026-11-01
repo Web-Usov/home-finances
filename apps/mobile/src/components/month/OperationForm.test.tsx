@@ -31,7 +31,7 @@ function apiError(status: number, error: string, message: string, available?: st
   });
 }
 
-/** Продукты (balance 10 000), Дом (balance 6 000), Старый (archived). */
+/** Продукты (balance 10 000), Дом (balance 6 000), Старый and Чужой (archived). */
 function makeDashboardWithEnvelopes(overrides: Partial<Dashboard['month']> = {}): Dashboard {
   const dashboard = makeDashboard(overrides);
   const [food] = dashboard.envelopes;
@@ -40,6 +40,7 @@ function makeDashboardWithEnvelopes(overrides: Partial<Dashboard['month']> = {})
     { ...food, envelopeId: 'e-food', name: 'Продукты', closing: '10000.00' },
     { ...food, envelopeId: 'e-home', name: 'Дом', closing: '6000.00' },
     { ...food, envelopeId: 'e-old', name: 'Старый', status: 'archived', closing: '0.00' },
+    { ...food, envelopeId: 'e-other', name: 'Чужой', status: 'archived', closing: '0.00' },
   ];
   return dashboard;
 }
@@ -247,6 +248,25 @@ describe('OperationForm', () => {
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(lastBody()).toMatchObject({ sourceEnvelopeId: 'e-old', destinationEnvelopeId: 'e-food', amount: '1000.00' });
+  });
+
+  it('ENV-12 / HIST-09: edit still hides an archived envelope that is not the operation\'s own', () => {
+    renderEdit('transfer', makeTransfer({ sourceEnvelopeId: 'e-old', destinationEnvelopeId: 'e-food' }));
+
+    expect(screen.getByRole('radio', { name: 'Откуда: Старый (архив)' })).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: /Чужой/ })).toBeNull();
+  });
+
+  it('HIST-09: edit preselects an archived destination envelope and labels it', async () => {
+    mockRequest.mockResolvedValue(created());
+    const { onSaved } = renderEdit('transfer', makeTransfer({ sourceEnvelopeId: 'e-home', destinationEnvelopeId: 'e-old' }));
+
+    const archived = screen.getByRole('radio', { name: 'Куда: Старый (архив)' });
+    expect(archived.props.accessibilityState.checked).toBe(true);
+    press('Сохранить изменения');
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(lastBody()).toMatchObject({ sourceEnvelopeId: 'e-home', destinationEnvelopeId: 'e-old' });
   });
 
   it('validation: no envelope, an empty or zero amount and an invalid amount block the request', async () => {
