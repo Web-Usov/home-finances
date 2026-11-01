@@ -62,14 +62,17 @@ test.describe('allocation editor', { tag: '@smoke' }, () => {
     await expect(page.getByText('Черновик февраля 2026 создан.')).toBeVisible();
     await button(page, 'Следующий месяц').click();
     await expect(page.getByRole('heading', { name: 'Февраль 2026' })).toBeVisible();
-    // FIN-11: free funds are signed on the dashboard (income 0, allocated 75 000).
-    await expect(page.getByLabel(/^Свободно: −75\s000,00/)).toBeVisible();
+    // MON-17 / FIN-02: the draft copies the previous income, so free funds equal the previous month's from the start.
+    await expect(page.getByLabel(/^Доход: 100\s000,00/)).toBeVisible();
+    await expect(page.getByLabel(/^Свободно: 25\s000,00/)).toBeVisible();
     await button(page, 'Изменить распределение').click();
+    await expect(page.getByLabel('Доход для распределения')).toHaveValue('100000,00');
     await expect(page.getByLabel('Распределение: Продукты')).toHaveValue('50000,00');
     await expect(page.getByLabel('Распределение: Дом')).toHaveValue('25000,00');
-    // The draft has no income yet, so the copied 75 000 overflow: the editor shows it and blocks the save.
-    await expect(page.getByText(/Распределено на 75\s000,00\s₽ больше дохода\./)).toBeVisible();
-    await expect(page.getByLabel(/^Свободно в редакторе: −75\s000,00/)).toBeVisible();
+    // Lowering the income below the copied 75 000 overflows: the editor shows the signed excess (FIN-11) and blocks the save.
+    await page.getByLabel('Доход для распределения').fill('60000');
+    await expect(page.getByText(/Распределено на 15\s000,00\s₽ больше дохода\./)).toBeVisible();
+    await expect(page.getByLabel(/^Свободно в редакторе: −15\s000,00/)).toBeVisible();
     await expect(button(page, 'Сохранить распределение')).toBeDisabled();
     await shot(page, testInfo, '4-copied-allocation-overflow');
 
