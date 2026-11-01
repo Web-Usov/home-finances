@@ -1,7 +1,7 @@
 ---
 id: T-054
 title: "OperationForm: replace offer when the transfer source changed, preselect archived source"
-status: todo
+status: in_progress
 epic: E-04
 depends: [T-053]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [OP-07, HIST-09]
 acceptance: []
 area: mobile
 size: M
-branch: null
+branch: task/T-054-operation-form-replace-offer-and-archived-source
 pr: null
 ---
 
