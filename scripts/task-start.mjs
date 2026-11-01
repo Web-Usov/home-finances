@@ -27,7 +27,7 @@ import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter } from './tasks.mjs';
-import { acquireSync } from './lib/lock.mjs';
+import { acquireSync, HELD_ENV } from './lib/lock.mjs';
 
 const AREAS = ['api', 'mobile', 'infra', 'docs'];
 const SIZES = ['S', 'M'];
@@ -110,8 +110,12 @@ function die(msg) {
   console.error(`task:start: ${msg}`);
   process.exit(1);
 }
-function run(cmd, args, cwd) {
-  const r = spawnSync(cmd, args, { cwd, stdio: 'inherit' });
+// `unlocked`: the child is not lock-aware (git runs the pre-commit/pre-push hooks, whose test:scripts must not inherit
+// FAMILY_BUDGET_LOCKS_HELD=task-id and treat the held lock as theirs), so it gets an env without the held-locks list.
+function run(cmd, args, cwd, { unlocked = false } = {}) {
+  const env = { ...process.env };
+  if (unlocked) delete env[HELD_ENV];
+  const r = spawnSync(cmd, args, { cwd, stdio: 'inherit', env });
   if (r.status !== 0) throw new Error(`\`${cmd} ${args.join(' ')}\` failed (exit ${r.status})`);
 }
 
@@ -205,10 +209,10 @@ function main() {
     run('node', ['scripts/tasks.mjs', 'board'], wtPath);
     run('git', ['add', 'tasks'], wtPath);
     const subject = creating ? `chore(tasks): add and start ${id} [${id}]` : `chore(tasks): start ${id} [${id}]`;
-    run('git', ['commit', '-m', subject], wtPath);
+    run('git', ['commit', '-m', subject], wtPath, { unlocked: true });
     // Publish the claim while still holding the task-id lock, so concurrent `--new` scans see this id.
     if (creating) {
-      run('git', ['push', '-u', 'origin', branch], wtPath);
+      run('git', ['push', '-u', 'origin', branch], wtPath, { unlocked: true });
       idLock.release();
     }
   } catch (e) {

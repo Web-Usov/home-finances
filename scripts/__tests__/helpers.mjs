@@ -13,11 +13,20 @@ import assert from 'node:assert/strict';
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const tmpRoot = fs.realpathSync(os.tmpdir());
 
-/** Environment for git subprocesses: no leaked GIT_* from hooks, ceiling at the tmp root, fixed identity. */
+/**
+ * Environment for every spawned process: process.env without what a parent hook/lock holder leaks in. GIT_* (set by git
+ * hooks) and FAMILY_BUDGET_LOCKS_HELD (set by `task:start --new` / with-lock.mjs around the pre-commit hook, which would
+ * make lock acquisition a silent no-op or change the value a child sees).
+ */
+export function cleanEnv(extra = {}) {
+  const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_') && k !== 'FAMILY_BUDGET_LOCKS_HELD'));
+  return { ...clean, ...extra };
+}
+
+/** Environment for git subprocesses: cleanEnv, ceiling at the tmp root, fixed identity. */
 export function gitEnv(extra = {}) {
-  const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
   return {
-    ...clean,
+    ...cleanEnv(),
     GIT_CEILING_DIRECTORIES: tmpRoot,
     GIT_AUTHOR_NAME: 't',
     GIT_AUTHOR_EMAIL: 't@t',
