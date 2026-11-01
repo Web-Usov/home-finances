@@ -152,6 +152,6 @@
 
 - [T-058](T-058-milestone-reports-e-02-e-06-and-e-01.md) Milestone reports E-02..E-06 and E-01 addendum — **done** · docs · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/53)
 
-- [T-071](T-071-docker-migrate-offline-corepack.md) Docker: migrate service must run offline (corepack cache readable by USER node) — **todo** · infra · S · depends: — · —
+- [T-071](T-071-docker-migrate-offline-corepack.md) Docker: migrate service must run offline (corepack cache readable by USER node) — **in_progress** · infra · S · depends: — · —
 
 - [T-072](T-072-migrations-on-populated-database.md) NFR-29: verify migrations apply on a populated database — **todo** · api · M · depends: — · —
