@@ -3,7 +3,7 @@
 # Probes the API health endpoint; after FAIL_THRESHOLD (2) consecutive failures restarts family-budget-preview-api.
 # A unit that is `inactive` was stopped on purpose (e.g. DB reset, docs/preview.md), so it is left alone.
 # Env (all optional): PREVIEW_HOME, API_PORT, HEALTH_URL, FAIL_THRESHOLD, WATCHDOG_STATE, API_UNIT
-set -u
+set -euo pipefail
 
 PREVIEW_HOME=${PREVIEW_HOME:-/root/workspace/finance-preview}
 API_PORT=${API_PORT:-3100}

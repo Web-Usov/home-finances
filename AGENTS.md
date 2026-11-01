@@ -31,7 +31,7 @@ docs/                spec, decisions (ADR), architecture, archive
 e2e/                 Playwright workspace (@family-budget/e2e)
 scripts/             repo tooling (verify, api-contract, spec-check, tasks, smoke-compose)
 tasks/, epics/       work items: detailed tasks (EN), epics (RU); tasks/README.md is the generated board
-docker-compose.yml   PostgreSQL 16 + one-shot `migrate` + API
+docker-compose.yml   PostgreSQL 16 + one-shot `migrate` + API + `web` (Expo export served by serve-web.mjs, docker/web/Dockerfile)
 ```
 
 ## Commands
