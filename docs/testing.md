@@ -96,6 +96,22 @@ once no test run is active:
 
 Tests must not rely on data left by other tests: every test starts from empty tables.
 
+### Migrations on empty and populated databases (NFR-29)
+
+`apps/api/src/prisma/migrations.populated-db.int-spec.ts` runs in `pnpm test:int` (so in `verify` and CI) and uses two
+extra private schemas of the test DB (`test_<runId>_wnfr29_empty`, `..._wnfr29_populated`; dropped by the test and by
+global teardown):
+
+- empty: `prisma migrate deploy` of all migrations; all recorded as finished, MON-13 partial index exists,
+  `prisma migrate diff` against `schema.prisma` is empty;
+- populated: deploys only the baseline migration (`init`, from a temp copy of the migration folder), seeds a realistic
+  budget (closed / reopened / draft months, archived envelope, allocations, all operation types incl. an uncovered
+  expense, results, snapshots), deploys the rest, then asserts data unchanged, the partial index present and enforced,
+  zero schema drift, and that `CalculationEngineService` rebuilds the derived rows to the same values.
+
+When you add a migration that transforms data, extend the seed in that test with rows the migration touches. If the
+baseline stops being `init`, change `BASELINE` there. Each test takes ~30 s (Prisma CLI process starts).
+
 ## Helpers and fixtures
 
 `apps/api/test/db.ts`:
