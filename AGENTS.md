@@ -46,7 +46,7 @@ pnpm test:unit           # no DB;  pnpm test:int needs the test DB (docs/testing
 pnpm e2e:smoke           # Playwright @smoke (CI job `e2e`);  pnpm e2e:full = all specs (machine-wide lock, ~2 GB RAM)
 pnpm api:generate        # regenerate apps/api/openapi.json + Orval client;  pnpm api:contract = fail on drift
 pnpm smoke:compose       # docker compose up/restart/persistence check (touching Docker files)
-pnpm spec:check          # spec rule IDs: uniqueness, dangling references, coverage report
+pnpm spec:check          # spec rule IDs: uniqueness, dangling references, coverage report (`--strict-epics`: every epic rule has a test, part of verify)
 pnpm tasks:check | tasks:board | tasks:next | tasks:set   # task system (scripts/tasks.mjs)
 pnpm test:scripts        # node --test for scripts/__tests__ (part of verify)
 pnpm task:start T-xxx    # claim: worktree + branch + env + install + claim commit;  pnpm task:clean T-xxx after the merge

@@ -60,7 +60,7 @@
 
 - [T-070](T-070-follow-up-tasks-batch-4-docker-migrate.md) Follow-up tasks batch 4: docker migrate offline, migration data test, rule bindings — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/59)
 
-- [T-073](T-073-bind-epic-rules-to-tests-by-id.md) Bind remaining epic rules to tests by rule ID — **todo** · api · M · depends: — · —
+- [T-073](T-073-bind-epic-rules-to-tests-by-id.md) Bind remaining epic rules to tests by rule ID — **in_progress** · api · M · depends: — · —
 
 - [T-074](T-074-test-scripts-ignore-inherited-lock-env.md) Fix test:scripts failing inside task:start --new (inherited FAMILY_BUDGET_LOCKS_HELD) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/60)
 
