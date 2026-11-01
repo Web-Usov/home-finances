@@ -26,9 +26,10 @@ A direct `playwright test` call is serialized by the same machine-wide `e2e` loc
 
 ## Definition of Done
 
-- [ ] a test in `scripts/__tests__/` shows a second invocation waits while the first holds the lock, and that nested use via `with-lock.mjs` does not deadlock
-- [ ] `pnpm e2e:smoke` is green; `docs/testing.md` describes the behaviour
-- [ ] `pnpm verify` is green
+- [x] a test in `scripts/__tests__/` shows a second invocation waits while the first holds the lock, and that nested use via `with-lock.mjs` does not deadlock
+- [x] `pnpm e2e:smoke` is green; `docs/testing.md` describes the behaviour
+- [x] `pnpm verify` is green
+- [x] (extended) `task:start --new` allocates ids under a machine-wide `task-id` lock and pushes the claim branch before releasing it; a test with concurrent `--new` calls against a throwaway origin yields distinct ids; `docs/workflow.md` + `docs/testing.md` updated
 - [ ] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
@@ -41,4 +42,13 @@ A direct `playwright test` call is serialized by the same machine-wide `e2e` loc
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Design: lock mechanics moved from `scripts/with-lock.mjs` into `scripts/lib/lock.mjs` (`acquire`, `acquireSync`, stale takeover unchanged).
+Re-entrancy through env `FAMILY_BUDGET_LOCKS_HELD` (set by the holder, inherited by children), so `with-lock e2e -- playwright test` does not
+deadlock and `pnpm e2e:*` keep their outer wrapper (the preview updater still runs `with-lock.mjs` from the target sha; `update.sh` now also
+fetches `scripts/lib/lock.mjs` next to it). Deviation: the Playwright config takes the lock at load time (`e2e/support/e2e-lock.mjs`), released
+in `global-teardown.ts` and on exit, instead of in `globalSetup`, because Playwright starts the webServers (the heavy Expo export) before
+globalSetup. Extended scope: `task:start --new` runs under lock `task-id` from `git fetch` until the claim branch is pushed to origin.
+Tests: `with-lock.test.mjs` (nested no-deadlock, waiting second Playwright-style run, stale lock, exit release) and
+`task-start.test.mjs` (3 concurrent `--new` against a throwaway origin give distinct ids; fails with duplicates when the lock is disabled).
+`pnpm e2e:smoke`: passed on retry; one different test (analytics / history / allocation) hit its 30s timeout under heavy machine load on
+each of two full runs and passed when run alone.
