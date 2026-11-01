@@ -12,6 +12,8 @@ import type {
 } from '@family-budget/types';
 import { z } from 'zod';
 import { NotFoundException } from '../../common/exceptions';
+import { freeFundsMinor } from '../../common/free-funds';
+import { pickWorkingMonth } from '../../common/working-month';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export type DashboardMonthlyQuery = z.infer<typeof DashboardMonthlyQuerySchema>;
@@ -84,7 +86,7 @@ export class ReportingService {
         income: formatMoneyMinor(month.incomeMinor),
         allocated: formatMoneyMinor(allocatedMinor),
         // FIN-11 / FIN-12: only income and allocations.
-        free: formatSignedMoneyMinor(month.incomeMinor - allocatedMinor),
+        free: formatSignedMoneyMinor(freeFundsMinor(month.incomeMinor, allocatedMinor)),
         replenished: formatMoneyMinor(sum((r) => r.replenished)),
         spent: formatMoneyMinor(sum((r) => r.spent)),
         adjustmentsApplied: formatSignedMoneyMinor(sum((r) => r.adjustmentApplied)),
@@ -145,7 +147,7 @@ export class ReportingService {
         income: formatMoneyMinor(month.incomeMinor),
         allocated: formatMoneyMinor(allocated),
         // FIN-11: only income and allocations; operations never change free funds (FIN-12).
-        free: formatSignedMoneyMinor(month.incomeMinor - allocated),
+        free: formatSignedMoneyMinor(freeFundsMinor(month.incomeMinor, allocated)),
       };
     });
     return {
@@ -153,7 +155,7 @@ export class ReportingService {
       totals: {
         income: formatMoneyMinor(totals.income),
         allocated: formatMoneyMinor(totals.allocated),
-        free: formatSignedMoneyMinor(totals.income - totals.allocated),
+        free: formatSignedMoneyMinor(freeFundsMinor(totals.income, totals.allocated)),
       },
     };
   }
@@ -245,11 +247,7 @@ export class ReportingService {
       return month;
     }
     const months = await this.prisma.budgetMonth.findMany({ orderBy: { period: 'desc' } });
-    const current =
-      months.find((m) => m.status === 'open') ??
-      months.find((m) => m.status === 'reopened') ??
-      months.find((m) => m.status === 'draft') ??
-      months[0];
+    const current = pickWorkingMonth(months);
     if (current === undefined) {
       throw new NotFoundException('MONTH_NOT_FOUND', 'Нет ни одного месяца. Создайте первый месяц.');
     }
