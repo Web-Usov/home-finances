@@ -1,7 +1,7 @@
 ---
 id: T-045
 title: "Operations: uncoveredOnly and role=source filters for analytics drill-down"
-status: todo
+status: in_progress
 epic: E-02
 depends: [T-008, T-025]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [HIST-15, HIST-11, REP-10]
 acceptance: [AC-20]
 area: api
 size: M
-branch: null
+branch: task/T-045-operations-filters-uncovered-only-role-source
 pr: null
 ---
 
