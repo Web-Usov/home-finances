@@ -17,6 +17,6 @@ export type OperationsControllerCreateV1Body = {
   sign?: OperationsControllerCreateV1BodySign;
   /** @maxLength 500 */
   comment?: string;
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   period?: string;
 };

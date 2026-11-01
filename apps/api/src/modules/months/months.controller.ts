@@ -2,6 +2,7 @@ import { Controller, Get, HttpCode, Post, Patch, Body, Param } from '@nestjs/com
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import {
   CloseMonthResultSchema,
+  CreateMonthRequestSchema,
   MonthSummaryResponseSchema,
   ReopenMonthResultSchema,
   ReopenPreviewSchema,
@@ -11,7 +12,7 @@ import {
 import { ApiIfMatch, IfMatch } from '../../common/if-match';
 import type { ExpectedVersion } from '../../common/if-match';
 import { MONTH_ETAG_HEADERS, MonthETag } from '../../common/month-etag';
-import { ZodValidationPipe } from '../../common/pipes';
+import { PeriodParamPipe, ZodValidationPipe } from '../../common/pipes';
 import { zodOpenApiSchema } from '../../common/swagger-zod';
 import { MonthsService } from './months.service';
 import type { CreateMonthRequest, UpdateIncomeRequest } from './months.service';
@@ -31,7 +32,7 @@ export class MonthsController {
   @Post()
   @ApiOperation({ summary: 'Create first or next month' })
   @ApiResponse({ status: 201, description: 'Created month' })
-  create(@Body() dto: CreateMonthRequest) {
+  create(@Body(new ZodValidationPipe(CreateMonthRequestSchema)) dto: CreateMonthRequest) {
     return this.monthsService.create(dto);
   }
 
@@ -50,7 +51,7 @@ export class MonthsController {
   @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or MONTH_LOCKED' })
   @ApiResponse({ status: 422, description: 'ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR' })
   updateIncome(
-    @Param('period') period: string,
+    @Param('period', PeriodParamPipe) period: string,
     @Body(new ZodValidationPipe(UpdateIncomeRequestSchema)) dto: UpdateIncomeRequest,
     @IfMatch() expectedVersion: ExpectedVersion,
   ) {
@@ -71,7 +72,7 @@ export class MonthsController {
   @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND' })
   @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or INVALID_STATUS_TRANSITION' })
   @ApiResponse({ status: 422, description: 'ALLOCATION_EXCEEDS_INCOME or VALIDATION_ERROR' })
-  close(@Param('period') period: string, @IfMatch() expectedVersion: ExpectedVersion) {
+  close(@Param('period', PeriodParamPipe) period: string, @IfMatch() expectedVersion: ExpectedVersion) {
     return this.monthsService.close(period, expectedVersion);
   }
 
@@ -94,7 +95,7 @@ export class MonthsController {
     status: 409,
     description: 'INVALID_STATUS_TRANSITION (month is not closed or another month is reopened, MON-13)',
   })
-  reopenPreview(@Param('period') period: string) {
+  reopenPreview(@Param('period', PeriodParamPipe) period: string) {
     return this.monthsService.reopenPreview(period);
   }
 
@@ -112,7 +113,7 @@ export class MonthsController {
   @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND' })
   @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or INVALID_STATUS_TRANSITION' })
   @ApiResponse({ status: 422, description: 'VALIDATION_ERROR' })
-  reopen(@Param('period') period: string, @IfMatch() expectedVersion: ExpectedVersion) {
+  reopen(@Param('period', PeriodParamPipe) period: string, @IfMatch() expectedVersion: ExpectedVersion) {
     return this.monthsService.reopen(period, expectedVersion);
   }
 }

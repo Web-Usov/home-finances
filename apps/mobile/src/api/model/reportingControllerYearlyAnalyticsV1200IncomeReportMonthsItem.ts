@@ -8,7 +8,7 @@
 import type { ReportingControllerYearlyAnalyticsV1200IncomeReportMonthsItemStatus } from './reportingControllerYearlyAnalyticsV1200IncomeReportMonthsItemStatus';
 
 export type ReportingControllerYearlyAnalyticsV1200IncomeReportMonthsItem = {
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   period: string;
   /** @nullable */
   status: ReportingControllerYearlyAnalyticsV1200IncomeReportMonthsItemStatus;

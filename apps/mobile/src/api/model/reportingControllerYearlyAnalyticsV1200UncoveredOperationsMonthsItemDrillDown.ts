@@ -8,7 +8,7 @@
 import type { ReportingControllerYearlyAnalyticsV1200UncoveredOperationsMonthsItemDrillDownType } from './reportingControllerYearlyAnalyticsV1200UncoveredOperationsMonthsItemDrillDownType';
 
 export type ReportingControllerYearlyAnalyticsV1200UncoveredOperationsMonthsItemDrillDown = {
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   period: string;
   envelopeId?: string;
   type?: ReportingControllerYearlyAnalyticsV1200UncoveredOperationsMonthsItemDrillDownType;

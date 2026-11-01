@@ -40,7 +40,7 @@
 
 - [T-040](T-040-spec-follow-ups-batch-2.md) Spec follow-ups batch 2 — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/33)
 
-- [T-042](T-042-period-month-range-and-transfer-period-test.md) Types: PeriodSchema rejects months outside 01-12, explicit-period transfer test — **todo** · api · S · depends: T-025 · —
+- [T-042](T-042-period-month-range-and-transfer-period-test.md) Types: PeriodSchema rejects months outside 01-12, explicit-period transfer test — **done** · api · S · depends: T-025 · [PR](https://github.com/Web-Usov/home-finances/pull/48)
 
 - [T-043](T-043-msg-05-text-and-negative-closing-warning.md) Envelopes: align MSG-05 text with the spec, test negative closing warning — **done** · api · S · depends: T-026 · [PR](https://github.com/Web-Usov/home-finances/pull/45)
 
