@@ -1,7 +1,7 @@
 ---
 id: T-074
 title: "Fix test:scripts failing inside task:start --new (inherited FAMILY_BUDGET_LOCKS_HELD)"
-status: in_progress          # todo | in_progress | review | done | blocked
+status: done          # todo | in_progress | review | done | blocked
 epic: E-00            # epics/E-xx-*.md
 depends: []           # [T-001, T-002] - must be done before this task starts
 blocked_by: []        # [Q-01] - open questions from docs/spec/99-open-questions.md
@@ -10,7 +10,7 @@ acceptance: []        # AC ids this task contributes to, e.g. [AC-06]
 area: infra             # api | mobile | infra | docs | design
 size: S               # S | M  (one agent session, ~300-500 LOC max)
 branch: task/T-074-test-scripts-ignore-inherited-lock-env          # set when work starts, e.g. task/T-000-slug
-pr: null              # PR URL once opened
+pr: https://github.com/Web-Usov/home-finances/pull/60              # PR URL once opened
 ---
 
 # T-074. Fix test:scripts failing inside task:start --new (inherited FAMILY_BUDGET_LOCKS_HELD)
