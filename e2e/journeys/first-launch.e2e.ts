@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures/test';
 import { button, dashboardFromApi, monthStatusesFromApi, saveAllocation, shot } from '../support/ui';
 
 test.describe('journey: first launch', () => {
-  test('AC-01 / SCOPE-23..SCOPE-27: first month, existing envelopes with balances, allocation, open dashboard', async ({ page }, testInfo) => {
+  test('NFR-27 / AC-01 / SCOPE-23..SCOPE-27: first month, existing envelopes with balances, allocation, open dashboard', async ({ page }, testInfo) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/month$/);
     await expect(page.getByText('Начните с первого месяца')).toBeVisible();

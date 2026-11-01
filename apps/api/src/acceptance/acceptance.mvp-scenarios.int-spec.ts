@@ -116,6 +116,38 @@ describe('MVP acceptance scenarios (integration)', () => {
     ).toBe(5_000_000);
   });
 
+  it('UI-15: changing a distribution recalculates the operations already added to this and the later months', async () => {
+    await createMonth(t.prisma, { period: '2026-01', incomeMinor: 10_000_000 });
+    const food = await createEnvelope(t.prisma, { name: 'Food' });
+    await allocate('2026-01', { [food.id]: '1000.00' }).then((r) => expect(r.status).toBe(200));
+    await operate('2026-01', { type: 'expense', sourceEnvelopeId: food.id, amount: '1500.00' }).then((r) =>
+      expect(r.status).toBe(201),
+    );
+    await http().post('/api/v1/months').send({ period: '2026-02', income: '100000.00' }).expect(201);
+    await operate('2026-02', { type: 'expense', period: '2026-02', sourceEnvelopeId: food.id, amount: '1200.00' }).then((r) =>
+      expect(r.status).toBe(201),
+    );
+    const results = async (period: string) =>
+      (
+        await t.prisma.operationResult.findMany({
+          where: { operation: { month: { period }, type: 'expense' } },
+        })
+      ).map((r) => [r.coveredMinor, r.uncoveredMinor]);
+    // January: 1500 against 1000 allocated; February: 1200 against its own 1000 (copied) and the empty carry-over
+    expect(await results('2026-01')).toEqual([[100_000, 50_000]]);
+    expect(await results('2026-02')).toEqual([[100_000, 20_000]]);
+
+    await allocate('2026-01', { [food.id]: '2000.00' }).then((r) => expect(r.status).toBe(200));
+
+    // the January expense is covered in full, and its 500 surplus carries over and covers the February expense too
+    expect(await results('2026-01')).toEqual([[150_000, 0]]);
+    expect(await results('2026-02')).toEqual([[120_000, 0]]);
+    const snapshot = await t.prisma.envelopeMonthSnapshot.findFirstOrThrow({
+      where: { envelopeId: food.id, month: { period: '2026-02' } },
+    });
+    expect(snapshot.opening).toBe(50_000);
+  });
+
   it('AC-14: after closing, income, distribution, expense, transfer, adjustment and envelope management are locked', async () => {
     await createMonth(t.prisma, { period: '2026-01', incomeMinor: 10_000_000 });
     const food = await createEnvelope(t.prisma, { name: 'Food' });
@@ -182,7 +214,7 @@ describe('MVP acceptance scenarios (integration)', () => {
     expect(JSON.stringify(history)).toContain(empty.id);
   });
 
-  it('AC-22: derived data is identical after rebuilding from source', async () => {
+  it('AC-22 / DOD-01: derived data is identical after a server restart and after rebuilding from source', async () => {
     await createMonth(t.prisma, { period: '2026-01', incomeMinor: 10_000_000 });
     const food = await createEnvelope(t.prisma, { name: 'Food' });
     const home = await createEnvelope(t.prisma, { name: 'Home' });
