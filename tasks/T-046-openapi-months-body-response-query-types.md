@@ -1,7 +1,7 @@
 ---
 id: T-046
 title: "OpenAPI: typed POST /months body, GET /months response and query params"
-status: todo
+status: done
 epic: E-00
 depends: [T-027, T-037, T-050]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [API-01, API-02, API-12, API-14]
 acceptance: []
 area: api
 size: S
-branch: null
-pr: null
+branch: task/T-046-openapi-months-body-response-query-types
+pr: https://github.com/Web-Usov/home-finances/pull/52
 ---
 
 # T-046. OpenAPI: typed POST /months body, GET /months response and query params
@@ -27,12 +27,12 @@ The generated client is typed for `POST /months` (body), `GET /months` (response
 
 ## Definition of Done
 
-- [ ] `pnpm api:generate` run; `openapi.json` has a request body for POST /months, a typed 200 for GET /months, typed query params
-- [ ] Mobile uses the generated hooks/types; mobile component tests and `pnpm e2e:smoke` green
-- [ ] `pnpm api:contract` green
-- [ ] `pnpm verify` is green
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `pnpm api:generate` run; `openapi.json` has a request body for POST /months, a typed 200 for GET /months, typed query params
+- [x] Mobile uses the generated hooks/types; mobile component tests and `pnpm e2e:smoke` green
+- [x] `pnpm api:contract` green
+- [x] `pnpm verify` is green
+- [x] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -44,4 +44,10 @@ The generated client is typed for `POST /months` (body), `GET /months` (response
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Typed at the controllers (Zod schemas added to `packages/types`, rendered with `zodOpenApiSchema`): `POST /months` body (`@ApiBody`) and 201 response, `GET /months` 200, `GET /envelopes`, `POST /envelopes` 201, `PATCH /envelopes/{id}` 200, `POST /envelopes/{id}/archive` 200 and `GET /health` 200 (all were `void`), query params `period`/`envelopeId` of `GET /operations`, `period` of `GET /dashboard/monthly`, `year` of `GET /analytics/yearly` (were `unknown`).
+
+Mobile: `useCreateMonth` now wraps the generated `useMonthsControllerCreateV1` (no `If-Match`: `POST /months` is not month-scoped, API-25); local `MonthsListResponse`, `CreateMonthBody`, `EnvelopesListResponse` removed, `MonthSummary`/`EnvelopeWithBalance` alias generated types, list hooks lost their `TData` casts.
+
+Guard: `apps/api/src/openapi.contract.spec.ts` (part of `test:unit`, hence verify) fails on any 2xx response without schema, untyped parameter, or POST/PUT/PATCH without body schema (close/reopen/archive exempt).
+
+Deviation: envelopes/health endpoints fixed too (task asked for any other `void`/`unknown`).

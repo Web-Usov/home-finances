@@ -8,7 +8,6 @@ import {
 } from '../../src/api/reporting/reporting';
 import { FirstMonthForm } from '../../src/components/month/FirstMonthForm';
 import { MonthDashboard } from '../../src/components/month/MonthDashboard';
-import type { MonthsListResponse } from '../../src/components/month/types';
 import { getApiErrorMessage } from '../../src/components/envelopes/types';
 import { useMonthStore } from '../../src/stores';
 
@@ -16,7 +15,7 @@ export default function MonthScreen() {
   const queryClient = useQueryClient();
   const { currentPeriod, setCurrentPeriod } = useMonthStore();
 
-  const monthsQuery = useMonthsControllerListV1<MonthsListResponse>();
+  const monthsQuery = useMonthsControllerListV1();
   const months = monthsQuery.data?.months ?? [];
   const hasMonths = months.length > 0;
 

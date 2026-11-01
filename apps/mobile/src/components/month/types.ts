@@ -1,17 +1,8 @@
-import type { z } from 'zod';
-import type { CreateMonthRequestSchema, MonthStatus, MonthSummarySchema } from '@family-budget/types';
-import type { ReportingControllerMonthlyDashboardV1200 } from '../../api/model';
+import type { MonthStatus } from '@family-budget/types';
+import type { MonthsControllerListV1200MonthsItem, ReportingControllerMonthlyDashboardV1200 } from '../../api/model';
 
-/** Brief month entry of GET /api/v1/months (the OpenAPI document has no response schema for it, so Orval types it `void`). */
-export type MonthSummary = z.infer<typeof MonthSummarySchema>;
-
-/** Response body of GET /api/v1/months — see MonthsService.list(). */
-export interface MonthsListResponse {
-  months: MonthSummary[];
-}
-
-/** Body of POST /api/v1/months (no `@ApiBody` in the OpenAPI document, so the generated hook sends none). */
-export type CreateMonthBody = z.infer<typeof CreateMonthRequestSchema>;
+/** Brief month entry of GET /api/v1/months (generated type). */
+export type MonthSummary = MonthsControllerListV1200MonthsItem;
 
 export type Dashboard = ReportingControllerMonthlyDashboardV1200;
 export type DashboardEnvelope = Dashboard['envelopes'][number];

@@ -2,6 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
   DashboardMonthlyQuerySchema,
+  PeriodSchema,
   DashboardMonthlyResponseSchema,
   YearlyAnalyticsQuerySchema,
   YearlyAnalyticsResponseSchema,
@@ -20,7 +21,12 @@ export class ReportingController {
   @Get('dashboard/monthly')
   @MonthETag()
   @ApiOperation({ summary: 'Monthly dashboard' })
-  @ApiQuery({ name: 'period', required: false, description: 'YYYY-MM; defaults to the working month' })
+  @ApiQuery({
+    name: 'period',
+    required: false,
+    description: 'YYYY-MM; defaults to the working month',
+    schema: zodOpenApiSchema(PeriodSchema),
+  })
   @ApiResponse({
     status: 200,
     headers: MONTH_ETAG_HEADERS,
@@ -35,7 +41,12 @@ export class ReportingController {
 
   @Get('analytics/yearly')
   @ApiOperation({ summary: 'Yearly analytics' })
-  @ApiQuery({ name: 'year', required: true, description: 'YYYY, calendar year' })
+  @ApiQuery({
+    name: 'year',
+    required: true,
+    description: 'YYYY, calendar year',
+    schema: zodOpenApiSchema(YearlyAnalyticsQuerySchema.shape.year),
+  })
   @ApiResponse({
     status: 200,
     description: 'Three required reports: income/allocation/free, envelope balances, uncovered operations',

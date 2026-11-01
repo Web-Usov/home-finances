@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import {
   CloseMonthResultSchema,
   CreateMonthRequestSchema,
+  CreateMonthResponseSchema,
+  MonthsListResponseSchema,
   MonthSummaryResponseSchema,
   ReopenMonthResultSchema,
   ReopenPreviewSchema,
@@ -24,14 +26,23 @@ export class MonthsController {
 
   @Get()
   @ApiOperation({ summary: 'List months and statuses' })
-  @ApiResponse({ status: 200, description: 'List of budget months' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of budget months',
+    schema: zodOpenApiSchema(MonthsListResponseSchema),
+  })
   list() {
     return this.monthsService.list();
   }
 
   @Post()
   @ApiOperation({ summary: 'Create first or next month' })
-  @ApiResponse({ status: 201, description: 'Created month' })
+  @ApiBody({ schema: zodOpenApiSchema(CreateMonthRequestSchema) })
+  @ApiResponse({
+    status: 201,
+    description: 'Created month',
+    schema: zodOpenApiSchema(CreateMonthResponseSchema),
+  })
   create(@Body(new ZodValidationPipe(CreateMonthRequestSchema)) dto: CreateMonthRequest) {
     return this.monthsService.create(dto);
   }

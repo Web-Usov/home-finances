@@ -6,13 +6,12 @@ import { useEnvelopesControllerListV1 } from '../../src/api/envelopes/envelopes'
 import { EnvelopeCard } from '../../src/components/envelopes/EnvelopeCard';
 import { EnvelopeCreateForm } from '../../src/components/envelopes/EnvelopeCreateForm';
 import { getApiErrorMessage } from '../../src/components/envelopes/types';
-import type { EnvelopesListResponse } from '../../src/components/envelopes/types';
 
 export default function EnvelopesScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
-  const query = useEnvelopesControllerListV1<EnvelopesListResponse>({});
+  const query = useEnvelopesControllerListV1();
 
   const envelopes = query.data?.envelopes ?? [];
   const active = envelopes.filter((envelope) => envelope.status === 'active');

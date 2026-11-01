@@ -9,6 +9,7 @@
 export type ReportingControllerMonthlyDashboardV1Params = {
 /**
  * YYYY-MM; defaults to the working month
+ * @pattern ^\d{4}-(0[1-9]|1[0-2])$
  */
-period?: unknown;
+period?: string;
 };

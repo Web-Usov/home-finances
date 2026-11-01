@@ -22,9 +22,10 @@ type?: OperationsControllerListV1Type;
 /**
  * Source or destination envelope
  */
-envelopeId?: unknown;
+envelopeId?: string;
 /**
  * YYYY-MM
+ * @pattern ^\d{4}-(0[1-9]|1[0-2])$
  */
-period?: unknown;
+period?: string;
 };
