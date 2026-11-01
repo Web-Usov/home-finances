@@ -1,7 +1,7 @@
 ---
 id: T-050
 title: "Optimistic locking via If-Match / ETag headers for all month-scoped mutations"
-status: todo
+status: in_progress
 epic: E-01
 depends: []
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-25, API-26, API-27, API-17, API-18, API-19, API-21, DATA-12, UI-16]
 acceptance: []
 area: api
 size: M
-branch: null
+branch: task/T-050-if-match-etag-optimistic-locking
 pr: null
 ---
 
