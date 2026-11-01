@@ -168,7 +168,7 @@ describe('MonthsService', () => {
           create: jest.fn().mockResolvedValue(makeMonth({ id: 'month-new', period: '2026-09' })),
           findUnique: jest.fn().mockResolvedValue(makeMonth({ id: 'month-new', period: '2026-09', version: 2 })),
           findMany: jest.fn().mockResolvedValue([
-            makeMonth({ id: 'month-prev', period: '2026-08', status: 'open' }),
+            makeMonth({ id: 'month-prev', period: '2026-08', status: 'open', incomeMinor: 500_000 }),
           ]),
         },
         allocation: {
@@ -341,6 +341,67 @@ describe('MonthsService', () => {
       });
     });
 
+    it('MON-17 / FIN-02 / SCOPE-29: copies the previous income and allocations inside the transaction client', async () => {
+      const tx = withLockQueries({
+        budgetMonth: {
+          create: jest.fn().mockImplementation(({ data }: { data: Partial<BudgetMonth> }) =>
+            Promise.resolve(makeMonth({ id: 'month-new', ...data })),
+          ),
+          findUnique: jest
+            .fn()
+            .mockResolvedValue(makeMonth({ id: 'month-new', period: '2026-09', status: 'draft', incomeMinor: 1_000_000, version: 2 })),
+          findMany: jest.fn().mockResolvedValue([
+            makeMonth({ id: 'month-prev', period: '2026-08', status: 'open', incomeMinor: 1_000_000 }),
+          ]),
+        },
+        allocation: {
+          findMany: jest.fn().mockResolvedValue([
+            { envelopeId: 'env-a', amountMinor: 750_000, envelope: { status: 'active' } },
+          ]),
+          createMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+      });
+      mock.$transaction.mockImplementation((callback: (client: unknown) => unknown) => callback(tx));
+
+      const result = await service.create({ period: '2026-09' });
+
+      expect(tx.budgetMonth.create).toHaveBeenCalledWith({
+        data: { period: '2026-09', status: 'draft', incomeMinor: 1_000_000 },
+      });
+      expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('month-new', tx);
+      expect(mock.budgetMonth.create).not.toHaveBeenCalled();
+      expect(result.month).toMatchObject({ incomeMinor: 1_000_000, totalAllocatedMinor: 750_000, freeFundsMinor: 250_000 });
+    });
+
+    it('MON-17: an explicit income wins over the previous one', async () => {
+      mock.budgetMonth.findMany.mockResolvedValue([
+        makeMonth({ id: 'month-prev', period: '2026-08', status: 'open', incomeMinor: 1_000_000 }),
+      ]);
+
+      await service.create({ period: '2026-09', income: '500.00' });
+
+      expect(mock.budgetMonth.create).toHaveBeenCalledWith({
+        data: { period: '2026-09', status: 'draft', incomeMinor: 50_000 },
+      });
+    });
+
+    it('MON-17 / FIN-02 / MSG-01: income below the copied allocations is a 422 and nothing is written', async () => {
+      mock.budgetMonth.findMany.mockResolvedValue([
+        makeMonth({ id: 'month-prev', period: '2026-08', status: 'open', incomeMinor: 1_000_000 }),
+      ]);
+      mock.allocation.findMany.mockResolvedValue([
+        { envelopeId: 'env-a', amountMinor: 700_000, envelope: { status: 'active' } },
+      ]);
+
+      await expect(service.create({ period: '2026-09', income: '5000.00' })).rejects.toMatchObject({
+        code: 'ALLOCATION_EXCEEDS_INCOME',
+        statusCode: 422,
+      });
+      expect(mock.budgetMonth.create).not.toHaveBeenCalled();
+      expect(mock.allocation.createMany).not.toHaveBeenCalled();
+      expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
+    });
+
     it('copies nothing when there is no previous month', async () => {
       mock.budgetMonth.findMany.mockResolvedValue([]);
 
@@ -366,7 +427,7 @@ describe('MonthsService', () => {
 
     it('copies from a closed previous month into the new open month', async () => {
       mock.budgetMonth.findMany.mockResolvedValue([
-        makeMonth({ id: 'month-prev', period: '2026-08', status: 'closed' }),
+        makeMonth({ id: 'month-prev', period: '2026-08', status: 'closed', incomeMinor: 500_000 }),
       ]);
       mock.allocation.findMany.mockResolvedValue([
         { envelopeId: 'env-a', amountMinor: 300_000, envelope: { status: 'active' } },
