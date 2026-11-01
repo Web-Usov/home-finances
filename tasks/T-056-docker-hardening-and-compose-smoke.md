@@ -1,7 +1,7 @@
 ---
 id: T-056
 title: "Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke"
-status: in_progress
+status: done
 epic: E-00
 depends: [T-050]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-22]
 area: infra
 size: S
 branch: task/T-056-docker-hardening-and-compose-smoke
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/55
 ---
 
 # T-056. Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke
