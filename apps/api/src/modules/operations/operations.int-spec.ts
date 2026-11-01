@@ -119,9 +119,25 @@ describe('Operations list and create (integration)', () => {
     expect(response.body).toEqual({
       error: 'TRANSFER_EXCEEDS_BALANCE',
       message: 'Доступно 6\u00A0000,00 ₽. Перевести только 6\u00A0000,00 ₽?',
+      available: '6000.00',
     });
     expect(await t.prisma.operation.count()).toBe(0);
     expect((await t.prisma.budgetMonth.findUniqueOrThrow({ where: { id: month.id } })).version).toBe(month.version);
+  });
+
+  it('OP-07 / MSG-03: 409 body contains available as a decimal string with the message text unchanged', async () => {
+    const { month, food, home } = await setup(600_050);
+
+    const response = await post({
+      type: 'transfer',
+      sourceEnvelopeId: food.id,
+      destinationEnvelopeId: home.id,
+      amount: '6000.51',
+      version: month.version,
+    }).expect(409);
+
+    expect(response.body.available).toBe('6000.50');
+    expect(response.body.message).toBe('Доступно 6\u00A0000,50 ₽. Перевести только 6\u00A0000,50 ₽?');
   });
 
   it('OP-02: a covered transfer moves money from source to destination', async () => {

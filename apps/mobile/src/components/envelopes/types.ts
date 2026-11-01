@@ -4,10 +4,11 @@ import type { EnvelopesControllerListV1200EnvelopesItem } from '../../api/model'
 /** Envelope with its current balance in integer kopecks (generated type of GET /api/v1/envelopes). */
 export type EnvelopeWithBalance = EnvelopesControllerListV1200EnvelopesItem;
 
-/** Backend error body on 409/422: { error: ApiErrorCode, message: string }. */
+/** Backend error body on 409/422: { error: ApiErrorCode, message: string }; `available` only on TRANSFER_EXCEEDS_BALANCE (OP-07). */
 export interface ApiErrorResponse {
   error: string;
   message: string;
+  available?: string;
 }
 
 /**

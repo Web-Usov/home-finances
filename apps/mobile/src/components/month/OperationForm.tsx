@@ -150,7 +150,7 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: O
   const destinationId = useWatch({ control, name: 'destinationEnvelopeId' });
   const sign = useWatch({ control, name: 'sign' });
   const amount = useWatch({ control, name: 'amount' }) ?? '';
-  const [exceedsOffer, setExceedsOffer] = React.useState<{ message: string } | null>(null);
+  const [exceedsOffer, setExceedsOffer] = React.useState<{ message: string; available: string | null } | null>(null);
 
   const source = active.find((envelope) => envelope.envelopeId === sourceId);
   const amountMinor = amountToMinor(amount);
@@ -168,8 +168,8 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: O
     const onSuccess = (response: { warnings: { message: string }[] }) =>
       onSaved({ kind, warnings: response.warnings.map((warning) => warning.message) });
     const onError = (error: unknown) => {
-      const { code, message } = describeMonthError(error, 'Не удалось сохранить операцию');
-      if (code === 'TRANSFER_EXCEEDS_BALANCE') setExceedsOffer({ message });
+      const { code, message, available } = describeMonthError(error, 'Не удалось сохранить операцию');
+      if (code === 'TRANSFER_EXCEEDS_BALANCE') setExceedsOffer({ message, available });
       else setError('root', { message });
     };
     if (editing) {
@@ -205,12 +205,14 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: O
     );
   };
 
-  // Editing: the balance the transfer met at its own position (server value), only valid for the unchanged source.
-  const availableForTransfer = editing
+  // MSG-03: the refusal body carries `available` (the balance at the transfer's sequence position); the dashboard
+  // closing (create) or the stored result (edit, unchanged source) is only a fallback when the field is absent.
+  const fallbackAvailable = editing
     ? editing.result !== null && sourceId === editing.sourceEnvelopeId
       ? formatMoneyMinor(editing.result.sourceBalanceBefore)
       : undefined
     : source?.closing;
+  const availableForTransfer = exceedsOffer?.available ?? fallbackAvailable;
   const canOfferAvailable = exceedsOffer !== null && availableForTransfer !== undefined && isNonZeroMoney(availableForTransfer);
   const blocked = locked || pending;
 

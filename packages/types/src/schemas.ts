@@ -229,6 +229,16 @@ export const OperationListQueryBaseSchema = z.object({
     .optional(),
 });
 
+/**
+ * Error body of the domain 409/422/404/428 responses (`{ error, message }`). `available` is present only for
+ * `TRANSFER_EXCEEDS_BALANCE` (OP-07, MSG-03): the balance the transfer met at its sequence position, as a decimal string.
+ */
+export const ApiErrorResponseSchema = z.object({
+  error: z.string(),
+  message: z.string(),
+  available: MoneyStringSchema.optional(),
+});
+
 /** HIST-15: `role=source` is meaningful only together with `envelopeId`; alone it is a 422, not silently ignored. */
 export const OperationListQuerySchema = OperationListQueryBaseSchema.refine(
   (query) => query.role === undefined || query.envelopeId !== undefined,

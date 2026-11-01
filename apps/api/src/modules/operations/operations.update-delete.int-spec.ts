@@ -160,12 +160,30 @@ describe('Operations update and delete (integration)', () => {
     expect(rejected.body).toEqual({
       error: 'TRANSFER_EXCEEDS_BALANCE',
       message: 'Доступно 10\u00A0000,00 ₽. Перевести только 10\u00A0000,00 ₽?',
+      available: '10000.00',
     });
     // the whole edit rolled back
     expect((await t.prisma.operation.findUniqueOrThrow({ where: { id: transfer.id } })).requestedMinor).toBe(600_000);
     expect(await monthVersion(month.id)).toBe(version);
 
     await patch(transfer.id, { amount: '10000.00', version }).expect(200); // exactly the balance is fine
+  });
+
+  it('OP-07 / MSG-03: available in the edit 409 is the balance at the transfer position, not the current closing', async () => {
+    const { month, food, home } = await setup();
+    const transfer = await addOperation(month.id, {
+      type: 'transfer',
+      sourceEnvelopeId: food.id,
+      destinationEnvelopeId: home.id,
+      amount: '6000.00',
+    });
+    const later = await addOperation(month.id, { type: 'expense', sourceEnvelopeId: food.id, amount: '3000.00' });
+    // the later operation moved the source balance: closing is 1000.00, the transfer met 10000.00
+    expect(await resultOf(later.id)).toMatchObject({ sourceBalanceAfter: 100_000 });
+
+    const rejected = await patch(transfer.id, { amount: '10000.01', version: await monthVersion(month.id) }).expect(409);
+    expect(rejected.body.available).toBe('10000.00');
+    expect(rejected.body.available).not.toBe('1000.00');
   });
 
   it('HIST-09: re-pointing a transfer to a source without money is rejected', async () => {
