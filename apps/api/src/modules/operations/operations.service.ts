@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Envelope, Operation, OperationResult, Prisma } from '@prisma/client';
 import {
+  formatMoneyMinor,
   formatMoneyMinorRu,
   parseMoneyMinor,
   CreateOperationRequestSchema,
@@ -283,13 +284,17 @@ export class OperationsService {
     return { operation, period: found.month.period };
   }
 
-  /** OP-07 / AC-07: offer the available amount instead of saving an uncovered transfer. */
+  /**
+   * OP-07 / AC-07: offer the available amount instead of saving an uncovered transfer. The 409 body also carries
+   * `available` as a decimal string so the client does not parse the message (MSG-03 text is unchanged).
+   */
   private assertTransferCovered(requestedMinor: number, availableMinor: number): void {
     if (requestedMinor > availableMinor) {
       const available = formatMoneyMinorRu(availableMinor);
       throw new ConflictException(
         'TRANSFER_EXCEEDS_BALANCE',
         `Доступно ${available} ₽. Перевести только ${available} ₽?`,
+        { available: formatMoneyMinor(availableMinor) },
       );
     }
   }

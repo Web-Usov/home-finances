@@ -20,13 +20,13 @@ const mockRequest = customAxiosInstance as jest.MockedFunction<typeof customAxio
 
 const NBSP = ' ';
 
-function apiError(status: number, error: string, message: string) {
+function apiError(status: number, error: string, message: string, available?: string) {
   return new AxiosError('Request failed', 'ERR_BAD_REQUEST', undefined, undefined, {
     status,
     statusText: String(status),
     headers: {},
     config: { headers: new AxiosHeaders() },
-    data: { error, message },
+    data: { error, message, ...(available !== undefined ? { available } : {}) },
   });
 }
 
@@ -238,6 +238,24 @@ describe('OperationForm', () => {
       period: '2026-02',
     });
     expect(lastIfMatch()).toBe('"4"');
+  });
+
+  it('OP-07: form shows the available amount from the response field, not the dashboard closing or the message text', async () => {
+    // The dashboard says Дом has 6 000, the message text names yet another number: only `available` is used.
+    const message = `Доступно 1${NBSP}111,00${NBSP}₽. Перевести только 1${NBSP}111,00${NBSP}₽?`;
+    mockRequest.mockRejectedValueOnce(apiError(409, 'TRANSFER_EXCEEDS_BALANCE', message, '4321.50')).mockResolvedValue(created());
+    const { onSaved } = renderForm('transfer', { period: '2026-02', version: 4 });
+
+    pick('Откуда', 'Дом');
+    pick('Куда', 'Продукты');
+    fireEvent.changeText(screen.getByLabelText('Сумма'), '10000');
+    press('Сохранить перевод');
+
+    expect(await screen.findByText(message)).toBeTruthy();
+    press(`Перевести только 4${NBSP}321,50${NBSP}₽`);
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ kind: 'transfer', warnings: [] }));
+    expect(lastBody()).toMatchObject({ type: 'transfer', amount: '4321.50' });
   });
 
   it('MSG-03: with nothing available the transfer refusal offers no replacement button', async () => {

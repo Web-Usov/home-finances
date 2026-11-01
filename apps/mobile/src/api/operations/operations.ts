@@ -26,11 +26,13 @@ import type {
 
 import type {
   OperationsControllerCreateV1201,
+  OperationsControllerCreateV1409,
   OperationsControllerCreateV1Body,
   OperationsControllerListV1200,
   OperationsControllerListV1Params,
   OperationsControllerRemoveV1200,
   OperationsControllerUpdateV1200,
+  OperationsControllerUpdateV1409,
   OperationsControllerUpdateV1Body
 } from '.././model';
 
@@ -153,7 +155,7 @@ export const operationsControllerCreateV1 = (
   
 
 
-export const getOperationsControllerCreateV1MutationOptions = <TError = void,
+export const getOperationsControllerCreateV1MutationOptions = <TError = void | OperationsControllerCreateV1409,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext> => {
 
@@ -180,12 +182,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type OperationsControllerCreateV1MutationResult = NonNullable<Awaited<ReturnType<typeof operationsControllerCreateV1>>>
     export type OperationsControllerCreateV1MutationBody = OperationsControllerCreateV1Body
-    export type OperationsControllerCreateV1MutationError = void
+    export type OperationsControllerCreateV1MutationError = void | OperationsControllerCreateV1409
 
     /**
  * @summary Create an operation in the given period (default: the working month)
  */
-export const useOperationsControllerCreateV1 = <TError = void,
+export const useOperationsControllerCreateV1 = <TError = void | OperationsControllerCreateV1409,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof operationsControllerCreateV1>>,
@@ -217,7 +219,7 @@ export const operationsControllerUpdateV1 = (
   
 
 
-export const getOperationsControllerUpdateV1MutationOptions = <TError = void,
+export const getOperationsControllerUpdateV1MutationOptions = <TError = void | OperationsControllerUpdateV1409,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext> => {
 
@@ -244,12 +246,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type OperationsControllerUpdateV1MutationResult = NonNullable<Awaited<ReturnType<typeof operationsControllerUpdateV1>>>
     export type OperationsControllerUpdateV1MutationBody = OperationsControllerUpdateV1Body
-    export type OperationsControllerUpdateV1MutationError = void
+    export type OperationsControllerUpdateV1MutationError = void | OperationsControllerUpdateV1409
 
     /**
  * @summary Edit an operation; sequence_no is kept, the cascade is recalculated
  */
-export const useOperationsControllerUpdateV1 = <TError = void,
+export const useOperationsControllerUpdateV1 = <TError = void | OperationsControllerUpdateV1409,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof operationsControllerUpdateV1>>,

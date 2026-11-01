@@ -10,6 +10,7 @@ import {
 interface DomainErrorResponse {
   error: ApiErrorCode;
   message: string;
+  available?: string;
 }
 
 type DomainException =
@@ -28,6 +29,7 @@ export class DomainExceptionFilter implements ExceptionFilter {
     const body: DomainErrorResponse = {
       error: exception.code,
       message: exception.message,
+      ...(exception instanceof ConflictException ? exception.extras : {}),
     };
 
     response.code(exception.statusCode).send(body);
