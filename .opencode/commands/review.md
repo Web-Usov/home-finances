@@ -8,7 +8,7 @@ Review this target: $ARGUMENTS
 
 If it is a task id `T-xxx`, find its PR with `gh pr list --state open --search "T-xxx" --json number,title,headRefName`
 (or use the `pr` field of the task file). If no PR exists, say so and stop.
-Follow your checklist, post the verdict as a PR comment: write the body to a temp file under `/tmp` and run
+Follow your checklist (including the language rule: PRs waiting for the human merge get a RUSSIAN comment, agent-only PRs an English one), post the verdict as a PR comment: write the body to a temp file under `/tmp` and run
 `gh pr review <n> --comment --body-file <file>` (no `--approve` attempt: self-approval is impossible with a single GitHub
 account; if writing temp files is not permitted use `gh pr comment <n> --body "..."`). Read PR files without a worktree via
 `git fetch origin <head>` + `git show origin/<head>:<path>`. Return the verdict block (`VERDICT: LGTM | CHANGES REQUESTED`,

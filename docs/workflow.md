@@ -1,6 +1,7 @@
 # Workflow: from task to merged PR
 
-Audience: agents (and the human orchestrating them). Language: English.
+Audience: agents (and the human orchestrating them). Language: English, except everything the human must review or decide,
+which is Russian (see "Language of human-facing text" below and `AGENTS.md` "Language rule").
 Rules in short: **one task = one session = one branch = one git worktree = one PR**. A session never ends with
 uncommitted changes. Merging happens only through a PR whose required checks (`verify`, `contract`, `e2e`) are green.
 
@@ -131,7 +132,13 @@ git commit -am "docs(tasks): mark T-xxx done [T-xxx]" && git push
 auto-merge after `VERDICT: LGTM`. After the merge run `pnpm task:clean T-xxx` (it finds the branch through the task file's `branch:` field, so renumbered
 tasks work too).
 
-PR title format equals the commit format (header max 100 chars), because the squash commit takes the PR title.
+PR title format equals the commit format (header max 100 chars), because the squash commit takes the PR title. The title
+is always English.
+
+**PR body language.** An agent-only PR (no human review; the reviewer enables auto-merge) uses the English
+`.github/pull_request_template.md`. A PR that needs human review (diff touches `docs/spec/**`, `docs/decisions/**`,
+`epics/**`, or it is a milestone report) uses `.github/PULL_REQUEST_TEMPLATE/human-review.md`: the body is Russian and
+starts with `⚠️ Требуется ревью человека`. `/ship` picks the template by the protected-paths check.
 
 ### Done status
 
@@ -155,7 +162,9 @@ Branch protection forbids a post-merge commit on `master`, so `done` cannot be s
 
 `/review <PR number | T-xxx>` runs the `reviewer` agent (fresh context, read-only) against the PR:
 `gh pr view`, `gh pr diff`, the task file, the cited spec rules, `gh pr checks`. It follows the checklist in its prompt
-and ends with a verdict: `LGTM` or `CHANGES REQUESTED` with a numbered finding list (file:line, rule, fix).
+and ends with a verdict: `LGTM` or `CHANGES REQUESTED` with a numbered finding list (file:line, rule, fix). For a PR that
+waits for the human merge (protected paths) the comment text is Russian (the `VERDICT: LGTM | CHANGES REQUESTED` line keeps
+its keywords; Summary/Findings/Checks and the "waits for the human" note are in Russian). Verdicts on agent-only PRs stay English.
 
 Approval limitation (honest note): the PR author and the reviewer agent use the **same GitHub account**, and GitHub
 does not allow approving your own PR. So:
@@ -190,7 +199,8 @@ does not allow approving your own PR. So:
 
 - Spec ambiguous or contradictory, or a needed decision is missing: stop coding that part. Set `status: blocked`
   (`node scripts/tasks.mjs set T-xxx blocked`), write the question and a proposed answer (`Q-proposal:` with options and
-  the recommended one) in the task's Handoff log, run `/handoff`, and notify the human (message to the orchestrator).
+  the recommended one) in the task's Handoff log **in Russian** (template below), run `/handoff`, and notify the human
+  (message to the orchestrator, also Russian).
 - Agents never edit `docs/spec/**`, `docs/decisions/**` or `epics/**` in implementation PRs. Spec/ADR changes are
   made only by the `planner` in a dedicated docs PR that the human reviews. The planner registers the question in
   `docs/spec/99-open-questions.md` as `Q-NN`; the blocked task then lists it in `blocked_by` and is unblocked when the question
@@ -198,6 +208,24 @@ does not allow approving your own PR. So:
 - New work discovered while implementing or reviewing: file it with `pnpm task:start --new "<title>" --epic E-xx --area <a>
   --size <S|M>` (section 2), or add a `todo` task file to the current PR; mention it in `## Result`. Tasks that need spec/ADR/epic
   changes still go through the planner.
+
+### Question to the human (Russian template)
+
+Used for `Q-proposal` entries, `Q-NN` in `docs/spec/99-open-questions.md`, questions in PR bodies and escalation messages:
+
+```
+**Вопрос:** что нужно решить, одним-двумя предложениями.
+**Варианты:** (A) ...; (B) ...; (C) ...
+**Рекомендация:** вариант и почему.
+**Затронутые правила:** ID правил/ADR (например, OP-04, ADR 0006).
+**Задачи:** T-xxx, заблокированные или зависящие от ответа.
+```
+
+### Language of human-facing text
+
+Russian: PR body of human-review PRs, questions/options/recommendations to the human (above), milestone reports, reviewer
+verdicts on human-merge PRs, notifications and final messages to the human. English: tasks, code, comments, tests, commits,
+PR titles, agent-only PRs and their verdicts. Reviewers flag a violation as a finding (minor; blocker if a human-review PR body is not Russian).
 
 ## 8. Milestones
 
