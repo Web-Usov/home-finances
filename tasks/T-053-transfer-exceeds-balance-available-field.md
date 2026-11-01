@@ -1,7 +1,7 @@
 ---
 id: T-053
 title: "Structured available field in TRANSFER_EXCEEDS_BALANCE 409 and client usage"
-status: todo
+status: in_progress
 epic: E-04
 depends: [T-011, T-012, T-050]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [OP-07, MSG-03]
 acceptance: []
 area: api
 size: M
-branch: null
+branch: task/T-053-transfer-exceeds-balance-available-field
 pr: null
 ---
 

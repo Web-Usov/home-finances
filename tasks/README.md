@@ -116,7 +116,7 @@
 
 - [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **done** · mobile · M · depends: T-005, T-011 · [PR](https://github.com/Web-Usov/home-finances/pull/39)
 
-- [T-053](T-053-transfer-exceeds-balance-available-field.md) Structured available field in TRANSFER_EXCEEDS_BALANCE 409 and client usage — **todo** · api · M · depends: T-011, T-012, T-050 · —
+- [T-053](T-053-transfer-exceeds-balance-available-field.md) Structured available field in TRANSFER_EXCEEDS_BALANCE 409 and client usage — **in_progress** · api · M · depends: T-011, T-012, T-050 · —
 
 - [T-054](T-054-operation-form-replace-offer-and-archived-source.md) OperationForm: replace offer when the transfer source changed, preselect archived source — **todo** · mobile · M · depends: T-053 · —
 
