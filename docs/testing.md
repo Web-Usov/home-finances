@@ -209,6 +209,12 @@ ACs whose test must wait for a later UI task are listed in `scripts/spec-coverag
 makes the check fail until it is removed. API-level acceptance scenarios live in
 `apps/api/src/acceptance/acceptance.mvp-scenarios.int-spec.ts`.
 
+`pnpm spec:check --strict-epics` (part of `verify`) fails when a rule from any epic `spec:` list (`epics/E-*.md`) is not
+referenced from a test file. Besides the test suffixes above, `scripts/__tests__/*.rules.test.mjs` counts: rules about
+the repository itself (documented launch, shipped migrations and env docs, UI without out-of-MVP controls) are asserted
+there over repo state. A rule that cannot be tested at all goes into `scripts/spec-epics-deferred.json`
+(`{ "XX-nn": { "reason": "..." } }`); the allowlist only shrinks (an entry for a covered rule fails the check).
+
 ## Mobile tests
 
 - Stack: `jest-expo` preset + `@testing-library/react-native`; config in

@@ -14,7 +14,7 @@ const quick = [
   { name: 'lint', cmd: 'pnpm lint' },
   { name: 'test:unit', cmd: 'pnpm test:unit' },
   { name: 'test:scripts', cmd: 'pnpm test:scripts' },
-  { name: 'spec:check', cmd: 'pnpm spec:check' },
+  { name: 'spec:check', cmd: 'pnpm spec:check --strict-epics' },
   { name: 'tasks:check', cmd: 'pnpm tasks:check' },
 ];
 
