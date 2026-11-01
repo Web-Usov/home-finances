@@ -22,7 +22,7 @@ orval.config.js              client generation from ../api/openapi.json (committ
 tailwind.config.js, global.css, metro.config.js, nativewind-env.d.ts   NativeWind setup
 ```
 
-Screen state: the **Envelopes** and **Month** screens are wired to the API; **History** and **Analytics** are static placeholders.
+Screen state: the **Envelopes**, **Month** and **History** screens are wired to the API (history: `src/components/history/*`, deep-link params `period`, `envelopeId`, `type`); **Analytics** is a static placeholder.
 Check `tasks/` before building a screen.
 
 ## Conventions
