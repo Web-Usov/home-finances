@@ -154,4 +154,4 @@
 
 - [T-071](T-071-docker-migrate-offline-corepack.md) Docker: migrate service must run offline (corepack cache readable by USER node) — **todo** · infra · S · depends: — · —
 
-- [T-072](T-072-migrations-on-populated-database.md) NFR-29: verify migrations apply on a populated database — **in_progress** · api · M · depends: — · —
+- [T-072](T-072-migrations-on-populated-database.md) NFR-29: verify migrations apply on a populated database — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/62)
