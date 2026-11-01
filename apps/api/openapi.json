@@ -1956,7 +1956,31 @@
             "description": "MONTH_NOT_FOUND or ENVELOPE_NOT_FOUND"
           },
           "409": {
-            "description": "VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope"
+            "description": "VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope. TRANSFER_EXCEEDS_BALANCE also carries `available`: the balance at the transfer position as a decimal string (OP-07)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "available": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           },
           "422": {
             "description": "VALIDATION_ERROR"
@@ -2266,7 +2290,31 @@
             "description": "OPERATION_NOT_FOUND or ENVELOPE_NOT_FOUND"
           },
           "409": {
-            "description": "VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope"
+            "description": "VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope. TRANSFER_EXCEEDS_BALANCE also carries `available`: the balance at the transfer position as a decimal string (OP-07)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "available": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           },
           "422": {
             "description": "VALIDATION_ERROR"

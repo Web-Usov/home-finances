@@ -27,11 +27,11 @@ The 409 `TRANSFER_EXCEEDS_BALANCE` body carries a structured `available` amount 
 
 ## Definition of Done
 
-- [ ] `it('OP-07 / MSG-03: 409 body contains available as a decimal string')` int test passes
-- [ ] `it('OP-07: form shows the available amount from the response field')` mobile component test passes (no message parsing)
-- [ ] `pnpm api:contract` green
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('OP-07 / MSG-03: 409 body contains available as a decimal string')` int test passes
+- [x] `it('OP-07: form shows the available amount from the response field')` mobile component test passes (no message parsing)
+- [x] `pnpm api:contract` green
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -43,4 +43,4 @@ The 409 `TRANSFER_EXCEEDS_BALANCE` body carries a structured `available` amount 
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+`ConflictException` takes optional `extras` (`available`) that `DomainExceptionFilter` merges into the body; `assertTransferCovered` sets `available` = `formatMoneyMinor(availableMinor)` (create: month closing of the source; edit: `sourceBalanceBefore` at the transfer's sequence position). `error` and the MSG-03 `message` are unchanged. `ApiErrorResponseSchema` (types) documents the 409 body in Swagger for POST/PATCH; OpenAPI and client regenerated. Mobile: `describeMonthError` returns `available`; `OperationForm` "Перевести только X" uses it, falling back to the dashboard closing (create) or stored result (edit) only when absent. Tests: int `operations.int-spec.ts` / `operations.update-delete.int-spec.ts`, mobile `OperationForm.test.tsx`, `apiErrors.test.ts`.

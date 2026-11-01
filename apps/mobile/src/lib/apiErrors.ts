@@ -10,6 +10,8 @@ export const PRECONDITION_REQUIRED_MESSAGE = 'Не удалось выполни
 export interface DescribedError {
   code: string | null;
   message: string;
+  /** OP-07: balance at the transfer position (decimal string) from a TRANSFER_EXCEEDS_BALANCE body; null otherwise. */
+  available: string | null;
 }
 
 /**
@@ -20,11 +22,13 @@ export interface DescribedError {
 export function describeMonthError(error: unknown, fallback: string): DescribedError {
   if (isAxiosError<ApiErrorResponse>(error)) {
     const code = error.response?.data?.error ?? null;
-    if (code === 'MONTH_LOCKED') return { code, message: MONTH_LOCKED_MESSAGE };
-    if (code === 'PRECONDITION_REQUIRED') return { code, message: PRECONDITION_REQUIRED_MESSAGE };
+    const rawAvailable = error.response?.data?.available;
+    const available = typeof rawAvailable === 'string' ? rawAvailable : null;
+    if (code === 'MONTH_LOCKED') return { code, message: MONTH_LOCKED_MESSAGE, available };
+    if (code === 'PRECONDITION_REQUIRED') return { code, message: PRECONDITION_REQUIRED_MESSAGE, available };
     const message = error.response?.data?.message;
-    if (typeof message === 'string' && message.length > 0) return { code, message };
-    return { code, message: fallback };
+    if (typeof message === 'string' && message.length > 0) return { code, message, available };
+    return { code, message: fallback, available };
   }
-  return { code: null, message: fallback };
+  return { code: null, message: fallback, available: null };
 }

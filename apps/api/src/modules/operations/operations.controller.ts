@@ -10,6 +10,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import {
+  ApiErrorResponseSchema,
   CreateOperationRequestSchema,
   UpdateOperationRequestSchema,
   DeleteOperationResponseSchema,
@@ -87,7 +88,9 @@ export class OperationsController {
   @ApiResponse({ status: 404, description: 'MONTH_NOT_FOUND or ENVELOPE_NOT_FOUND' })
   @ApiResponse({
     status: 409,
-    description: 'VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope',
+    description:
+      'VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope. TRANSFER_EXCEEDS_BALANCE also carries `available`: the balance at the transfer position as a decimal string (OP-07)',
+    schema: zodOpenApiSchema(ApiErrorResponseSchema),
   })
   @ApiResponse({ status: 422, description: 'VALIDATION_ERROR' })
   create(
@@ -111,7 +114,9 @@ export class OperationsController {
   @ApiResponse({ status: 404, description: 'OPERATION_NOT_FOUND or ENVELOPE_NOT_FOUND' })
   @ApiResponse({
     status: 409,
-    description: 'VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope',
+    description:
+      'VERSION_CONFLICT, MONTH_LOCKED, TRANSFER_EXCEEDS_BALANCE or archived envelope. TRANSFER_EXCEEDS_BALANCE also carries `available`: the balance at the transfer position as a decimal string (OP-07)',
+    schema: zodOpenApiSchema(ApiErrorResponseSchema),
   })
   @ApiResponse({ status: 422, description: 'VALIDATION_ERROR' })
   update(

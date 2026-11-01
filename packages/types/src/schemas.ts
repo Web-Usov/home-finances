@@ -229,6 +229,16 @@ export const OperationListQuerySchema = z.object({
     .optional(),
 });
 
+/**
+ * Error body of the domain 409/422/404/428 responses (`{ error, message }`). `available` is present only for
+ * `TRANSFER_EXCEEDS_BALANCE` (OP-07, MSG-03): the balance the transfer met at its sequence position, as a decimal string.
+ */
+export const ApiErrorResponseSchema = z.object({
+  error: z.string(),
+  message: z.string(),
+  available: MoneyStringSchema.optional(),
+});
+
 // API-25: the expected month version travels in the `If-Match` header, never in a body or query.
 // Close/reopen therefore have no request body at all.
 
