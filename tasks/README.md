@@ -52,6 +52,12 @@
 
 - [T-049](T-049-language-rule-russian-for-everything.md) Language rule: Russian for everything the human reviews or decides — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/44)
 
+- [T-051](T-051-spec-follow-ups-batch-3.md) Spec follow-ups batch 3 — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/51)
+
+- [T-056](T-056-docker-hardening-and-compose-smoke.md) Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke — **done** · infra · S · depends: T-050 · [PR](https://github.com/Web-Usov/home-finances/pull/55)
+
+- [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/56)
+
 ## E-01. Ядро API: месяцы и операции — accepted, принят 2026-11-01
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
@@ -80,7 +86,7 @@
 
 - [T-050](T-050-if-match-etag-optimistic-locking.md) Optimistic locking via If-Match / ETag headers for all month-scoped mutations — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/46)
 
-## E-02. Отчётность API — done
+## E-02. Отчётность API — accepted, принят 2026-11-01
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)
 
@@ -90,7 +96,9 @@
 
 - [T-045](T-045-operations-filters-uncovered-only-role-source.md) Operations: uncoveredOnly and role=source filters for analytics drill-down — **done** · api · M · depends: T-008, T-025 · [PR](https://github.com/Web-Usov/home-finances/pull/49)
 
-## E-03. Экран «Месяц» и редактор распределения — done
+- [T-052](T-052-operations-role-source-requires-envelope-id.md) Operations: role=source without envelopeId is a 422 — **todo** · api · S · depends: T-045 · —
+
+## E-03. Экран «Месяц» и редактор распределения — accepted, принят 2026-11-01
 
 Эпик: [E-03-month-screen.md](../epics/E-03-month-screen.md)
 
@@ -100,7 +108,7 @@
 
 - [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **done** · mobile · S · depends: T-009, T-024 · [PR](https://github.com/Web-Usov/home-finances/pull/37)
 
-## E-04. Операции и история (UI) — done
+## E-04. Операции и история (UI) — accepted, принят 2026-11-01
 
 Эпик: [E-04-operations-ui.md](../epics/E-04-operations-ui.md)
 
@@ -108,13 +116,19 @@
 
 - [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **done** · mobile · M · depends: T-005, T-011 · [PR](https://github.com/Web-Usov/home-finances/pull/39)
 
-## E-05. Годовая аналитика (UI) — done
+- [T-053](T-053-transfer-exceeds-balance-available-field.md) Structured available field in TRANSFER_EXCEEDS_BALANCE 409 and client usage — **todo** · api · M · depends: T-011, T-012, T-050 · —
+
+- [T-054](T-054-operation-form-replace-offer-and-archived-source.md) OperationForm: replace offer when the transfer source changed, preselect archived source — **todo** · mobile · M · depends: T-053 · —
+
+- [T-055](T-055-e2e-transfer-overrun-on-edit.md) E2E: real transfer overrun on edit — **todo** · mobile · S · depends: T-054 · —
+
+## E-05. Годовая аналитика (UI) — accepted, принят 2026-11-01
 
 Эпик: [E-05-analytics-ui.md](../epics/E-05-analytics-ui.md)
 
 - [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **done** · mobile · M · depends: T-008, T-012 · [PR](https://github.com/Web-Usov/home-finances/pull/41)
 
-## E-06. Приёмка MVP и поставка — done
+## E-06. Приёмка MVP и поставка — accepted, принят 2026-11-01
 
 Эпик: [E-06-mvp-release.md](../epics/E-06-mvp-release.md)
 

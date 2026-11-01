@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { installGuards, makeTmp, gitEnv, repoRoot } from './helpers.mjs';
 import { nextTaskId, collectTaskIds, slugify, renderNewTask, parseArgs } from '../task-start.mjs';
 
@@ -70,7 +70,9 @@ function fixture() {
   sh(main, 'branch', '-D', 'task/T-030-pending');
   const bin = path.join(dir, 'bin');
   fs.mkdirSync(bin);
-  return { dir, main, sh, env: { ...env, TASK_START_SKIP_INSTALL: '1' }, bin };
+  const locks = path.join(dir, 'locks'); // os.tmpdir() of the script: keeps the task-id lock off the real machine-wide one
+  fs.mkdirSync(locks);
+  return { dir, main, sh, env: { ...env, TASK_START_SKIP_INSTALL: '1', TMPDIR: locks, WITH_LOCK_POLL_MS: '30' }, bin, locks };
 }
 
 const start = (fx, args, env = {}) =>
@@ -158,4 +160,34 @@ test('--new skips ids held by task files of unmerged branches (PR with T-023..T-
   const r = start(fx, ['--new', 'After pending', '--epic', 'E-00', '--area', 'infra', '--size', 'S']);
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.ok(fs.existsSync(path.join(fx.dir, 'main', 'finance-wt', 't-042-after-pending', 'tasks/T-042-after-pending.md')));
+});
+
+test('concurrent --new calls get distinct ids; each claim branch is pushed to origin and the task-id lock is released', async () => {
+  const fx = fixture();
+  const titles = ['Alpha work', 'Bravo work', 'Charlie work'];
+  const runs = titles.map(
+    (t) =>
+      new Promise((resolve) => {
+        const p = spawn(process.execPath, [path.join(fx.main, 'scripts/task-start.mjs'), '--new', t, '--epic', 'E-00', '--area', 'infra', '--size', 'S'], {
+          cwd: fx.main,
+          env: fx.env,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        let out = '';
+        p.stdout.on('data', (d) => (out += d));
+        p.stderr.on('data', (d) => (out += d));
+        p.on('close', (code) => resolve({ code, out }));
+      }),
+  );
+  const results = await Promise.all(runs);
+  for (const r of results) assert.equal(r.code, 0, r.out);
+  const branches = fx
+    .sh(fx.main, 'ls-remote', '--heads', 'origin', 'task/T-*')
+    .split('\n')
+    .map((l) => /refs\/heads\/task\/(T-\d+)-/.exec(l)?.[1]);
+  const ids = branches.filter((id) => id !== 'T-030'); // T-030 is the pre-existing pending branch of the fixture
+  assert.equal(ids.length, 3, branches.join(','));
+  assert.equal(new Set(ids).size, 3, `duplicate ids: ${ids}`);
+  assert.deepEqual([...ids].sort(), ['T-031', 'T-032', 'T-033']);
+  assert.equal(fs.existsSync(path.join(fx.locks, 'family-budget-task-id.lock')), false);
 });

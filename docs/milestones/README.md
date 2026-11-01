@@ -2,17 +2,17 @@
 
 Отчёты по вехам для приёмки владельцем. Формат: итог, смёрженные PR, покрытие правил и AC, демо-сценарий со скриншотами, ограничения, что проверить человеку (см. `docs/workflow.md`, раздел 8). Статус `accepted` и дату приёмки ставит только владелец.
 
-Состояние на 2026-11-01. Стенд для ручной проверки: http://192.168.1.114:8100/ (Swagger: http://192.168.1.114:8100/api, описание: [`docs/preview.md`](../preview.md)).
+Состояние на 2026-11-01: MVP принят владельцем. Стенд для ручной проверки: http://192.168.1.114:8100/ (Swagger: http://192.168.1.114:8100/api, описание: [`docs/preview.md`](../preview.md)).
 
 | Эпик | Название | Статус | Отчёт | PR отчёта |
 |------|----------|--------|-------|-----------|
 | [E-00](../../epics/E-00-tech-debt.md) | Технический долг и соответствие спеке | `planned` (задачи выполняются по мере появления) | нет (сквозной эпик, не веха) | нет |
-| [E-01](../../epics/E-01-core-api.md) | Ядро API: месяцы и операции | `accepted` 2026-11-01 (дополнение после приёмки ждёт подтверждения) | [E-01-report.md](E-01-report.md) | [#15](https://github.com/Web-Usov/home-finances/pull/15), дополнение: [#53](https://github.com/Web-Usov/home-finances/pull/53) |
-| [E-02](../../epics/E-02-reporting-api.md) | Отчётность API | `done`, ждёт приёмки | [E-02-report.md](E-02-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
-| [E-03](../../epics/E-03-month-screen.md) | Экран «Месяц» и редактор распределения | `done`, ждёт приёмки | [E-03-report.md](E-03-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
-| [E-04](../../epics/E-04-operations-ui.md) | Операции и история (UI) | `done`, ждёт приёмки | [E-04-report.md](E-04-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
-| [E-05](../../epics/E-05-analytics-ui.md) | Годовая аналитика (UI) | `done`, ждёт приёмки | [E-05-report.md](E-05-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
-| [E-06](../../epics/E-06-mvp-release.md) | Приёмка MVP и поставка | `done`, ждёт приёмки | [E-06-report.md](E-06-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-01](../../epics/E-01-core-api.md) | Ядро API: месяцы и операции | `accepted` 2026-11-01 (дополнение подтверждено 2026-11-01) | [E-01-report.md](E-01-report.md) | [#15](https://github.com/Web-Usov/home-finances/pull/15), дополнение: [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-02](../../epics/E-02-reporting-api.md) | Отчётность API | `accepted` 2026-11-01 | [E-02-report.md](E-02-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-03](../../epics/E-03-month-screen.md) | Экран «Месяц» и редактор распределения | `accepted` 2026-11-01 | [E-03-report.md](E-03-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-04](../../epics/E-04-operations-ui.md) | Операции и история (UI) | `accepted` 2026-11-01 | [E-04-report.md](E-04-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-05](../../epics/E-05-analytics-ui.md) | Годовая аналитика (UI) | `accepted` 2026-11-01 | [E-05-report.md](E-05-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-06](../../epics/E-06-mvp-release.md) | Приёмка MVP и поставка | `accepted` 2026-11-01 | [E-06-report.md](E-06-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
 
 ## Известные пробелы MVP (сводно)
 

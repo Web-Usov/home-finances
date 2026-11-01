@@ -39,7 +39,7 @@ Each slot holds its own `node_modules`, `apps/api/dist` and `.preview/web` (Expo
 (`scripts/preview/update.sh` of the live slot):
 
 1. `git fetch`; if `origin/master` equals `state/deployed-sha` nothing happens.
-2. Otherwise it waits for the machine-wide `e2e` lock (`scripts/with-lock.mjs`, so it never builds together with an agent's
+2. Otherwise it waits for the machine-wide `e2e` lock (`scripts/with-lock.mjs` + `scripts/lib/lock.mjs`, both taken from the target sha, so it never builds together with an agent's
    e2e run) and runs at `nice 19` / idle I/O priority.
 3. In the **inactive** slot: checkout the sha, `pnpm install --frozen-lockfile --prefer-offline`, build types + API,
    `expo export` for web, `prisma migrate deploy` on `family_budget_preview` (database is created if missing),
@@ -134,6 +134,10 @@ Only ever touch `family_budget_preview`; never the dev DB `family_budget` or `*_
   protections. `ProtectHome` and a dedicated user are not used because the preview lives under `/root/workspace` (mode 700); moving it
   to e.g. `/srv/finance-preview` (set `PREVIEW_HOME`, re-run the installer) would allow that. The update unit only has
   `NoNewPrivileges` (it needs the shared `/tmp` lock, docker, ssh keys, the pnpm store).
+
+`serve-web.mjs` also accepts `WEB_ROOT=<dir>` (a plain export directory with `version.json` next to `index.html`; used by the
+compose `web` image). The preview keeps its `PREVIEW_HOME/current/.preview/web` layout; `WEB_ROOT` wins when both are set, so the
+preview units need no change.
 
 ## Resources
 

@@ -2,14 +2,17 @@
 /* eslint-disable no-console */
 // Preview web server: serves the Expo web export of the active release with SPA fallback and
 // reverse-proxies `/api` (REST, Swagger UI, swagger.json) to the preview API. `/version.json` describes the deployed build.
-// The release is resolved per request through the `current` symlink, so a deploy needs no restart of this process.
-//
-//   PREVIEW_HOME=/root/workspace/finance-preview node serve-web.mjs
-// Env: PREVIEW_HOME, WEB_PORT (8100), WEB_HOST (0.0.0.0; e.g. a LAN IP or 127.0.0.1 to restrict), API_PROXY_TARGET (http://127.0.0.1:3100)
+// Two layouts:
+//   WEB_ROOT=/srv/web node serve-web.mjs                                  static export in $WEB_ROOT, /version.json = $WEB_ROOT/version.json
+//   PREVIEW_HOME=/root/workspace/finance-preview node serve-web.mjs       preview: the release is resolved per request through the
+//                                                                          `current` symlink, so a deploy needs no restart of this process
+// WEB_ROOT wins when both are set; PREVIEW_HOME is the preview's own layout (alias kept for the systemd units).
+// Env: WEB_ROOT, PREVIEW_HOME, WEB_PORT (8100), WEB_HOST (0.0.0.0; e.g. a LAN IP or 127.0.0.1 to restrict), API_PROXY_TARGET (http://127.0.0.1:3100)
 import { createReadStream, readFileSync, realpathSync, statSync } from 'node:fs';
 import { createServer, request as httpRequest } from 'node:http';
-import { extname, join, normalize, sep } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 
+const fixedRoot = process.env.WEB_ROOT ? resolve(process.env.WEB_ROOT) : null;
 const home = process.env.PREVIEW_HOME ?? '/root/workspace/finance-preview';
 const port = Number(process.env.WEB_PORT ?? 8100);
 const host = process.env.WEB_HOST ?? '0.0.0.0';
@@ -30,6 +33,7 @@ const types = {
 
 /** Root of the active release's web export, or null when nothing is deployed yet. */
 function releaseDirs() {
+  if (fixedRoot) return { webRoot: fixedRoot, versionFile: join(fixedRoot, 'version.json') };
   try {
     const slot = realpathSync(join(home, 'current'));
     return { webRoot: join(slot, '.preview', 'web'), versionFile: join(slot, '.preview', 'version.json') };
@@ -133,5 +137,5 @@ const server = createServer((req, res) => {
 });
 server.on('clientError', (_err, socket) => socket.destroy());
 server.listen(port, host, () => {
-  console.log(`preview web listening on http://${host}:${port} (home ${home}, api ${target.origin})`);
+  console.log(`preview web listening on http://${host}:${port} (${fixedRoot ? `root ${fixedRoot}` : `home ${home}`}, api ${target.origin})`);
 });
