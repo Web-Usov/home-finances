@@ -1,7 +1,7 @@
 ---
 id: T-055
 title: "E2E: real transfer overrun on edit"
-status: in_progress
+status: done
 epic: E-04
 depends: [T-054]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: mobile
 size: S
 branch: task/T-055-e2e-transfer-overrun-on-edit
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/64
 ---
 
 # T-055. E2E: real transfer overrun on edit
