@@ -62,7 +62,7 @@
 
 - [T-073](T-073-bind-epic-rules-to-tests-by-id.md) Bind remaining epic rules to tests by rule ID — **todo** · api · M · depends: — · —
 
-- [T-074](T-074-test-scripts-ignore-inherited-lock-env.md) Fix test:scripts failing inside task:start --new (inherited FAMILY_BUDGET_LOCKS_HELD) — **todo** · infra · S · depends: — · —
+- [T-074](T-074-test-scripts-ignore-inherited-lock-env.md) Fix test:scripts failing inside task:start --new (inherited FAMILY_BUDGET_LOCKS_HELD) — **in_progress** · infra · S · depends: — · —
 
 ## E-01. Ядро API: месяцы и операции — accepted, принят 2026-11-01
 
