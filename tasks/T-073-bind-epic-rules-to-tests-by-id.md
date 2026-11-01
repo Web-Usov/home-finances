@@ -1,7 +1,7 @@
 ---
 id: T-073
 title: "Bind remaining epic rules to tests by rule ID"
-status: in_progress          # todo | in_progress | review | done | blocked
+status: done          # todo | in_progress | review | done | blocked
 epic: E-00            # epics/E-xx-*.md
 depends: []           # [T-001, T-002] - must be done before this task starts
 blocked_by: []        # [Q-01] - open questions from docs/spec/99-open-questions.md
@@ -10,7 +10,7 @@ acceptance: []        # AC ids this task contributes to, e.g. [AC-06]
 area: api             # api | mobile | infra | docs | design
 size: M               # S | M  (one agent session, ~300-500 LOC max)
 branch: task/T-073-bind-epic-rules-to-tests-by-id          # set when work starts, e.g. task/T-000-slug
-pr: null              # PR URL once opened
+pr: https://github.com/Web-Usov/home-finances/pull/65              # PR URL once opened
 ---
 
 # T-073. Bind remaining epic rules to tests by rule ID
@@ -30,7 +30,23 @@ Every rule listed in an epic `spec:` list is referenced by ID from at least one 
 
 Every item must be verifiable by a command or a named test.
 
-- [x] Every rule listed in Context is referenced by ID in the name or a comment of a test that asserts it (list rule -> test file in `## Result
+- [x] Every rule listed in Context is referenced by ID in the name or a comment of a test that asserts it (list rule -> test file in `## Result`).
+- [x] New tests were written only where none existed and each one fails when the behavior is broken (mutation check noted in `## Result`).
+- [x] `node scripts/spec-check.mjs --verbose` reports none of these rules as unreferenced from tests; no other rule regresses.
+- [x] Tests cite rule IDs in their names; `pnpm test:unit` and `pnpm test:int` pass for touched packages.
+- [x] `pnpm verify` is green (and `pnpm e2e:smoke` if e2e specs changed)
+- [x] Task file updated (status, branch, pr, Result)
+
+## Out of scope
+
+- Changing spec rule text or deferred-coverage policy (`scripts/spec-coverage-deferred.json`).
+- Rules outside epic `spec:` lists.
+
+## Handoff log
+
+<!-- Append-only. One entry per interrupted session: date, what is done, what is next, branch/commit, gotchas. -->
+
+## Result
 
 PR: see the `pr:` field. NFR-29 was already bound by T-072 (PR #62, `apps/api/src/prisma/migrations.populated-db.int-spec.ts`); verified, not touched.
 
