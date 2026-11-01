@@ -50,7 +50,10 @@ export function makeYearly(): YearlyAnalytics {
         ...(i === 1 ? { total: '1500.00', expense: '1000.00', transfer: '500.00', adjustment: '0.00' } : ZERO),
         drillDown: drill(period),
         drillDownByType: { expense: drill(period, 'expense'), transfer: drill(period, 'transfer'), adjustment: drill(period, 'adjustment') },
-        envelopes: [],
+        envelopes:
+          i === 1
+            ? [{ envelopeId: FOOD_ID, name: 'Продукты', total: '1500.00', expense: '1000.00', transfer: '500.00', adjustment: '0.00', drillDown: { period, envelopeId: FOOD_ID } }]
+            : [],
       })),
       totals: { total: '1500.00', expense: '1000.00', transfer: '500.00', adjustment: '0.00' },
     },

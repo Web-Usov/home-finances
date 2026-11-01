@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useReportingControllerYearlyAnalyticsV1 } from '../../src/api/reporting/reporting';
 import { YearlyAnalyticsView } from '../../src/components/analytics/YearlyAnalyticsView';
 import type { YearlyAnalytics } from '../../src/components/analytics/types';
@@ -19,7 +19,10 @@ function YearButton({ label, glyph, onPress }: { label: string; glyph: string; o
 /** Analytics tab (UI-04): year switcher and the three yearly reports; values drill down to History (REP-10). */
 export default function AnalyticsScreen() {
   const router = useRouter();
-  const [year, setYear] = useState(() => Number(todayPeriod().slice(0, 4)));
+  const params = useLocalSearchParams<{ year?: string }>();
+  const paramYear = Array.isArray(params.year) ? params.year[0] : params.year;
+  // The optional `year` route param (YYYY) opens a given year; otherwise the current one.
+  const [year, setYear] = useState(() => Number(paramYear && /^\d{4}$/.test(paramYear) ? paramYear : todayPeriod().slice(0, 4)));
   const query = useReportingControllerYearlyAnalyticsV1<YearlyAnalytics, unknown>({ year: String(year) });
 
   return (

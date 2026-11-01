@@ -1,6 +1,6 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
-import { makeYearly } from '../../../test/analyticsFixtures';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { FOOD_ID, OLD_ID, makeYearly } from '../../../test/analyticsFixtures';
 import { buildHistoryLink } from '../../lib/drillDown';
 import { YearlyAnalyticsView } from './YearlyAnalyticsView';
 
@@ -66,5 +66,57 @@ describe('yearly analytics reports', () => {
     render(<YearlyAnalyticsView data={makeYearly()} onDrillDown={jest.fn()} />);
     expect(screen.queryByLabelText(/^Январь 2026, списания/)).toBeNull();
     expect(screen.queryByLabelText(/^Итого, всего/)).toBeNull();
+  });
+
+  describe('REP-07: balance line chart', () => {
+    function renderChart(data = makeYearly()) {
+      render(<YearlyAnalyticsView data={data} onDrillDown={jest.fn()} />);
+      act(() => {
+        fireEvent(screen.getByTestId('balance-chart', { hidden: true }).children[0] as never, 'layout', { nativeEvent: { layout: { width: 340, height: 160 } } });
+      });
+    }
+    const series = (id: string) => screen.queryByTestId(`balance-series-${id}`, { hidden: true });
+
+    it('REP-07: the picker selects which envelopes are drawn', () => {
+      renderChart();
+      expect(series(FOOD_ID)).toBeTruthy();
+      expect(series(OLD_ID)).toBeTruthy();
+      fireEvent.press(screen.getByLabelText('График: Старый конверт'));
+      expect(series(OLD_ID)).toBeNull();
+      expect(series(FOOD_ID)).toBeTruthy();
+      expect(within(screen.getByTestId('balance-legend', { hidden: true })).queryByText(/Старый конверт/)).toBeNull();
+      fireEvent.press(screen.getByLabelText('График: Продукты'));
+      expect(screen.getByText('Выберите конверты, чтобы построить график', { hidden: true })).toBeTruthy();
+      expect(screen.getByLabelText('График: Продукты').props.accessibilityState).toEqual({ checked: false });
+    });
+
+    it('REP-07: null months are gaps — no point and no segment across them', () => {
+      const data = makeYearly();
+      const food = data.envelopeBalances.envelopes[0];
+      if (!food) throw new Error('fixture');
+      food.months = food.months.map((m, i) => ({ ...m, closing: i === 0 ? '10000.00' : i === 2 ? '8000.00' : null }));
+      renderChart(data);
+      const foodSeries = series(FOOD_ID);
+      if (!foodSeries) throw new Error('no series');
+      expect(within(foodSeries).getAllByTestId('balance-point', { hidden: true })).toHaveLength(2);
+      expect(within(foodSeries).queryAllByTestId('balance-segment', { hidden: true })).toHaveLength(0);
+    });
+
+    it('REP-07: consecutive months are joined by segments', () => {
+      renderChart();
+      const foodSeries = series(FOOD_ID);
+      if (!foodSeries) throw new Error('no series');
+      expect(within(foodSeries).getAllByTestId('balance-point', { hidden: true })).toHaveLength(2);
+      expect(within(foodSeries).getAllByTestId('balance-segment', { hidden: true })).toHaveLength(1);
+    });
+  });
+
+  it('REP-10: per-envelope uncovered values drill down with envelopeId and type', () => {
+    const onDrillDown = jest.fn();
+    render(<YearlyAnalyticsView data={makeYearly()} onDrillDown={onDrillDown} />);
+    fireEvent.press(screen.getByLabelText(/^Февраль 2026, Продукты, списания/));
+    expect(onDrillDown).toHaveBeenLastCalledWith({ period: '2026-02', envelopeId: FOOD_ID, type: 'expense' });
+    fireEvent.press(screen.getByLabelText(/^Февраль 2026, Продукты, всего/));
+    expect(onDrillDown).toHaveBeenLastCalledWith({ period: '2026-02', envelopeId: FOOD_ID });
   });
 });

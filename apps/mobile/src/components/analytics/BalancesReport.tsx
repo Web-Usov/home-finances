@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { formatRubles } from '../../lib/money';
+import { BalanceChart } from './BalanceChart';
 import { ReportCard } from './ReportCard';
 import type { YearlyAnalytics } from './types';
 
@@ -18,16 +19,16 @@ export function BalancesReport({ report }: { report: YearlyAnalytics['envelopeBa
     <ReportCard title="Балансы конвертов" hint="Закрывающий баланс на конец месяца; «—» — конверта в этом месяце не было">
       {hasArchived && (
         <Pressable
-          role="switch"
           accessibilityRole="switch"
           accessibilityLabel="Архивные конверты"
           accessibilityState={{ checked: showArchived }}
           onPress={() => setShowArchived((v) => !v)}
-          className="self-start rounded-lg border border-gray-300 px-3 py-2 mb-2 min-h-11 justify-center"
+          className={`self-start rounded-lg border px-3 py-2 mb-2 min-h-11 justify-center ${showArchived ? 'border-primary-600 bg-primary-50' : 'border-gray-300 bg-white'}`}
         >
-          <Text className="text-sm text-gray-900">{showArchived ? '☑' : '☐'} Показывать архивные</Text>
+          <Text className="text-sm text-gray-900">Показывать архивные</Text>
         </Pressable>
       )}
+      {rows.length > 0 && <BalanceChart key={rows.map((r) => r.envelopeId).join()} envelopes={rows} />}
       {rows.length === 0 ? (
         <Text className="text-gray-500 italic">Конвертов за этот год нет</Text>
       ) : (

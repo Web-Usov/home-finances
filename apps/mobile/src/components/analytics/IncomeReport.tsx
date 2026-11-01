@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { parseMoneyMinor } from '@family-budget/types';
 import { formatRubles } from '../../lib/money';
 import { formatPeriodLabel } from '../../lib/period';
@@ -64,10 +64,11 @@ export function IncomeReport({ report }: { report: YearlyAnalytics['incomeReport
   return (
     <ReportCard title="Доход и распределение" hint="Свободные средства не входят в балансы конвертов">
       <IncomeChart months={months} />
+      <ScrollView horizontal testID="income-scroll">
       <View role="table" accessibilityLabel="Доход, распределение и свободные средства по месяцам">
         <View role="row" className="flex-row py-2 border-b border-gray-200">
           {['Месяц', 'Доход', 'Распределено', 'Свободно'].map((title, i) => (
-            <Text key={title} role="columnheader" className={`text-xs font-medium text-gray-500 ${i === 0 ? 'w-20' : 'flex-1 text-right'}`}>
+            <Text key={title} role="columnheader" className={`text-xs font-medium text-gray-500 ${i === 0 ? 'w-20' : 'w-28 pl-2 text-right'}`}>
               {title}
             </Text>
           ))}
@@ -78,9 +79,9 @@ export function IncomeReport({ report }: { report: YearlyAnalytics['incomeReport
             label={`Доход, ${formatPeriodLabel(m.period)}`}
             cells={[
               <Text key="p" role="rowheader" className="w-20 text-sm text-gray-800">{formatPeriodLabel(m.period).split(' ')[0]}</Text>,
-              <Text key="i" role="cell" className="flex-1 text-right text-sm text-gray-900">{money(m.income)}</Text>,
-              <Text key="a" role="cell" className="flex-1 text-right text-sm text-gray-900">{money(m.allocated)}</Text>,
-              <Text key="f" role="cell" className={`flex-1 text-right text-sm ${freeClass(m.free)}`}>{money(m.free, true)}</Text>,
+              <Text key="i" role="cell" className="w-28 pl-2 text-right text-sm text-gray-900">{money(m.income)}</Text>,
+              <Text key="a" role="cell" className="w-28 pl-2 text-right text-sm text-gray-900">{money(m.allocated)}</Text>,
+              <Text key="f" role="cell" className={`w-28 pl-2 text-right text-sm ${freeClass(m.free)}`}>{money(m.free, true)}</Text>,
             ]}
           />
         ))}
@@ -89,12 +90,13 @@ export function IncomeReport({ report }: { report: YearlyAnalytics['incomeReport
           label="Доход, итого за год"
           cells={[
             <Text key="p" role="rowheader" className="w-20 text-sm font-bold text-gray-900">Итого</Text>,
-            <Text key="i" role="cell" className="flex-1 text-right text-sm font-bold text-gray-900">{money(totals.income)}</Text>,
-            <Text key="a" role="cell" className="flex-1 text-right text-sm font-bold text-gray-900">{money(totals.allocated)}</Text>,
-            <Text key="f" role="cell" className={`flex-1 text-right text-sm font-bold ${freeClass(totals.free)}`}>{money(totals.free, true)}</Text>,
+            <Text key="i" role="cell" className="w-28 pl-2 text-right text-sm font-bold text-gray-900">{money(totals.income)}</Text>,
+            <Text key="a" role="cell" className="w-28 pl-2 text-right text-sm font-bold text-gray-900">{money(totals.allocated)}</Text>,
+            <Text key="f" role="cell" className={`w-28 pl-2 text-right text-sm font-bold ${freeClass(totals.free)}`}>{money(totals.free, true)}</Text>,
           ]}
         />
       </View>
+      </ScrollView>
     </ReportCard>
   );
 }
