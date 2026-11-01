@@ -58,7 +58,7 @@
 
 - [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/56)
 
-- [T-070](T-070-follow-up-tasks-batch-4-docker-migrate.md) Follow-up tasks batch 4: docker migrate offline, migration data test, rule bindings — **in_progress** · docs · S · depends: — · —
+- [T-070](T-070-follow-up-tasks-batch-4-docker-migrate.md) Follow-up tasks batch 4: docker migrate offline, migration data test, rule bindings — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/59)
 
 - [T-073](T-073-bind-epic-rules-to-tests-by-id.md) Bind remaining epic rules to tests by rule ID — **todo** · api · M · depends: — · —
 
