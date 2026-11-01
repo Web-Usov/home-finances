@@ -1,7 +1,7 @@
 ---
 id: T-041
 title: "Months: new month copies income from the previous month"
-status: todo
+status: done
 epic: E-01
 depends: [T-032, T-027]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [MON-17, MON-01, MON-07, FIN-02, SCOPE-29]
 acceptance: [AC-02]
 area: api
 size: S
-branch: null
-pr: null
+branch: task/T-041-draft-copies-income
+pr: https://github.com/Web-Usov/home-finances/pull/47
 ---
 
 # T-041. Months: new month copies income from the previous month
@@ -27,13 +27,13 @@ A newly created month (draft or open) satisfies FIN-02 from the start. Implement
 
 ## Definition of Done
 
-- [ ] `it('MON-17 / FIN-02 / SCOPE-29: ...')` int test: a draft created after a month with income 100000 and allocations 75000 has income 100000 (option A) and free 25000
-- [ ] Snapshots are still built on creation (T-032); month `version` bumped as before
-- [ ] `it('MON-17: explicit income wins over the copied one; income below the copied allocations answers 422 ALLOCATION_EXCEEDS_INCOME')`
-- [ ] `it('MON-17: the first month takes income from the request or 0')`
-- [ ] `pnpm verify` is green
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('MON-17 / FIN-02 / SCOPE-29: ...')` int test: a draft created after a month with income 100000 and allocations 75000 has income 100000 (option A) and free 25000
+- [x] Snapshots are still built on creation (T-032); month `version` bumped as before
+- [x] `it('MON-17: explicit income wins over the copied one; income below the copied allocations answers 422 ALLOCATION_EXCEEDS_INCOME')`
+- [x] `it('MON-17: the first month takes income from the request or 0')`
+- [x] `pnpm verify` is green
+- [x] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -46,4 +46,8 @@ A newly created month (draft or open) satisfies FIN-02 from the start. Implement
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+`MonthsService.create` now takes the new month's income from the request `income`, else from the latest existing month, else 0 for the first month (MON-17). The active allocations of the previous month are read first; if their total exceeds the resulting income the request fails with 422 `ALLOCATION_EXCEEDS_INCOME` (MSG-01, ru-RU amount) before anything is written. Cascade/recalc and the version bump are unchanged (T-032).
+
+Tests: unit (`months.service.spec.ts`, distinct `tx`), int `months.create-income.int-spec.ts` (copy, explicit wins, 422 creates nothing, first month, open-after-closed). Two existing unit fixtures got a consistent previous income (FIN-02).
+
+Mobile: no client change needed: "Создать следующий" (`MonthActions`) already sends only `period`, `FirstMonthForm` sends `income` only when filled. E2E adapted: `allocation-editor` (draft now shows income 100 000 / free 25 000; the negative-free/overflow display is exercised by lowering the draft income to 60 000 in the editor, and by the existing `MonthDashboard`/`AllocationEditor` component tests), `analytics` (February copies income, year total 200 000).

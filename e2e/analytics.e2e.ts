@@ -28,7 +28,9 @@ test.describe('analytics', { tag: '@smoke' }, () => {
     await expect(page.getByRole('heading', { name: 'Доход и распределение' })).toBeVisible();
     const income = page.getByLabel(`Доход, Январь ${YEAR}`);
     await expect(income).toContainText(/100\s000,00/);
-    await expect(page.getByLabel('Доход, итого за год')).toContainText(/100\s000,00/);
+    // MON-17: February (created without income) copies January's 100 000, so the year total is 200 000.
+    await expect(page.getByLabel(`Доход, Февраль ${YEAR}`)).toContainText(/100\s000,00/);
+    await expect(page.getByLabel('Доход, итого за год')).toContainText(/200\s000,00/);
     await expect(page.getByLabel(`Доход, Март ${YEAR}`)).toContainText('—');
 
     // Report 2: envelope balances; months without the envelope are "—".

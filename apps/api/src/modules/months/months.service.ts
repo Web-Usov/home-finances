@@ -103,7 +103,8 @@ export class MonthsService {
    * - an open month exists → the new month is a 'draft' (only one draft allowed);
    * - latest month closed and no draft → the new month is 'open'.
    * The period must be the immediate next month — gaps are rejected (MON-06).
-   * Income defaults to 0. Allocations of the previous month are copied for
+   * Income: the request's `income`, else the previous month's income, else 0 for
+   * the first month (MON-17). Allocations of the previous month are copied for
    * active envelopes only, as editable values (ENV-12, UI-12), atomically
    * with the month row.
    */
@@ -133,11 +134,22 @@ export class MonthsService {
         status = months.some((m) => m.status === 'open') ? 'draft' : 'open';
       }
 
-      const incomeMinor = dto.income !== undefined ? parseMoneyMinor(dto.income) : 0;
+      // MON-17: explicit income wins; otherwise the previous month's income; the first month gets 0.
+      const incomeMinor =
+        dto.income !== undefined ? parseMoneyMinor(dto.income) : (latest?.incomeMinor ?? 0);
+      const toCopy = latest === undefined ? [] : await this.activeAllocationsToCopy(tx, latest.id);
+      const copiedMinor = toCopy.reduce((sum, allocation) => sum + allocation.amountMinor, 0);
+      // MON-17 / FIN-02: the copied plan may not exceed the income (MSG-01); nothing is created.
+      if (copiedMinor > incomeMinor) {
+        throw new ValidationException(
+          'ALLOCATION_EXCEEDS_INCOME',
+          `Распределено на ${formatMoneyMinorRu(copiedMinor - incomeMinor)} ₽ больше дохода. Уменьшите суммы по конвертам.`,
+        );
+      }
       const month = await tx.budgetMonth.create({
         data: { period: dto.period, status, incomeMinor },
       });
-      const copied = latest === undefined ? 0 : await this.copyAllocations(tx, latest.id, month.id);
+      const copied = await this.copyAllocations(tx, month.id, toCopy);
       // FIN-04 / DATA-06: build the new month's snapshots (carried opening, copied
       // allocations as replenished) in the same transaction (ADR 0004). The engine
       // bumps `version` of the new month (1 -> 2, ADR 0005); nothing else can hold
@@ -150,32 +162,40 @@ export class MonthsService {
   }
 
   /**
-   * Copy the previous month's allocations into the new month for ACTIVE
-   * envelopes only — archived envelopes never enter new distributions
-   * (ENV-12). Returns the copied total for the summary.
+   * The previous month's allocations that are copied into a new month: ACTIVE
+   * envelopes only — archived envelopes never enter new distributions (ENV-12).
    */
-  private async copyAllocations(
+  private async activeAllocationsToCopy(
     db: DbClient,
     fromMonthId: string,
-    toMonthId: string,
-  ): Promise<number> {
+  ): Promise<Array<{ envelopeId: string; amountMinor: number }>> {
     const previous = await db.allocation.findMany({
       where: { monthId: fromMonthId },
       select: { envelopeId: true, amountMinor: true, envelope: { select: { status: true } } },
     });
-    const active = previous.filter((allocation) => allocation.envelope.status === 'active');
-    if (active.length === 0) {
+    return previous
+      .filter((allocation) => allocation.envelope.status === 'active')
+      .map(({ envelopeId, amountMinor }) => ({ envelopeId, amountMinor }));
+  }
+
+  /** Insert the copied allocations into the new month; returns the copied total for the summary. */
+  private async copyAllocations(
+    db: DbClient,
+    toMonthId: string,
+    allocations: Array<{ envelopeId: string; amountMinor: number }>,
+  ): Promise<number> {
+    if (allocations.length === 0) {
       return 0;
     }
 
     await db.allocation.createMany({
-      data: active.map((allocation) => ({
+      data: allocations.map((allocation) => ({
         monthId: toMonthId,
         envelopeId: allocation.envelopeId,
         amountMinor: allocation.amountMinor,
       })),
     });
-    return active.reduce((sum, allocation) => sum + allocation.amountMinor, 0);
+    return allocations.reduce((sum, allocation) => sum + allocation.amountMinor, 0);
   }
 
   /**
