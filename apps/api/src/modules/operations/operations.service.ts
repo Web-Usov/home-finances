@@ -62,14 +62,19 @@ export class OperationsService {
 
   /**
    * HIST-11: operation history, chronological (period, then sequence_no), each with its result
-   * (covered / uncovered parts). Filters: period, envelope (either side of a transfer), type.
+   * (covered / uncovered parts). Filters: period, envelope (either side of a transfer,
+   * or the source only with `role=source`, HIST-15), type, `uncoveredOnly` (result.uncovered > 0, HIST-15).
    */
   async list(query: OperationListQuery): Promise<{ operations: OperationHistoryItem[] }> {
     const operations = await this.prisma.operation.findMany({
       where: {
         ...(query.period !== undefined ? { month: { period: query.period } } : {}),
         ...(query.type !== undefined ? { type: query.type } : {}),
-        ...(query.envelopeId !== undefined
+        ...(query.uncoveredOnly === true ? { result: { is: { uncoveredMinor: { gt: 0 } } } } : {}),
+        ...(query.envelopeId !== undefined && query.role === 'source'
+          ? { sourceEnvelopeId: query.envelopeId }
+          : {}),
+        ...(query.envelopeId !== undefined && query.role !== 'source'
           ? {
               OR: [
                 { sourceEnvelopeId: query.envelopeId },

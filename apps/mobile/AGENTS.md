@@ -22,7 +22,7 @@ orval.config.js              client generation from ../api/openapi.json (committ
 tailwind.config.js, global.css, metro.config.js, nativewind-env.d.ts   NativeWind setup
 ```
 
-Screen state: the **Envelopes**, **Month**, **History** and **Analytics** screens are wired to the API (history: `src/components/history/*`, deep-link params `period`, `envelopeId`, `type`); **Analytics** (`src/components/analytics/*`: income, balances, uncovered reports; drill-down links come only from `src/lib/drillDown.ts`) is wired to `GET /analytics/yearly`.
+Screen state: the **Envelopes**, **Month**, **History** and **Analytics** screens are wired to the API (history: `src/components/history/*`, deep-link params `period`, `envelopeId`, `type`, `uncoveredOnly`, `role`; the analytics drill-down sets `uncoveredOnly=true&role=source`, shown as a clearable chip, HIST-15); **Analytics** (`src/components/analytics/*`: income, balances, uncovered reports; drill-down links come only from `src/lib/drillDown.ts`) is wired to `GET /analytics/yearly`.
 Check `tasks/` before building a screen.
 
 ## Conventions

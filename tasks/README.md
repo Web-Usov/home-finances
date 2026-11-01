@@ -88,7 +88,7 @@
 
 - [T-008](T-008-analytics-yearly-api.md) Reporting: yearly analytics endpoint (three reports) — **done** · api · M · depends: T-004 · [PR](https://github.com/Web-Usov/home-finances/pull/17)
 
-- [T-045](T-045-operations-filters-uncovered-only-role-source.md) Operations: uncoveredOnly and role=source filters for analytics drill-down — **todo** · api · M · depends: T-008, T-025 · —
+- [T-045](T-045-operations-filters-uncovered-only-role-source.md) Operations: uncoveredOnly and role=source filters for analytics drill-down — **done** · api · M · depends: T-008, T-025 · [PR](https://github.com/Web-Usov/home-finances/pull/49)
 
 ## E-03. Экран «Месяц» и редактор распределения — planned
 

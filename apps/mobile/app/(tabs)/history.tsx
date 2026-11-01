@@ -18,21 +18,32 @@ const TYPES: HistoryTypeFilter[] = ['expense', 'transfer', 'adjustment', 'initia
 const single = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
 /**
- * History tab (UI-03). Deep-link params `period` (YYYY-MM), `envelopeId` and `type` preselect the view — the analytics
+ * History tab (UI-03). Deep-link params `period` (YYYY-MM), `envelopeId`, `type`, `uncoveredOnly=true` and `role=source` (HIST-15) preselect the view — the analytics
  * drill-down (T-013) links here. The period is shared with the month screen through the month store.
  */
 export default function HistoryScreen() {
   const queryClient = useQueryClient();
-  const params = useLocalSearchParams<{ period?: string; envelopeId?: string; type?: string }>();
+  const params = useLocalSearchParams<{
+    period?: string;
+    envelopeId?: string;
+    type?: string;
+    uncoveredOnly?: string;
+    role?: string;
+  }>();
   const paramPeriod = single(params.period);
   const paramEnvelope = single(params.envelopeId) ?? null;
   const paramType = single(params.type);
+  const paramUncoveredOnly = single(params.uncoveredOnly) === 'true';
+  const paramRoleSource = single(params.role) === 'source';
   const { currentPeriod, setCurrentPeriod } = useMonthStore();
 
   const [envelopeId, setEnvelopeId] = useState<string | null>(paramEnvelope);
   const [type, setType] = useState<HistoryTypeFilter | null>(
     TYPES.find((value) => value === paramType) ?? null,
   );
+
+  const [uncoveredOnly, setUncoveredOnly] = useState(paramUncoveredOnly);
+  const [roleSource, setRoleSource] = useState(paramRoleSource);
 
   useEffect(() => {
     if (paramPeriod !== undefined && isValidPeriod(paramPeriod)) setCurrentPeriod(paramPeriod);
@@ -43,6 +54,11 @@ export default function HistoryScreen() {
   useEffect(() => {
     setType(TYPES.find((value) => value === paramType) ?? null);
   }, [paramType]);
+
+  useEffect(() => {
+    setUncoveredOnly(paramUncoveredOnly);
+    setRoleSource(paramRoleSource);
+  }, [paramUncoveredOnly, paramRoleSource]);
 
   const monthsQuery = useMonthsControllerListV1();
   const months = monthsQuery.data?.months ?? [];
@@ -107,9 +123,15 @@ export default function HistoryScreen() {
             months={months}
             envelopeId={envelopeId}
             type={type}
+            uncoveredOnly={uncoveredOnly}
+            roleSource={roleSource}
             onPeriodChange={setCurrentPeriod}
             onEnvelopeChange={setEnvelopeId}
             onTypeChange={setType}
+            onClearUncoveredOnly={() => {
+              setUncoveredOnly(false);
+              setRoleSource(false);
+            }}
           />
         )}
       </View>

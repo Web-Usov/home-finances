@@ -183,6 +183,56 @@ describe('Yearly analytics (integration)', () => {
     ]);
   });
 
+  it('REP-10 / HIST-15: drillDown of every non-zero uncovered value returns exactly the rows summing to it', async () => {
+    const { jan, food, home } = await setup();
+    // noise that must not appear in any drill-down: covered rows, a positive adjustment, a transfer INTO Home
+    await addOperation(jan.id, { type: 'adjustment', sourceEnvelopeId: home.id, sign: '+', amount: '500.00' });
+    await addOperation(jan.id, { type: 'transfer', sourceEnvelopeId: food.id, destinationEnvelopeId: home.id, amount: '100.00' });
+    await addOperation(jan.id, { type: 'expense', sourceEnvelopeId: food.id, amount: '10.00' });
+    await addOperation(jan.id, { type: 'transfer', sourceEnvelopeId: home.id, destinationEnvelopeId: food.id, amount: '20000.00' });
+    await allocate('2026-01', jan.id, { [food.id]: '50000.00', [home.id]: '10000.00' });
+    await addOperation(jan.id, { type: 'expense', sourceEnvelopeId: home.id, amount: '30000.00' });
+    await addOperation(jan.id, { type: 'adjustment', sourceEnvelopeId: home.id, sign: '-', amount: '200.00' });
+    const { uncoveredOperations } = (await yearly().expect(200)).body;
+    const month = uncoveredOperations.months[0];
+
+    /** The client adds the HIST-15 filters to every uncovered-report key (buildHistoryLink). */
+    const rowsSum = async (key: object) => {
+      const res = await http()
+        .get('/api/v1/operations')
+        .query({ ...key, uncoveredOnly: 'true', role: 'source' })
+        .expect(200);
+      const ops = res.body.operations as { result: { uncoveredMinor: number } }[];
+      expect(ops.every((op) => op.result.uncoveredMinor > 0)).toBe(true);
+      return { count: ops.length, sum: ops.reduce((acc, op) => acc + op.result.uncoveredMinor, 0) };
+    };
+    const minor = (value: string) => Math.round(Number(value) * 100);
+
+    const cells: [string, object][] = [
+      [month.total, month.drillDown],
+      [month.expense, month.drillDownByType.expense],
+      [month.transfer, month.drillDownByType.transfer],
+      [month.adjustment, month.drillDownByType.adjustment],
+    ];
+    for (const e of month.envelopes) {
+      cells.push([e.total, e.drillDown]);
+      cells.push([e.expense, { ...e.drillDown, type: 'expense' }]);
+      cells.push([e.transfer, { ...e.drillDown, type: 'transfer' }]);
+      cells.push([e.adjustment, { ...e.drillDown, type: 'adjustment' }]);
+    }
+    let checked = 0;
+    for (const [value, key] of cells) {
+      if (minor(value) === 0) continue;
+      const { sum, count } = await rowsSum(key);
+      expect({ key, sum }).toEqual({ key, sum: minor(value) });
+      expect(count).toBeGreaterThan(0);
+      checked += 1;
+    }
+    expect(checked).toBe(8);
+    // the adjustment cell has exactly one row: the negative adjustment, not the +500 one
+    expect((await rowsSum(month.drillDownByType.adjustment)).count).toBe(1);
+  });
+
   it('REP-11: uncovered amounts do not appear in later months', async () => {
     const { jan, food, home } = await setup();
     await addOperation(jan.id, { type: 'expense', sourceEnvelopeId: home.id, amount: '30000.00' });
