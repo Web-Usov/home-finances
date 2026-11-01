@@ -45,10 +45,12 @@ export function syncMonthVersionFromETag(queryClient: QueryClient): () => void {
   const listener: Listener = (period, version) => {
     queryClient.setQueriesData<{ month?: { period: string; version: number } }>(
       { queryKey: getReportingControllerMonthlyDashboardV1QueryKey().slice(0, 1) },
+      // `undefined` leaves the query untouched: returning the old data would still call `setQueryData` and clear
+      // the invalidation of an unrelated month (it would then not be refetched when opened).
       (cached) =>
         cached?.month !== undefined && cached.month.period === period && cached.month.version < version
           ? { ...cached, month: { ...cached.month, version } }
-          : cached,
+          : undefined,
     );
   };
   listeners.add(listener);

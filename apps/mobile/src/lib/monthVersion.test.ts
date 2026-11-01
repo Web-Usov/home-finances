@@ -77,6 +77,18 @@ describe('syncMonthVersionFromETag (API-26)', () => {
     unsubscribe();
   });
 
+  it('API-26: a month the ETag is not about stays invalidated (it must still be refetched when opened)', async () => {
+    const { queryClient, unsubscribe } = setup();
+    await queryClient.invalidateQueries({ queryKey: key('2026-02') });
+
+    notifyMonthETag('"4"', { data: { summary: { period: '2026-01', version: 4 } }, warnings: [] });
+    notifyMonthETag('"1"', { data: { summary: { period: '2026-01', version: 1 } }, warnings: [] });
+
+    expect(queryClient.getQueryState(key('2026-02'))?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(key('2026-01'))?.isInvalidated).toBe(false);
+    unsubscribe();
+  });
+
   it('stops after unsubscribe', () => {
     const { queryClient, unsubscribe } = setup();
     unsubscribe();
