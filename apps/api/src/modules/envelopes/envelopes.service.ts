@@ -245,7 +245,7 @@ export class EnvelopesService {
       if (balanceMinor !== 0) {
         throw new ConflictException(
           'ENVELOPE_NOT_EMPTY',
-          `Невозможно архивировать конверт «${envelope.name}»: баланс ${formatMoneyMinorRu(balanceMinor)} ₽. Переведите остаток или сделайте отрицательную корректировку.`,
+          `Сначала обнулите конверт. Текущий остаток: ${formatMoneyMinorRu(balanceMinor)} ₽.`,
         );
       }
 

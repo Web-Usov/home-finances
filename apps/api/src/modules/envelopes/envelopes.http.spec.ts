@@ -239,7 +239,7 @@ describe('Envelopes HTTP integration', () => {
     });
   });
 
-  it('MSG-05 / MSG-07: POST /api/v1/envelopes/:id/archive rejects non-empty envelopes with a ru-RU balance', async () => {
+  it('MSG-05 / MSG-07: archive of a non-empty envelope answers the verbatim text', async () => {
     mock.envelope.findUnique.mockResolvedValue(makeEnvelope({ id: 'env-a', name: 'Еда' }));
     mock.budgetMonth.findMany.mockResolvedValue([makeMonth({ status: 'open' })]);
     mock.envelopeMonthSnapshot.findMany.mockResolvedValue([
@@ -252,8 +252,7 @@ describe('Envelopes HTTP integration', () => {
 
     expect(response.body).toMatchObject({
       error: 'ENVELOPE_NOT_EMPTY',
-      message:
-        'Невозможно архивировать конверт «Еда»: баланс 500,00 ₽. Переведите остаток или сделайте отрицательную корректировку.',
+      message: 'Сначала обнулите конверт. Текущий остаток: 500,00 ₽.',
     });
   });
 });

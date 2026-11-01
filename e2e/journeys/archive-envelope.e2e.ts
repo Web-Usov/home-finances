@@ -9,7 +9,7 @@ test.describe('journey: archiving an envelope', () => {
     await page.goto('/envelopes');
     await expect(page.getByText('Копилка', { exact: true })).toBeVisible();
     await page.getByText('Архивировать', { exact: true }).click();
-    await expect(page.getByText(/Невозможно архивировать конверт «Копилка»: баланс 2\s000(,00)?\s₽\./)).toBeVisible();
+    await expect(page.getByText(/Сначала обнулите конверт\. Текущий остаток: 2\s000(,00)?\s₽\./)).toBeVisible();
     await expect(page.getByText('Копилка', { exact: true })).toBeVisible();
     await shot(page, testInfo, '01-archive-blocked');
 

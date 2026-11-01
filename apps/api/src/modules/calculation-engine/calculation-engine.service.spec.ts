@@ -571,6 +571,23 @@ describe('CalculationEngineService.recalculateFrom', () => {
     ]);
   });
 
+  it('ENV-11 / CALC-12: ARCHIVED_ENVELOPE_WITH_BALANCE warns when the closing balance of an archived envelope is negative', async () => {
+    stubScenario(mock, {
+      months: [makeMonth({ id: 'month-1', period: '2026-08' })],
+      previousMonth: makeMonth({ id: 'month-0', period: '2026-07' }),
+      previousSnapshots: [makeSnapshot({ monthId: 'month-0', closing: -30_000 })],
+      envelopes: [makeEnvelope({ status: 'archived', archivedPeriod: '2026-08', name: 'Ремонт' })],
+    });
+
+    const result = await service.recalculateFrom('2026-08');
+
+    expect(result.warnings).toHaveLength(1);
+    const [warning] = result.warnings;
+    expect(warning?.code).toBe('ARCHIVED_ENVELOPE_WITH_BALANCE');
+    expect(warning?.message).toContain('Ремонт');
+    expect(warning?.message).toContain('остаток равен \u2212300,00 ₽.'); // MSG-07
+  });
+
   it('does not warn when the archived envelope keeps a zero balance', async () => {
     stubScenario(mock, {
       months: [makeMonth()],
