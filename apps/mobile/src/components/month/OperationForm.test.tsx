@@ -9,6 +9,7 @@ import { makeDashboard } from '../../../test/monthFixtures';
 import { OperationForm } from './OperationForm';
 import type { QuickActionKind } from './QuickActions';
 import type { Dashboard } from './types';
+import type { HistoryOperation } from '../history/types';
 
 jest.mock('../../api/axios-instance', () => ({
   __esModule: true,
@@ -73,6 +74,38 @@ function lastIfMatch(): string | undefined {
 
 function postCalls() {
   return mockRequest.mock.calls.filter(([config]) => (config as { method?: string }).method === 'POST');
+}
+
+function makeTransfer(overrides: Partial<HistoryOperation> = {}): HistoryOperation {
+  return {
+    id: 'op-t',
+    sequenceNo: 3,
+    monthId: 'm-1',
+    type: 'transfer',
+    sourceEnvelopeId: 'e-home',
+    destinationEnvelopeId: 'e-food',
+    requestedMinor: 100_000,
+    sign: null,
+    isInitial: false,
+    comment: null,
+    createdAt: '2026-01-05T00:00:00.000Z',
+    updatedAt: '2026-01-05T00:00:00.000Z',
+    period: '2026-01',
+    result: null,
+    ...overrides,
+  } as HistoryOperation;
+}
+
+function renderEdit(kind: QuickActionKind, editing: HistoryOperation) {
+  const onSaved = jest.fn();
+  renderWithProviders(
+    <OperationForm kind={kind} dashboard={makeDashboardWithEnvelopes({ version: 9 })} onSaved={onSaved} onCancel={jest.fn()} editing={editing} />,
+  );
+  return { onSaved };
+}
+
+function patchCalls() {
+  return mockRequest.mock.calls.filter(([config]) => (config as { method?: string }).method === 'PATCH');
 }
 
 jest.setTimeout(20000); // first render compiles NativeWind/RN modules; slow on a loaded machine
@@ -181,6 +214,39 @@ describe('OperationForm', () => {
 
     expect(screen.getByRole('radio', { name: 'Откуда: Продукты' })).toBeTruthy();
     expect(screen.queryByRole('radio', { name: /Старый/ })).toBeNull();
+  });
+
+  it('HIST-09: changing the transfer source offers the replace flow', async () => {
+    const message = `Доступно 4${NBSP}321,50${NBSP}₽. Перевести только 4${NBSP}321,50${NBSP}₽?`;
+    mockRequest.mockRejectedValueOnce(apiError(409, 'TRANSFER_EXCEEDS_BALANCE', message, '4321.50')).mockResolvedValue(created());
+    const { onSaved } = renderEdit('transfer', makeTransfer({ result: { sourceBalanceBefore: 600_000 } as HistoryOperation['result'] }));
+
+    // Source moved from Дом to Продукты, destination to Дом: the stored result of the old source must not be used.
+    pick('Откуда', 'Продукты');
+    pick('Куда', 'Дом');
+    fireEvent.changeText(screen.getByLabelText('Сумма'), '20000');
+    press('Сохранить изменения');
+
+    expect(await screen.findByText(message)).toBeTruthy();
+    expect(patchCalls()).toHaveLength(1);
+    press(`Перевести только 4${NBSP}321,50${NBSP}₽`);
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ kind: 'transfer', warnings: [] }));
+    expect(patchCalls()).toHaveLength(2);
+    expect(lastBody()).toMatchObject({ sourceEnvelopeId: 'e-food', destinationEnvelopeId: 'e-home', amount: '4321.50' });
+  });
+
+  it('HIST-09: edit preselects an archived source envelope', async () => {
+    mockRequest.mockResolvedValue(created());
+    const { onSaved } = renderEdit('transfer', makeTransfer({ sourceEnvelopeId: 'e-old', destinationEnvelopeId: 'e-food' }));
+
+    const archived = screen.getByRole('radio', { name: 'Откуда: Старый (архив)' });
+    expect(archived.props.accessibilityState.checked).toBe(true);
+    // ENV-12: it is only offered because it belongs to this operation; a new form still hides it.
+    press('Сохранить изменения');
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(lastBody()).toMatchObject({ sourceEnvelopeId: 'e-old', destinationEnvelopeId: 'e-food', amount: '1000.00' });
   });
 
   it('validation: no envelope, an empty or zero amount and an invalid amount block the request', async () => {

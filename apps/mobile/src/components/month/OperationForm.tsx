@@ -82,7 +82,7 @@ function EnvelopePicker({ label, envelopes, value, onChange, error, disabled }: 
             <Pressable
               key={envelope.envelopeId}
               accessibilityRole="radio"
-              accessibilityLabel={`${label}: ${envelope.name}`}
+              accessibilityLabel={`${label}: ${envelope.name}${envelope.status === 'archived' ? ' (архив)' : ''}`}
               accessibilityState={{ checked: selected, disabled }}
               disabled={disabled}
               onPress={() => onChange(envelope.envelopeId)}
@@ -90,7 +90,10 @@ function EnvelopePicker({ label, envelopes, value, onChange, error, disabled }: 
                 selected ? 'border-primary-600 bg-primary-50' : 'border-gray-300 bg-white'
               }`}
             >
-              <Text className="text-sm font-medium text-gray-900">{envelope.name}</Text>
+              <Text className="text-sm font-medium text-gray-900">
+                {envelope.name}
+                {envelope.status === 'archived' ? ' (архив)' : ''}
+              </Text>
               <Text className="text-xs text-gray-600">{formatRubles(envelope.closing)}</Text>
             </Pressable>
           );
@@ -119,7 +122,7 @@ interface OperationFormProps {
 /**
  * Expense / transfer / adjustment form (UI-10). Month-only (AC-21): the operation always goes to the month shown on
  * screen — `period` and that month's `version` are sent with every request (UI-16, API-21). Archived envelopes are not
- * offered (ENV-12). The balance shown and compared is the envelope's `closing` from the dashboard response; the
+ * offered for new choices (ENV-12); editing keeps the operation's own archived envelopes preselected (HIST-09). The balance shown and compared is the envelope's `closing` from the dashboard response; the
  * uncovered part is never computed here — it arrives in the API warnings after the save (OP-06, OP-12).
  * A transfer above the available balance is refused by the API (OP-07); the form then offers one click to
  * transfer the available amount (MSG-03).
@@ -127,7 +130,14 @@ interface OperationFormProps {
 export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: OperationFormProps) {
   const { month, envelopes } = dashboard;
   const locked = month.status === 'closed';
-  const active = envelopes.filter((envelope) => envelope.status === 'active');
+  // ENV-12: archived envelopes are not offered for new choices; in edit mode the operation's own archived envelopes
+  // stay visible (flagged) so they can be preselected and the operation remains editable.
+  const active = envelopes.filter(
+    (envelope) =>
+      envelope.status === 'active' ||
+      (editing !== undefined &&
+        (envelope.envelopeId === editing.sourceEnvelopeId || envelope.envelopeId === editing.destinationEnvelopeId)),
+  );
   const create = useCreateOperation();
   const update = useUpdateOperation();
   const pending = create.isPending || update.isPending;
