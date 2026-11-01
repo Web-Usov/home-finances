@@ -80,7 +80,7 @@
 
 - [T-050](T-050-if-match-etag-optimistic-locking.md) Optimistic locking via If-Match / ETag headers for all month-scoped mutations — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/46)
 
-## E-02. Отчётность API — planned
+## E-02. Отчётность API — done
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)
 
@@ -90,7 +90,7 @@
 
 - [T-045](T-045-operations-filters-uncovered-only-role-source.md) Operations: uncoveredOnly and role=source filters for analytics drill-down — **done** · api · M · depends: T-008, T-025 · [PR](https://github.com/Web-Usov/home-finances/pull/49)
 
-## E-03. Экран «Месяц» и редактор распределения — planned
+## E-03. Экран «Месяц» и редактор распределения — done
 
 Эпик: [E-03-month-screen.md](../epics/E-03-month-screen.md)
 
@@ -100,7 +100,7 @@
 
 - [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **done** · mobile · S · depends: T-009, T-024 · [PR](https://github.com/Web-Usov/home-finances/pull/37)
 
-## E-04. Операции и история (UI) — planned
+## E-04. Операции и история (UI) — done
 
 Эпик: [E-04-operations-ui.md](../epics/E-04-operations-ui.md)
 
@@ -108,13 +108,13 @@
 
 - [T-012](T-012-history-screen.md) Mobile: history screen with filters, edit and delete — **done** · mobile · M · depends: T-005, T-011 · [PR](https://github.com/Web-Usov/home-finances/pull/39)
 
-## E-05. Годовая аналитика (UI) — planned
+## E-05. Годовая аналитика (UI) — done
 
 Эпик: [E-05-analytics-ui.md](../epics/E-05-analytics-ui.md)
 
 - [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **done** · mobile · M · depends: T-008, T-012 · [PR](https://github.com/Web-Usov/home-finances/pull/41)
 
-## E-06. Приёмка MVP и поставка — planned
+## E-06. Приёмка MVP и поставка — done
 
 Эпик: [E-06-mvp-release.md](../epics/E-06-mvp-release.md)
 
@@ -130,4 +130,4 @@
 
 - [T-048](T-048-mobile-refresh-month-after-envelope-change.md) Refresh the month dashboard after envelope create/rename/archive — **done** · mobile · S · depends: T-015 · [PR](https://github.com/Web-Usov/home-finances/pull/43)
 
-- [T-058](T-058-milestone-reports-e-02-e-06-and-e-01.md) Milestone reports E-02..E-06 and E-01 addendum — **in_progress** · docs · M · depends: — · —
+- [T-058](T-058-milestone-reports-e-02-e-06-and-e-01.md) Milestone reports E-02..E-06 and E-01 addendum — **review** · docs · M · depends: — · —

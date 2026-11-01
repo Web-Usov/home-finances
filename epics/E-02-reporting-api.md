@@ -1,7 +1,7 @@
 ---
 id: E-02
 title: Отчётность API
-status: planned
+status: done
 accepted: null
 spec: [UI-06, UI-07, UI-08, UI-09, HIST-12, FIN-11, FIN-12, REP-01, REP-02, REP-03, REP-04, REP-05, REP-06, REP-07, REP-08, REP-09, REP-10, REP-11, API-12, API-13]
 ---

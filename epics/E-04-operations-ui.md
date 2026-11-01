@@ -1,7 +1,7 @@
 ---
 id: E-04
 title: Операции и история (UI)
-status: planned
+status: done
 accepted: null
 spec: [UI-03, UI-10, HIST-01, HIST-02, HIST-03, HIST-04, HIST-05, HIST-07, HIST-08, HIST-09, HIST-10, HIST-11, HIST-12, OP-06, OP-07, OP-12, OP-13, MSG-02, MSG-03, MSG-04, MSG-06]
 ---
