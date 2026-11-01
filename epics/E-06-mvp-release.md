@@ -1,8 +1,8 @@
 ---
 id: E-06
 title: Приёмка MVP и поставка
-status: planned
-accepted: null
+status: accepted
+accepted: 2026-11-01
 spec: [DOD-01, DOD-02, DOD-03, DOD-04, DOD-05, DOD-06, NFR-27, NFR-29, AC-01, AC-02, AC-03, AC-04, AC-05, AC-06, AC-07, AC-08, AC-09, AC-10, AC-11, AC-12, AC-13, AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-20, AC-21, AC-22]
 ---
 

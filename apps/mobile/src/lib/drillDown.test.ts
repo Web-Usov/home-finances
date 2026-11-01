@@ -11,7 +11,11 @@ describe('REP-10: buildHistoryLink', () => {
   it('REP-10: omits absent filters', () => {
     expect(buildHistoryLink({ period: '2026-02' })).toEqual({
       pathname: '/history',
-      params: { period: '2026-02', uncoveredOnly: 'true', role: 'source' },
+      params: { period: '2026-02', uncoveredOnly: 'true' },
     });
+  });
+
+  it('HIST-15: never sends role=source without envelopeId (the API answers 422)', () => {
+    expect(buildHistoryLink({ period: '2026-02', type: 'expense' }).params).not.toHaveProperty('role');
   });
 });

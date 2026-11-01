@@ -218,7 +218,7 @@ export const UpdateOperationRequestSchema = z.object({
 export const OperationListRoleSchema = z.enum(['source']);
 
 /** HIST-11 / HIST-15: history filters (the month is selected by `period`). Query strings carry `uncoveredOnly=true|false`. */
-export const OperationListQuerySchema = z.object({
+export const OperationListQueryBaseSchema = z.object({
   period: PeriodSchema.optional(),
   envelopeId: z.string().uuid().optional(),
   type: OperationTypeSchema.optional(),
@@ -228,6 +228,12 @@ export const OperationListQuerySchema = z.object({
     .transform((value) => value === 'true')
     .optional(),
 });
+
+/** HIST-15: `role=source` is meaningful only together with `envelopeId`; alone it is a 422, not silently ignored. */
+export const OperationListQuerySchema = OperationListQueryBaseSchema.refine(
+  (query) => query.role === undefined || query.envelopeId !== undefined,
+  { path: ['role'], message: 'role=source requires envelopeId' },
+);
 
 // API-25: the expected month version travels in the `If-Match` header, never in a body or query.
 // Close/reopen therefore have no request body at all.
@@ -395,7 +401,7 @@ export const YearlyAnalyticsQuerySchema = z.object({
  * (`GET /operations?period&envelopeId&type`). The client adds `uncoveredOnly=true&role=source` (HIST-15) for the uncovered
  * report, so the history shows exactly the rows behind the number.
  */
-export const AnalyticsDrillDownSchema = OperationListQuerySchema.pick({
+export const AnalyticsDrillDownSchema = OperationListQueryBaseSchema.pick({
   period: true,
   envelopeId: true,
   type: true,
