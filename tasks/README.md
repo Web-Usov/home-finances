@@ -42,7 +42,7 @@
 
 - [T-042](T-042-period-month-range-and-transfer-period-test.md) Types: PeriodSchema rejects months outside 01-12, explicit-period transfer test — **todo** · api · S · depends: T-025 · —
 
-- [T-043](T-043-msg-05-text-and-negative-closing-warning.md) Envelopes: align MSG-05 text with the spec, test negative closing warning — **todo** · api · S · depends: T-026 · —
+- [T-043](T-043-msg-05-text-and-negative-closing-warning.md) Envelopes: align MSG-05 text with the spec, test negative closing warning — **in_progress** · api · S · depends: T-026 · —
 
 - [T-044](T-044-shared-working-month-and-free-helpers.md) API: shared working-month and free-funds helpers, dedup yearly uncovered schema — **todo** · api · S · depends: T-043, T-008 · —
 

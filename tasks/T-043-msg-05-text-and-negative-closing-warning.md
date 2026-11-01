@@ -1,7 +1,7 @@
 ---
 id: T-043
 title: "Envelopes: align MSG-05 text with the spec, test negative closing warning"
-status: todo
+status: in_progress
 epic: E-00
 depends: [T-026]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [MSG-05, MSG-07, ENV-11]
 acceptance: []
 area: api
 size: S
-branch: null
+branch: task/T-043-msg-05-text-and-negative-closing-warning
 pr: null
 ---
 
