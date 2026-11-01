@@ -26,28 +26,21 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+File planner follow-up batch 4 as `todo` tasks: T-071 (docker migrate offline), T-072 (NFR-29 populated-DB migrations), T-073 (bind remaining epic rules to tests), T-074 (test:scripts vs inherited lock env, found while filing this batch).
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- `/root/.opencode/plan/planner-followups.md` items 24 and 25. Item 24 (task:start --new id race) is already covered by T-057 (PR #56, merged); item 25 = T-071.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Tasks T-071..T-074 exist as `todo` with Goal, Context, verifiable DoD, Out of scope.
+- [x] `pnpm tasks:check` and `pnpm tasks:board` pass.
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Implementing any of the filed tasks.
 
 ## Handoff log
 
@@ -55,4 +48,4 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Filed T-071..T-074 (todo). Follow-up items 24 and 25 marked PROCESSED in the planner follow-ups file.

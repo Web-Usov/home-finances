@@ -60,6 +60,10 @@
 
 - [T-070](T-070-follow-up-tasks-batch-4-docker-migrate.md) Follow-up tasks batch 4: docker migrate offline, migration data test, rule bindings — **in_progress** · docs · S · depends: — · —
 
+- [T-073](T-073-bind-epic-rules-to-tests-by-id.md) Bind remaining epic rules to tests by rule ID — **todo** · api · M · depends: — · —
+
+- [T-074](T-074-test-scripts-ignore-inherited-lock-env.md) Fix test:scripts failing inside task:start --new (inherited FAMILY_BUDGET_LOCKS_HELD) — **todo** · infra · S · depends: — · —
+
 ## E-01. Ядро API: месяцы и операции — accepted, принят 2026-11-01
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
@@ -147,3 +151,7 @@
 - [T-048](T-048-mobile-refresh-month-after-envelope-change.md) Refresh the month dashboard after envelope create/rename/archive — **done** · mobile · S · depends: T-015 · [PR](https://github.com/Web-Usov/home-finances/pull/43)
 
 - [T-058](T-058-milestone-reports-e-02-e-06-and-e-01.md) Milestone reports E-02..E-06 and E-01 addendum — **done** · docs · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/53)
+
+- [T-071](T-071-docker-migrate-offline-corepack.md) Docker: migrate service must run offline (corepack cache readable by USER node) — **todo** · infra · S · depends: — · —
+
+- [T-072](T-072-migrations-on-populated-database.md) NFR-29: verify migrations apply on a populated database — **todo** · api · M · depends: — · —
