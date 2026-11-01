@@ -6,7 +6,7 @@ import { MonthsModule } from '../modules/months/months.module';
 import { OperationsModule } from '../modules/operations/operations.module';
 import { ReportingModule } from '../modules/reporting/reporting.module';
 import { createEnvelope, createMonth, resetDb } from '../../test/db';
-import { createTestApp, TestApp } from '../../test/http';
+import { createTestApp, TestApp, etag } from '../../test/http';
 
 const MODULES = [MonthsModule, AllocationsModule, EnvelopesModule, OperationsModule, ReportingModule];
 
@@ -35,11 +35,12 @@ describe('MVP acceptance scenarios (integration)', () => {
   const versionOf = async (period: string) =>
     (await t.prisma.budgetMonth.findUniqueOrThrow({ where: { period } })).version;
   const allocate = async (period: string, allocations: Record<string, string>) =>
-    http().put(`/api/v1/months/${period}/allocations`).send({ allocations, version: await versionOf(period) });
+    http().put(`/api/v1/months/${period}/allocations`).set('If-Match', etag(await versionOf(period))).send({ allocations });
   const operate = async (period: string, body: object) =>
     http()
       .post('/api/v1/operations')
-      .send({ ...body, version: await versionOf(period) });
+      .set('If-Match', etag(await versionOf(period)))
+      .send({ ...body });
   const balances = async () =>
     Object.fromEntries(
       (await http().get('/api/v1/envelopes').expect(200)).body.envelopes.map(
@@ -122,7 +123,7 @@ describe('MVP acceptance scenarios (integration)', () => {
     await allocate('2026-01', { [food.id]: '5000.00', [home.id]: '0.00' }).then((r) => expect(r.status).toBe(200));
     await http()
       .post('/api/v1/months/2026-01/close')
-      .send({ version: await versionOf('2026-01') })
+      .set('If-Match', etag(await versionOf('2026-01')))
       .expect(200);
     const version = await versionOf('2026-01');
     const operationsBefore = await t.prisma.operation.count();
@@ -130,10 +131,10 @@ describe('MVP acceptance scenarios (integration)', () => {
     // concurrent on purpose: all seven are rejected by the same lock-protected closed-month check. They go through the
     // listened server (t.listen): supertest on the unlistened one fails parallel requests with ECONNRESET.
     const live = request(await t.listen());
-    const operateLive = (body: object) => live.post('/api/v1/operations').send({ ...body, version });
+    const operateLive = (body: object) => live.post('/api/v1/operations').set('If-Match', etag(version)).send({ ...body });
     const attempts = [
-      () => live.patch('/api/v1/months/2026-01').send({ income: '1.00', version }),
-      () => live.put('/api/v1/months/2026-01/allocations').send({ allocations: { [food.id]: '1.00' }, version }),
+      () => live.patch('/api/v1/months/2026-01').set('If-Match', etag(version)).send({ income: '1.00' }),
+      () => live.put('/api/v1/months/2026-01/allocations').set('If-Match', etag(version)).send({ allocations: { [food.id]: '1.00' } }),
       () => operateLive({ type: 'expense', sourceEnvelopeId: food.id, amount: '1.00' }),
       () => operateLive({
         type: 'transfer',
@@ -192,7 +193,7 @@ describe('MVP acceptance scenarios (integration)', () => {
     await http().post('/api/v1/months').send({ period: '2026-02', income: '90000.00' }).expect(201);
     await http()
       .post('/api/v1/months/2026-01/close')
-      .send({ version: await versionOf('2026-01') })
+      .set('If-Match', etag(await versionOf('2026-01')))
       .expect(200);
 
     // rebuilt derived rows get new surrogate ids and timestamps; everything else must match

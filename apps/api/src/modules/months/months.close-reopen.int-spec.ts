@@ -2,7 +2,7 @@ import request from 'supertest';
 import { AllocationsModule } from '../allocations/allocations.module';
 import { MonthsModule } from './months.module';
 import { createAllocation, createEnvelope, createMonth, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB: POST /months/:period/close and /reopen (API-05, API-06). */
 describe('Months close / reopen (integration)', () => {
@@ -21,8 +21,9 @@ describe('Months close / reopen (integration)', () => {
     await t?.close();
   });
 
-  const post = (path: string, body: object) =>
-    request(t.app.getHttpServer()).post(`/api/v1/months/${path}`).send(body);
+  /** POST close / reopen: no body, `version` is the expected month version sent as `If-Match` (API-25). */
+  const post = (path: string, { version }: { version: number }) =>
+    request(t.app.getHttpServer()).post(`/api/v1/months/${path}`).set('If-Match', etag(version));
   const preview = (period: string) =>
     request(t.app.getHttpServer()).get(`/api/v1/months/${period}/reopen-preview`);
   const statusOf = async (period: string) =>
@@ -50,7 +51,8 @@ describe('Months close / reopen (integration)', () => {
 
     await request(t.app.getHttpServer())
       .put('/api/v1/months/2026-02/allocations')
-      .send({ allocations: { [envelope.id]: '100.00' }, version: 1 })
+      .set('If-Match', etag(1))
+      .send({ allocations: { [envelope.id]: '100.00' } })
       .expect(200);
     const response = await post('2026-02/close', { version: feb.version + 1 }).expect(409);
 
@@ -114,11 +116,13 @@ describe('Months close / reopen (integration)', () => {
 
     const income = await request(t.app.getHttpServer())
       .patch('/api/v1/months/2026-01')
-      .send({ income: '1.00', version: 2 })
+      .set('If-Match', etag(2))
+      .send({ income: '1.00' })
       .expect(409);
     const allocations = await request(t.app.getHttpServer())
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [envelope.id]: '1.00' }, version: 2 })
+      .set('If-Match', etag(2))
+      .send({ allocations: { [envelope.id]: '1.00' } })
       .expect(409);
 
     expect(income.body.error).toBe('MONTH_LOCKED');
@@ -140,11 +144,10 @@ describe('Months close / reopen (integration)', () => {
     expect(await statusOf('2026-02')).toBe('closed');
   });
 
-  it('DATA-12: stale version returns 409 VERSION_CONFLICT; invalid body 422; unknown month 404', async () => {
+  it('DATA-12: stale version returns 409 VERSION_CONFLICT; unknown month 404', async () => {
     await createMonth(t.prisma, { period: '2026-01', status: 'open', version: 3 });
 
     expect((await post('2026-01/close', { version: 2 }).expect(409)).body.error).toBe('VERSION_CONFLICT');
-    expect((await post('2026-01/close', {}).expect(422)).body.error).toBe('VALIDATION_ERROR');
     expect((await post('2030-01/reopen', { version: 1 }).expect(404)).body.error).toBe('MONTH_NOT_FOUND');
   });
 

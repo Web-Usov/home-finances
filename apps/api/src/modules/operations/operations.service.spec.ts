@@ -1,4 +1,5 @@
 import type { BudgetMonth, Envelope, Operation, OperationResult } from '@prisma/client';
+import { expectVersion } from '../../common/if-match';
 import { ConflictException, NotFoundException } from '../../common/exceptions';
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
@@ -103,7 +104,6 @@ const EXPENSE: CreateOperationRequest = {
   type: 'expense',
   sourceEnvelopeId: 'env-src',
   amount: '30.00',
-  version: 1,
 };
 
 describe('OperationsService', () => {
@@ -150,7 +150,7 @@ describe('OperationsService', () => {
 
   describe('create', () => {
     it('API-15 / OP-01: writes the operation and recalculates in the SAME transaction; bumps the month version', async () => {
-      const response = await service.create(EXPENSE);
+      const response = await service.create(EXPENSE, expectVersion(1));
 
       expect(tx.operation.create).toHaveBeenCalledWith({
         data: {
@@ -182,7 +182,7 @@ describe('OperationsService', () => {
     });
 
     it('API-14: converts the decimal string to integer kopecks', async () => {
-      await service.create({ ...EXPENSE, amount: '15000.05' });
+      await service.create({ ...EXPENSE, amount: '15000.05' }, expectVersion(1));
 
       expect(tx.operation.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ requestedMinor: 1_500_005 }) }),
@@ -192,7 +192,7 @@ describe('OperationsService', () => {
     it('OP-17: a new operation gets max + 1 as sequence_no (first one gets 1)', async () => {
       tx.operation.aggregate.mockResolvedValue({ _max: { sequenceNo: 4 } });
 
-      await service.create(EXPENSE);
+      await service.create(EXPENSE, expectVersion(1));
 
       expect(tx.operation.aggregate).toHaveBeenCalledWith({
         where: { monthId: 'month-1' },
@@ -206,7 +206,7 @@ describe('OperationsService', () => {
     it('DATA-12: reads the month inside the transaction and rejects a stale version without writing', async () => {
       tx.$queryRaw.mockResolvedValue(lockedRows('open', 2)); // changed after the client read v1
 
-      await expect(service.create(EXPENSE)).rejects.toMatchObject({
+      await expect(service.create(EXPENSE, expectVersion(1))).rejects.toMatchObject({
         statusCode: 409,
         code: 'VERSION_CONFLICT',
       });
@@ -218,7 +218,7 @@ describe('OperationsService', () => {
       stubTx(makeMonth({ status: 'closed' }));
       tx.budgetMonth.findMany.mockResolvedValue([]);
 
-      await expect(service.create(EXPENSE)).rejects.toMatchObject({
+      await expect(service.create(EXPENSE, expectVersion(1))).rejects.toMatchObject({
         statusCode: 409,
         code: 'MONTH_LOCKED',
       });
@@ -228,14 +228,14 @@ describe('OperationsService', () => {
     it('HIST-10: a month closed concurrently (locked row reads closed) → MONTH_LOCKED', async () => {
       tx.$queryRaw.mockResolvedValue(lockedRows('closed', 1));
 
-      await expect(service.create(EXPENSE)).rejects.toMatchObject({ code: 'MONTH_LOCKED' });
+      await expect(service.create(EXPENSE, expectVersion(1))).rejects.toMatchObject({ code: 'MONTH_LOCKED' });
       expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
     });
 
     it('version is checked before the month status (order of checks)', async () => {
       tx.$queryRaw.mockResolvedValue(lockedRows('closed', 5));
 
-      await expect(service.create(EXPENSE)).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+      await expect(service.create(EXPENSE, expectVersion(1))).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
     });
 
     it('MON-04 / MON-01: prefers open, then reopened, then draft as the working month', async () => {
@@ -249,16 +249,16 @@ describe('OperationsService', () => {
         return Promise.resolve(lockedRows('open', 1, asked?.id, asked?.period));
       });
 
-      await service.create(EXPENSE);
+      await service.create(EXPENSE, expectVersion(1));
 
       expect(engine.recalculateMonthAtomically).toHaveBeenCalledWith('open', tx);
 
       tx.budgetMonth.findMany.mockResolvedValue([draft, reopened]);
-      await service.create(EXPENSE);
+      await service.create(EXPENSE, expectVersion(1));
       expect(engine.recalculateMonthAtomically).toHaveBeenLastCalledWith('reopened', tx);
 
       tx.budgetMonth.findMany.mockResolvedValue([draft]);
-      await service.create(EXPENSE);
+      await service.create(EXPENSE, expectVersion(1));
       expect(engine.recalculateMonthAtomically).toHaveBeenLastCalledWith('draft', tx);
     });
 
@@ -266,8 +266,8 @@ describe('OperationsService', () => {
       tx.budgetMonth.findMany.mockResolvedValue([]);
       tx.budgetMonth.findFirst.mockResolvedValue(null);
 
-      await expect(service.create(EXPENSE)).rejects.toBeInstanceOf(NotFoundException);
-      await expect(service.create(EXPENSE)).rejects.toMatchObject({ code: 'MONTH_NOT_FOUND' });
+      await expect(service.create(EXPENSE, expectVersion(1))).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.create(EXPENSE, expectVersion(1))).rejects.toMatchObject({ code: 'MONTH_NOT_FOUND' });
     });
 
     it('OP-05 / OP-06 / MSG-02 / MSG-07: expense beyond balance is saved in full and warns about the uncovered part in ru-RU amounts', async () => {
@@ -283,7 +283,7 @@ describe('OperationsService', () => {
         Promise.resolve(makeOperation(data)),
       );
 
-      const response = await service.create({ ...EXPENSE, amount: '15000.00' });
+      const response = await service.create({ ...EXPENSE, amount: '15000.00' }, expectVersion(1));
 
       expect(tx.operation.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ requestedMinor: 1_500_000 }) }),
@@ -303,7 +303,7 @@ describe('OperationsService', () => {
         warnings: [{ code: 'ARCHIVED_ENVELOPE_WITH_BALANCE', message: 'x' }],
       });
 
-      const response = await service.create(EXPENSE);
+      const response = await service.create(EXPENSE, expectVersion(1));
 
       expect(response.warnings).toEqual([{ code: 'ARCHIVED_ENVELOPE_WITH_BALANCE', message: 'x' }]);
     });
@@ -317,8 +317,7 @@ describe('OperationsService', () => {
         sourceEnvelopeId: 'env-src',
         amount: '15000.00',
         sign: '-',
-        version: 1,
-      });
+      }, expectVersion(1));
       expect(negative.warnings).toEqual([
         {
           code: 'ADJUSTMENT_EXCEEDS_BALANCE',
@@ -335,8 +334,7 @@ describe('OperationsService', () => {
         sourceEnvelopeId: 'env-src',
         amount: '50.00',
         sign: '+',
-        version: 1,
-      });
+      }, expectVersion(1));
       expect(positive.warnings).toEqual([]);
     });
 
@@ -349,8 +347,7 @@ describe('OperationsService', () => {
         destinationEnvelopeId: 'env-dst',
         amount: '1000.00',
         sign: '+',
-        version: 1,
-      });
+      }, expectVersion(1));
 
       expect(tx.operation.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -371,8 +368,7 @@ describe('OperationsService', () => {
         sourceEnvelopeId: 'env-src',
         destinationEnvelopeId: 'env-dst',
         amount: '10000.00',
-        version: 1,
-      });
+      }, expectVersion(1));
 
       await expect(promise).rejects.toBeInstanceOf(ConflictException);
       await expect(promise).rejects.toMatchObject({
@@ -391,8 +387,7 @@ describe('OperationsService', () => {
           sourceEnvelopeId: 'env-src',
           destinationEnvelopeId: 'env-dst',
           amount: '0.01',
-          version: 1,
-        }),
+        }, expectVersion(1)),
       ).rejects.toMatchObject({ code: 'TRANSFER_EXCEEDS_BALANCE' });
     });
 
@@ -405,14 +400,13 @@ describe('OperationsService', () => {
           sourceEnvelopeId: 'env-src',
           destinationEnvelopeId: 'env-dst',
           amount: '6000.00',
-          version: 1,
-        }),
+        }, expectVersion(1)),
       ).resolves.toBeDefined();
     });
 
     it('DATA-11: unknown source / destination envelope → 404 ENVELOPE_NOT_FOUND', async () => {
       await expect(
-        service.create({ ...EXPENSE, sourceEnvelopeId: 'missing' }),
+        service.create({ ...EXPENSE, sourceEnvelopeId: 'missing' }, expectVersion(1)),
       ).rejects.toMatchObject({ statusCode: 404, code: 'ENVELOPE_NOT_FOUND' });
       await expect(
         service.create({
@@ -420,8 +414,7 @@ describe('OperationsService', () => {
           sourceEnvelopeId: 'env-src',
           destinationEnvelopeId: 'missing',
           amount: '1.00',
-          version: 1,
-        }),
+        }, expectVersion(1)),
       ).rejects.toMatchObject({ code: 'ENVELOPE_NOT_FOUND' });
       expect(tx.operation.create).not.toHaveBeenCalled();
     });
@@ -430,7 +423,7 @@ describe('OperationsService', () => {
       tx.envelope.findUnique.mockResolvedValue(
         makeEnvelope({ status: 'archived', archivedPeriod: '2026-08' }),
       );
-      await expect(service.create(EXPENSE)).rejects.toMatchObject({
+      await expect(service.create(EXPENSE, expectVersion(1))).rejects.toMatchObject({
         statusCode: 409,
         code: 'INVALID_STATUS_TRANSITION',
       });
@@ -438,11 +431,11 @@ describe('OperationsService', () => {
       tx.envelope.findUnique.mockResolvedValue(
         makeEnvelope({ status: 'archived', archivedPeriod: '2026-09' }),
       );
-      await expect(service.create(EXPENSE)).resolves.toBeDefined();
+      await expect(service.create(EXPENSE, expectVersion(1))).resolves.toBeDefined();
     });
 
     it('HIST-05: stores the optional comment', async () => {
-      await service.create({ ...EXPENSE, comment: 'Молоко' });
+      await service.create({ ...EXPENSE, comment: 'Молоко' }, expectVersion(1));
 
       expect(tx.operation.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ comment: 'Молоко' }) }),
@@ -460,14 +453,14 @@ describe('OperationsService', () => {
         return Promise.resolve({ _max: { sequenceNo: null } });
       });
 
-      await service.create(EXPENSE);
+      await service.create(EXPENSE, expectVersion(1));
 
       expect(order).toEqual(['lock', 'sequence']);
     });
   });
 
   describe('update', () => {
-    const EDIT = { amount: '50.00', version: 1 };
+    const EDIT = { amount: '50.00' };
 
     /** Month 1 (version 1) holding op-1; the update returns the stored row merged with `data`. */
     function stubExisting(operation: Operation = makeOperation()): void {
@@ -485,7 +478,7 @@ describe('OperationsService', () => {
     beforeEach(() => stubExisting());
 
     it('HIST-08 / OP-17: edits in place (no sequence_no write), recalculates in the SAME tx and bumps the version', async () => {
-      const response = await service.update('op-1', EDIT);
+      const response = await service.update('op-1', EDIT, expectVersion(1));
 
       expect(tx.operation.update).toHaveBeenCalledWith({
         where: { id: 'op-1' },
@@ -502,7 +495,7 @@ describe('OperationsService', () => {
     it('DATA-12: the version is checked inside the transaction under FOR UPDATE; stale → VERSION_CONFLICT, nothing written', async () => {
       tx.$queryRaw.mockResolvedValue(lockedRows('open', 2));
 
-      await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
+      await expect(service.update('op-1', EDIT, expectVersion(1))).rejects.toMatchObject({
         statusCode: 409,
         code: 'VERSION_CONFLICT',
       });
@@ -515,7 +508,7 @@ describe('OperationsService', () => {
     it('HIST-10 / AC-14: a closed month returns MONTH_LOCKED without writing', async () => {
       tx.$queryRaw.mockResolvedValue(lockedRows('closed', 1));
 
-      await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
+      await expect(service.update('op-1', EDIT, expectVersion(1))).rejects.toMatchObject({
         statusCode: 409,
         code: 'MONTH_LOCKED',
       });
@@ -525,13 +518,13 @@ describe('OperationsService', () => {
     it.each(['open', 'reopened', 'draft'])('HIST-07: allowed in a %s month', async (status) => {
       tx.$queryRaw.mockResolvedValue([{ status, version: 1 }]);
 
-      await expect(service.update('op-1', EDIT)).resolves.toBeDefined();
+      await expect(service.update('op-1', EDIT, expectVersion(1))).resolves.toBeDefined();
     });
 
     it('unknown operation → 404 OPERATION_NOT_FOUND', async () => {
       tx.operation.findUnique.mockResolvedValue(null);
 
-      await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
+      await expect(service.update('op-1', EDIT, expectVersion(1))).rejects.toMatchObject({
         statusCode: 404,
         code: 'OPERATION_NOT_FOUND',
       });
@@ -540,7 +533,7 @@ describe('OperationsService', () => {
     it('OP-10: the initial balance cannot be edited through the operations API', async () => {
       stubExisting(makeOperation({ type: 'initial_balance', isInitial: true }));
 
-      await expect(service.update('op-1', EDIT)).rejects.toMatchObject({
+      await expect(service.update('op-1', EDIT, expectVersion(1))).rejects.toMatchObject({
         statusCode: 422,
         code: 'VALIDATION_ERROR',
       });
@@ -554,10 +547,10 @@ describe('OperationsService', () => {
         ),
       );
 
-      await expect(service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-old' })).rejects.toMatchObject({
+      await expect(service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-old' }, expectVersion(1))).rejects.toMatchObject({
         code: 'INVALID_STATUS_TRANSITION',
       });
-      await expect(service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-x' })).rejects.toMatchObject({
+      await expect(service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-x' }, expectVersion(1))).rejects.toMatchObject({
         statusCode: 404,
         code: 'ENVELOPE_NOT_FOUND',
       });
@@ -567,18 +560,18 @@ describe('OperationsService', () => {
     it('DATA-11: an unchanged archived envelope does not block a comment/amount edit', async () => {
       tx.envelope.findUnique.mockResolvedValue(makeEnvelope({ status: 'archived', archivedPeriod: '2026-08' }));
 
-      await expect(service.update('op-1', EDIT)).resolves.toBeDefined();
+      await expect(service.update('op-1', EDIT, expectVersion(1))).resolves.toBeDefined();
       expect(tx.envelope.findUnique).not.toHaveBeenCalled();
     });
 
     it('DATA-09: destination is rejected for an expense, and must differ from the source for a transfer', async () => {
       await expect(
-        service.update('op-1', { ...EDIT, destinationEnvelopeId: 'env-dst' }),
+        service.update('op-1', { ...EDIT, destinationEnvelopeId: 'env-dst' }, expectVersion(1)),
       ).rejects.toMatchObject({ statusCode: 422, code: 'VALIDATION_ERROR' });
 
       stubExisting(makeOperation({ type: 'transfer', destinationEnvelopeId: 'env-dst' }));
       await expect(
-        service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-dst' }),
+        service.update('op-1', { ...EDIT, sourceEnvelopeId: 'env-dst' }, expectVersion(1)),
       ).rejects.toMatchObject({ statusCode: 422, code: 'VALIDATION_ERROR' });
     });
 
@@ -590,7 +583,7 @@ describe('OperationsService', () => {
         makeResult({ coveredMinor: 10_000, uncoveredMinor: 40_000, sourceBalanceBefore: 10_000 }),
       );
 
-      await expect(service.update('op-1', { amount: '500.00', version: 1 })).rejects.toMatchObject({
+      await expect(service.update('op-1', { amount: '500.00' }, expectVersion(1))).rejects.toMatchObject({
         statusCode: 409,
         code: 'TRANSFER_EXCEEDS_BALANCE',
         message: 'Доступно 100,00 ₽. Перевести только 100,00 ₽?',
@@ -605,7 +598,7 @@ describe('OperationsService', () => {
         makeResult({ coveredMinor: 10_000, uncoveredMinor: 40_000 }),
       );
 
-      await expect(service.update('op-1', { comment: 'note', version: 1 })).resolves.toBeDefined();
+      await expect(service.update('op-1', { comment: 'note' }, expectVersion(1))).resolves.toBeDefined();
       expect(tx.operation.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ comment: 'note', requestedMinor: 50_000 }) }),
       );
@@ -616,7 +609,7 @@ describe('OperationsService', () => {
         makeResult({ coveredMinor: 10_000, uncoveredMinor: 5_000, sourceBalanceBefore: 10_000 }),
       );
 
-      const response = await service.update('op-1', { amount: '150.00', version: 1 });
+      const response = await service.update('op-1', { amount: '150.00' }, expectVersion(1));
 
       expect(response.warnings.map((w) => w.code)).toEqual(['EXPENSE_EXCEEDS_BALANCE']);
     });
@@ -633,7 +626,7 @@ describe('OperationsService', () => {
     });
 
     it('OP-18 / HIST-08: deletes and recalculates in the SAME tx, bumps the version, renumbers nothing', async () => {
-      const response = await service.remove('op-1', 1);
+      const response = await service.remove('op-1', expectVersion(1));
 
       expect(tx.operation.delete).toHaveBeenCalledWith({ where: { id: 'op-1' } });
       expect(db.operation.delete).not.toHaveBeenCalled();
@@ -645,17 +638,17 @@ describe('OperationsService', () => {
 
     it('DATA-12: stale version → VERSION_CONFLICT; HIST-10: closed month → MONTH_LOCKED; nothing deleted', async () => {
       tx.$queryRaw.mockResolvedValue(lockedRows('open', 5));
-      await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+      await expect(service.remove('op-1', expectVersion(1))).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
 
       tx.$queryRaw.mockResolvedValue(lockedRows('closed', 1));
-      await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'MONTH_LOCKED' });
+      await expect(service.remove('op-1', expectVersion(1))).rejects.toMatchObject({ code: 'MONTH_LOCKED' });
 
       expect(tx.operation.delete).not.toHaveBeenCalled();
     });
 
     it('unknown operation → 404; initial balance → 422', async () => {
       tx.operation.findUnique.mockResolvedValue(null);
-      await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'OPERATION_NOT_FOUND' });
+      await expect(service.remove('op-1', expectVersion(1))).rejects.toMatchObject({ code: 'OPERATION_NOT_FOUND' });
 
       tx.operation.findUnique.mockImplementation((args: { select?: unknown }) =>
         Promise.resolve(
@@ -664,7 +657,7 @@ describe('OperationsService', () => {
             : makeOperation({ isInitial: true, type: 'initial_balance' }),
         ),
       );
-      await expect(service.remove('op-1', 1)).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      await expect(service.remove('op-1', expectVersion(1))).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
       expect(tx.operation.delete).not.toHaveBeenCalled();
     });
   });

@@ -5,7 +5,7 @@ import { MonthsModule } from '../months/months.module';
 import { OperationsModule } from '../operations/operations.module';
 import { ReportingModule } from './reporting.module';
 import { createEnvelope, createMonth, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB + real engine: GET /dashboard/monthly (API-12) reads engine-written snapshots. */
 describe('Monthly dashboard (integration)', () => {
@@ -38,7 +38,8 @@ describe('Monthly dashboard (integration)', () => {
     const home = await createEnvelope(t.prisma, { name: 'Home', displayOrder: 1 });
     await http()
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [food.id]: '50000.00', [home.id]: '25000.00' }, version: month.version })
+      .set('If-Match', etag(month.version))
+      .send({ allocations: { [food.id]: '50000.00', [home.id]: '25000.00' } })
       .expect(200);
     return { month, food, home };
   }
@@ -46,7 +47,8 @@ describe('Monthly dashboard (integration)', () => {
   async function addOperation(monthId: string, body: object) {
     await http()
       .post('/api/v1/operations')
-      .send({ ...body, version: await monthVersion(monthId) })
+      .set('If-Match', etag(await monthVersion(monthId)))
+      .send({ ...body })
       .expect(201);
   }
 
@@ -137,7 +139,8 @@ describe('Monthly dashboard (integration)', () => {
     // lowering Home's allocation makes the cascade leave 10 000 of that transfer uncovered (OP-09)
     await http()
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [food.id]: '50000.00', [home.id]: '10000.00' }, version: await monthVersion(month.id) })
+      .set('If-Match', etag(await monthVersion(month.id)))
+      .send({ allocations: { [food.id]: '50000.00', [home.id]: '10000.00' } })
       .expect(200);
     await addOperation(month.id, { type: 'expense', sourceEnvelopeId: home.id, amount: '1000.00' });
     await addOperation(month.id, { type: 'adjustment', sourceEnvelopeId: home.id, sign: '-', amount: '200.00' });
@@ -167,7 +170,8 @@ describe('Monthly dashboard (integration)', () => {
     // creation already recalculated (T-032); this PUT overrides the copied allocation
     await http()
       .put('/api/v1/months/2026-02/allocations')
-      .send({ allocations: { [food.id]: '30000.00' }, version: await monthVersion(next.id) })
+      .set('If-Match', etag(await monthVersion(next.id)))
+      .send({ allocations: { [food.id]: '30000.00' } })
       .expect(200);
 
     const body = (await dashboard('?period=2026-02').expect(200)).body;

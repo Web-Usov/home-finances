@@ -5,7 +5,7 @@ import { OperationsModule } from '../operations/operations.module';
 import { ReportingModule } from '../reporting/reporting.module';
 import { MonthsModule } from './months.module';
 import { createEnvelope, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB + real engine: month creation and draft promotion keep snapshots consistent. */
 describe('Months create / promote recalculation (integration)', () => {
@@ -38,12 +38,14 @@ describe('Months create / promote recalculation (integration)', () => {
     const home = await createEnvelope(t.prisma, { name: 'Home', displayOrder: 1 });
     await http()
       .put('/api/v1/months/2026-01/allocations')
-      .send({ allocations: { [food.id]: '50000.00', [home.id]: '25000.00' }, version: await versionOf('2026-01') })
+      .set('If-Match', etag(await versionOf('2026-01')))
+      .send({ allocations: { [food.id]: '50000.00', [home.id]: '25000.00' } })
       .expect(200);
     const jan = await t.prisma.budgetMonth.findUniqueOrThrow({ where: { period: '2026-01' } });
     await http()
       .post('/api/v1/operations')
-      .send({ type: 'expense', sourceEnvelopeId: food.id, amount: '10000.00', version: jan.version })
+      .set('If-Match', etag(jan.version))
+      .send({ type: 'expense', sourceEnvelopeId: food.id, amount: '10000.00' })
       .expect(201);
     return { food, home };
   }
@@ -103,7 +105,7 @@ describe('Months create / promote recalculation (integration)', () => {
 
     const closed = await http()
       .post('/api/v1/months/2026-01/close')
-      .send({ version: await versionOf('2026-01') })
+      .set('If-Match', etag(await versionOf('2026-01')))
       .expect(200);
 
     expect(closed.body.data.promotedDraft).toMatchObject({ period: '2026-02', status: 'open' });

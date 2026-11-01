@@ -4,7 +4,7 @@ import { EnvelopesModule } from '../envelopes/envelopes.module';
 import { MonthsModule } from '../months/months.module';
 import { OperationsModule } from './operations.module';
 import { createEnvelope, createMonth, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB + real engine: how adjustments, transfers and the application order change balances (OP-04..OP-16, FIN-06). */
 describe('Operations balance rules (integration)', () => {
@@ -32,7 +32,8 @@ describe('Operations balance rules (integration)', () => {
   async function addOperation(monthId: string, body: object) {
     const response = await http()
       .post('/api/v1/operations')
-      .send({ ...body, version: await versionOf(monthId) })
+      .set('If-Match', etag(await versionOf(monthId)))
+      .send({ ...body })
       .expect(201);
     return response.body.data as {
     operation: { id: string; sequenceNo: number; requestedMinor: number; comment: string | null };
@@ -43,7 +44,8 @@ describe('Operations balance rules (integration)', () => {
   async function allocate(monthId: string, period: string, allocations: Record<string, string>) {
     await http()
       .put(`/api/v1/months/${period}/allocations`)
-      .send({ allocations, version: await versionOf(monthId) })
+      .set('If-Match', etag(await versionOf(monthId)))
+      .send({ allocations })
       .expect(200);
   }
 

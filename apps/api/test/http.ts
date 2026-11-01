@@ -63,3 +63,6 @@ export async function createTestApp(modules: Type<unknown>[]): Promise<TestApp> 
     },
   };
 }
+
+/** `If-Match` header value for a month version: a quoted ETag (API-25). */
+export const etag = (version: number | string): string => `"${version}"`;

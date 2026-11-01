@@ -5,7 +5,7 @@ import { MonthsModule } from '../months/months.module';
 import { OperationsModule } from '../operations/operations.module';
 import { ReportingModule } from './reporting.module';
 import { createEnvelope, createMonth, resetDb } from '../../../test/db';
-import { createTestApp, TestApp } from '../../../test/http';
+import { createTestApp, TestApp, etag } from '../../../test/http';
 
 /** HTTP + real DB + real engine: GET /analytics/yearly (API-13) reads engine-written snapshots. */
 describe('Yearly analytics (integration)', () => {
@@ -32,14 +32,16 @@ describe('Yearly analytics (integration)', () => {
   async function allocate(period: string, monthId: string, allocations: Record<string, string>) {
     await http()
       .put(`/api/v1/months/${period}/allocations`)
-      .send({ allocations, version: await monthVersion(monthId) })
+      .set('If-Match', etag(await monthVersion(monthId)))
+      .send({ allocations })
       .expect(200);
   }
 
   async function addOperation(monthId: string, body: object) {
     await http()
       .post('/api/v1/operations')
-      .send({ ...body, version: await monthVersion(monthId) })
+      .set('If-Match', etag(await monthVersion(monthId)))
+      .send({ ...body })
       .expect(201);
   }
 

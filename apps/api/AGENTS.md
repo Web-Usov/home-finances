@@ -8,15 +8,15 @@ Global rules (money, periods, types, language, spec references) are in the root 
 
 | Path | Responsibility | State |
 | --- | --- | --- |
-| `main.ts` | Fastify bootstrap, prefix `api`, URI versioning (default `v1`), Swagger UI at `/api`, JSON at `/api/swagger.json` (`src/openapi.ts` dumps `openapi.json` without a DB), `DomainExceptionFilter`, open CORS | done |
-| `common/` | `ZodValidationPipe`, domain exceptions (422/409/404), `DomainExceptionFilter`, `zodOpenApiSchema`, `month-lock.ts` (`lockMonthForMutation`, `lockWorkingMonth`, `lockAllMonths`) | done |
+| `main.ts` | Fastify bootstrap, prefix `api`, URI versioning (default `v1`), Swagger UI at `/api`, JSON at `/api/swagger.json` (`src/openapi.ts` dumps `openapi.json` without a DB), `DomainExceptionFilter`, `MonthETagInterceptor`, open CORS exposing `ETag` and allowing `If-Match` (all in `app.setup.ts`) | done |
+| `common/` | `ZodValidationPipe`, domain exceptions (422/409/404/428), `DomainExceptionFilter`, `zodOpenApiSchema`, `month-lock.ts` (`lockMonthForMutation`, `lockWorkingMonth`, `lockAllMonths`), `if-match.ts` (`@IfMatch()`, `@ApiIfMatch()`, `assertExpectedVersion`), `month-etag.ts` (`@MonthETag()`, `MonthETagInterceptor`) | done |
 | `prisma/` | `PrismaService` (global client) | done |
 | `health/` | `GET /api/v1/health` | done |
 | `modules/calculation-engine/` | stateless cascade recalculation (`recalculateFrom`, `recalculateMonthAtomically`) | done, unit + integration tests |
 | `modules/envelopes/` | list/create/update/archive; create with an initial balance inserts the `initial_balance` operation and recalculates the month in the same transaction | done |
-| `modules/allocations/` | `PUT /months/:period/allocations` (version check, closed-month check, recalculation; optional `income` saved atomically in the same transaction, FIN-02 against the new income) | done |
+| `modules/allocations/` | `PUT /months/:period/allocations` (`If-Match` version check, closed-month check, recalculation; optional `income` saved atomically in the same transaction, FIN-02 against the new income) | done |
 | `modules/months/` | list, create (draft/auto-open, allocation copy), `updateIncome` (PATCH, cascade) | done — list, create, `updateIncome`, `close` (draft promotion), `reopen` (cascade, recalc range), `reopenPreview` (read-only, no locks, shares `planReopen` with `reopen`) |
-| `modules/operations/` | list/create/update/delete | done — list, create, PATCH, DELETE (`version` in the query) |
+| `modules/operations/` | list/create/update/delete | done — list, create, PATCH, DELETE (version in `If-Match`) |
 | `modules/reporting/` | dashboard + yearly analytics | `GET /dashboard/monthly` done (reads `EnvelopeMonthSnapshot`, T-007); `GET /analytics/yearly` done (three reports from snapshots, T-008) |
 | `prisma/schema.prisma`, `prisma/seed.ts`, `prisma/migrations/` | 7 entities (BudgetMonth, Envelope, Allocation, Operation, OperationResult, EnvelopeMonthSnapshot, AppSettings), idempotent seed | done |
 
@@ -30,9 +30,14 @@ Tasks track the remaining work; check `tasks/` before assuming a stub is free to
   Month mutations return `data.summary` (short `MonthSummary` via `buildMonthSummary`, API-22; no envelope data) plus `warnings`;
   `close`/`reopen` keep their `month` field.
 - Pass the interactive `tx` into the engine; never call it after the transaction has committed.
-- Errors: throw `ValidationException` (422), `ConflictException` (409) or `NotFoundException` (404) with a code from
+- Errors: throw `ValidationException` (422), `ConflictException` (409), `NotFoundException` (404) or `PreconditionRequiredException` (428) with a code from
   `ApiErrorCode` in `@family-budget/types`. Add new codes there, not locally.
-- Order of checks for month-scoped mutations (as in allocations): existence → `version` (`VERSION_CONFLICT`) → month status (`MONTH_LOCKED`) → business rules.
+- Optimistic locking (API-25…API-27): the expected month version comes ONLY from the `If-Match: "<version>"` header, never from a body or
+  query. Controllers of month-scoped mutations declare `@MonthETag()` + `@ApiIfMatch()` on the handler and take `@IfMatch() expectedVersion:
+  ExpectedVersion` as the last parameter; the service passes it to the lock helper. Do not parse the header anywhere else. Month-scoped
+  responses get `ETag: "<version>"` from the global interceptor (`@MonthETag()`, body shape `data.summary|data.month|month`); add
+  `headers: MONTH_ETAG_HEADERS` to their `@ApiResponse`. Tests send the header with `etag(version)` from `test/http.ts`.
+- Order of checks for month-scoped mutations (as in allocations): existence (404) → `If-Match` (428 missing / 422 malformed / 409 `VERSION_CONFLICT`) → month status (`MONTH_LOCKED`) → business rules.
   Every one of them runs inside the `$transaction`, right after `lockMonthForMutation(tx, { period } | { id }, { expectedVersion })`
   (`common/month-lock.ts`): it takes `FOR UPDATE` on the month and all later months in ascending period order and does the first
   three checks. Never read or check `version`/`status` outside the transaction or without the lock (DATA-12 race), never lock months

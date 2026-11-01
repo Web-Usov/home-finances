@@ -1,4 +1,5 @@
 import { Prisma, type BudgetMonth } from '@prisma/client';
+import { expectVersion } from '../../common/if-match';
 import type { CalculationEngineService } from '../calculation-engine/calculation-engine.service';
 import {
   ConflictException,
@@ -428,7 +429,7 @@ describe('MonthsService', () => {
         warnings,
       });
 
-      const result = await service.updateIncome('2026-08', { income: '20000.00', version: 3 });
+      const result = await service.updateIncome('2026-08', { income: '20000.00' }, expectVersion(3));
 
       expect(tx.budgetMonth.update).toHaveBeenCalledWith({
         where: { id: 'month-1' },
@@ -451,7 +452,7 @@ describe('MonthsService', () => {
     it('AC-02: free funds = income - allocations after income update', async () => {
       stub(makeMonth({ status: 'open', version: 1 }), 75_000_00);
 
-      const result = await service.updateIncome('2026-08', { income: '100000.00', version: 1 });
+      const result = await service.updateIncome('2026-08', { income: '100000.00' }, expectVersion(1));
 
       expect(result.data.summary.freeFundsMinor).toBe(25_000_00);
     });
@@ -459,7 +460,7 @@ describe('MonthsService', () => {
     it('MSG-01 / AC-03 / FIN-02: overflow of 0.01 renders Распределено на 0,01 ₽ больше дохода. Уменьшите суммы по конвертам.', async () => {
       stub(makeMonth({ status: 'open', version: 1 }), 10_000_001);
 
-      const attempt = service.updateIncome('2026-08', { income: '100000.00', version: 1 });
+      const attempt = service.updateIncome('2026-08', { income: '100000.00' }, expectVersion(1));
 
       await expect(attempt).rejects.toBeInstanceOf(ValidationException);
       await expect(attempt).rejects.toMatchObject({
@@ -476,7 +477,7 @@ describe('MonthsService', () => {
     it('FIN-02: income equal to the allocated sum is accepted', async () => {
       stub(makeMonth({ status: 'open', version: 1 }), 10_000_000);
 
-      const result = await service.updateIncome('2026-08', { income: '100000.00', version: 1 });
+      const result = await service.updateIncome('2026-08', { income: '100000.00' }, expectVersion(1));
 
       expect(result.data.summary.freeFundsMinor).toBe(0);
       expect(engine.recalculateMonthAtomically).toHaveBeenCalledTimes(1);
@@ -485,7 +486,7 @@ describe('MonthsService', () => {
     it('API-03: throws MONTH_NOT_FOUND for an unknown period', async () => {
       tx.budgetMonth.findUnique.mockResolvedValue(null);
 
-      const attempt = service.updateIncome('2026-13', { income: '100.00', version: 1 });
+      const attempt = service.updateIncome('2026-13', { income: '100.00' }, expectVersion(1));
 
       await expect(attempt).rejects.toBeInstanceOf(NotFoundException);
       await expect(attempt).rejects.toMatchObject({ code: 'MONTH_NOT_FOUND', statusCode: 404 });
@@ -497,7 +498,7 @@ describe('MonthsService', () => {
       stub(makeMonth({ status: 'open', version: 3 }));
 
       await expect(
-        service.updateIncome('2026-08', { income: '100.00', version: 2 }),
+        service.updateIncome('2026-08', { income: '100.00' }, expectVersion(2)),
       ).rejects.toMatchObject({ code: 'VERSION_CONFLICT', statusCode: 409 });
       expect(tx.budgetMonth.update).not.toHaveBeenCalled();
       expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
@@ -506,7 +507,7 @@ describe('MonthsService', () => {
     it('MON-03 / AC-14: income update in a closed month returns MONTH_LOCKED (MSG-06)', async () => {
       stub(makeMonth({ status: 'closed', version: 3 }));
 
-      const attempt = service.updateIncome('2026-08', { income: '100.00', version: 3 });
+      const attempt = service.updateIncome('2026-08', { income: '100.00' }, expectVersion(3));
 
       await expect(attempt).rejects.toMatchObject({
         code: 'MONTH_LOCKED',
@@ -523,14 +524,14 @@ describe('MonthsService', () => {
       stub(makeMonth({ status: 'closed', version: 3 }));
 
       await expect(
-        service.updateIncome('2026-08', { income: '100.00', version: 99 }),
+        service.updateIncome('2026-08', { income: '100.00' }, expectVersion(99)),
       ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
     });
 
     it.each(['draft', 'reopened'] as const)('allows income changes in a %s month', async (status) => {
       stub(makeMonth({ status, version: 2 }));
 
-      await service.updateIncome('2026-08', { income: '5000.00', version: 2 });
+      await service.updateIncome('2026-08', { income: '5000.00' }, expectVersion(2));
 
       expect(tx.budgetMonth.update).toHaveBeenCalledWith({
         where: { id: 'month-1' },
@@ -586,7 +587,7 @@ describe('MonthsService', () => {
       it('MON-08 / AC-17: closing the current month promotes the existing draft to open', async () => {
         setup({}, makeMonth({ id: 'draft-1', period: '2026-09', status: 'draft', version: 2 }));
 
-        const result = await service.close('2026-08', { version: 4 });
+        const result = await service.close('2026-08', expectVersion(4));
 
         expect(tx.budgetMonth.update).toHaveBeenCalledWith({
           where: { id: 'month-1' },
@@ -605,7 +606,7 @@ describe('MonthsService', () => {
       it('MON-09: closing without a draft promotes nothing', async () => {
         setup({}, null);
 
-        const result = await service.close('2026-08', { version: 4 });
+        const result = await service.close('2026-08', expectVersion(4));
 
         expect(result.data.promotedDraft).toBeNull();
         expect(tx.budgetMonth.update).toHaveBeenCalledTimes(1);
@@ -614,7 +615,7 @@ describe('MonthsService', () => {
       it('MON-15: closing a reopened month does not promote the draft', async () => {
         setup({ status: 'reopened' }, makeMonth({ id: 'draft-1', period: '2026-09', status: 'draft' }));
 
-        const result = await service.close('2026-08', { version: 4 });
+        const result = await service.close('2026-08', expectVersion(4));
 
         expect(result.data.month.status).toBe('closed');
         expect(result.data.promotedDraft).toBeNull();
@@ -625,7 +626,7 @@ describe('MonthsService', () => {
       it('MON-01 / AC-16: a draft cannot be closed', async () => {
         setup({ status: 'draft' }, null);
 
-        await expect(service.close('2026-08', { version: 4 })).rejects.toMatchObject({
+        await expect(service.close('2026-08', expectVersion(4))).rejects.toMatchObject({
           code: 'INVALID_STATUS_TRANSITION',
           statusCode: 409,
         });
@@ -635,7 +636,7 @@ describe('MonthsService', () => {
       it('an already closed month cannot be closed again', async () => {
         setup({ status: 'closed' }, null);
 
-        await expect(service.close('2026-08', { version: 4 })).rejects.toMatchObject({
+        await expect(service.close('2026-08', expectVersion(4))).rejects.toMatchObject({
           code: 'INVALID_STATUS_TRANSITION',
         });
       });
@@ -644,7 +645,7 @@ describe('MonthsService', () => {
         setup({ incomeMinor: 10_000_000 }, null);
         tx.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 100 } });
 
-        const result = await service.close('2026-08', { version: 4 });
+        const result = await service.close('2026-08', expectVersion(4));
 
         expect(result.data.month.freeFundsMinor).toBe(9_999_900);
         expect(result.warnings).toEqual([]);
@@ -654,7 +655,7 @@ describe('MonthsService', () => {
         setup({ incomeMinor: 1_000 }, null);
         tx.allocation.aggregate.mockResolvedValue({ _sum: { amountMinor: 1_001 } });
 
-        await expect(service.close('2026-08', { version: 4 })).rejects.toMatchObject({
+        await expect(service.close('2026-08', expectVersion(4))).rejects.toMatchObject({
           code: 'ALLOCATION_EXCEEDS_INCOME',
           statusCode: 422,
         });
@@ -664,7 +665,7 @@ describe('MonthsService', () => {
       it('DATA-12: version is checked inside the transaction (VERSION_CONFLICT)', async () => {
         setup({}, null);
 
-        await expect(service.close('2026-08', { version: 3 })).rejects.toMatchObject({
+        await expect(service.close('2026-08', expectVersion(3))).rejects.toMatchObject({
           code: 'VERSION_CONFLICT',
         });
         expect(mock.budgetMonth.findUnique).not.toHaveBeenCalled();
@@ -674,7 +675,7 @@ describe('MonthsService', () => {
       it('API-05: unknown month returns MONTH_NOT_FOUND', async () => {
         tx.budgetMonth.findUnique.mockResolvedValue(null);
 
-        await expect(service.close('2030-01', { version: 1 })).rejects.toMatchObject({
+        await expect(service.close('2030-01', expectVersion(1))).rejects.toMatchObject({
           code: 'MONTH_NOT_FOUND',
           statusCode: 404,
         });
@@ -705,7 +706,7 @@ describe('MonthsService', () => {
       it('MON-14 / AC-15: reopen recalculates on the same tx, bumps versions and returns the range', async () => {
         setupReopen(null);
 
-        const result = await service.reopen('2026-06', { version: 7 });
+        const result = await service.reopen('2026-06', expectVersion(7));
 
         expect(tx.budgetMonth.update).toHaveBeenCalledWith({
           where: { id: 'month-1' },
@@ -724,7 +725,7 @@ describe('MonthsService', () => {
       it('MON-13: a second month cannot be reopened while one is reopened', async () => {
         setupReopen(makeMonth({ id: 'other', period: '2026-05', status: 'reopened' }));
 
-        await expect(service.reopen('2026-06', { version: 7 })).rejects.toMatchObject({
+        await expect(service.reopen('2026-06', expectVersion(7))).rejects.toMatchObject({
           code: 'INVALID_STATUS_TRANSITION',
           statusCode: 409,
         });
@@ -742,7 +743,7 @@ describe('MonthsService', () => {
           }),
         );
 
-        await expect(service.reopen('2026-06', { version: 7 })).rejects.toMatchObject({
+        await expect(service.reopen('2026-06', expectVersion(7))).rejects.toMatchObject({
           code: 'INVALID_STATUS_TRANSITION',
           statusCode: 409,
         });
@@ -758,13 +759,13 @@ describe('MonthsService', () => {
         });
         tx.budgetMonth.update.mockRejectedValueOnce(other);
 
-        await expect(service.reopen('2026-06', { version: 7 })).rejects.toBe(other);
+        await expect(service.reopen('2026-06', expectVersion(7))).rejects.toBe(other);
       });
 
       it.each(['draft', 'open', 'reopened'] as const)('only a closed month can be reopened (%s rejected)', async (status) => {
         tx.budgetMonth.findUnique.mockResolvedValue(makeMonth({ status, version: 7 }));
 
-        await expect(service.reopen('2026-08', { version: 7 })).rejects.toMatchObject({
+        await expect(service.reopen('2026-08', expectVersion(7))).rejects.toMatchObject({
           code: 'INVALID_STATUS_TRANSITION',
         });
         expect(engine.recalculateMonthAtomically).not.toHaveBeenCalled();
@@ -773,7 +774,7 @@ describe('MonthsService', () => {
       it('DATA-12: stale version returns VERSION_CONFLICT before any write', async () => {
         setupReopen(null);
 
-        await expect(service.reopen('2026-06', { version: 6 })).rejects.toMatchObject({
+        await expect(service.reopen('2026-06', expectVersion(6))).rejects.toMatchObject({
           code: 'VERSION_CONFLICT',
         });
         expect(tx.budgetMonth.update).not.toHaveBeenCalled();
@@ -782,7 +783,7 @@ describe('MonthsService', () => {
       it('API-06: unknown month returns MONTH_NOT_FOUND', async () => {
         tx.budgetMonth.findUnique.mockResolvedValue(null);
 
-        await expect(service.reopen('2030-01', { version: 1 })).rejects.toMatchObject({
+        await expect(service.reopen('2030-01', expectVersion(1))).rejects.toMatchObject({
           code: 'MONTH_NOT_FOUND',
         });
       });
