@@ -58,6 +58,8 @@
 
 - [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/56)
 
+- [T-070](T-070-follow-up-tasks-batch-4-docker-migrate.md) Follow-up tasks batch 4: docker migrate offline, migration data test, rule bindings — **in_progress** · docs · S · depends: — · —
+
 ## E-01. Ядро API: месяцы и операции — accepted, принят 2026-11-01
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
