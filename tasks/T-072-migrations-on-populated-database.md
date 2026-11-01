@@ -29,12 +29,12 @@ A repeatable check proves that all Prisma migrations apply on a database that al
 
 Every item must be verifiable by a command or a named test.
 
-- [ ] `it('NFR-29: migrations apply on a populated database ...')` (or equivalent script) passes: seeded data from the baseline migration survives all later migrations and the resulting schema equals the Prisma schema (`prisma migrate diff` is empty).
-- [ ] The check also covers the empty database (all migrations from scratch).
-- [ ] The check runs in CI as part of an existing required job (`verify` or `e2e`/int), documented in `docs/testing.md`.
-- [ ] `node scripts/spec-check.mjs` shows NFR-29 referenced from a test file.
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('NFR-29: migrations apply on a populated database ...')` (or equivalent script) passes: seeded data from the baseline migration survives all later migrations and the resulting schema equals the Prisma schema (`prisma migrate diff` is empty).
+- [x] The check also covers the empty database (all migrations from scratch).
+- [x] The check runs in CI as part of an existing required job (`verify` or `e2e`/int), documented in `docs/testing.md`.
+- [x] `node scripts/spec-check.mjs` shows NFR-29 referenced from a test file.
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -47,4 +47,11 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Added `apps/api/src/prisma/migrations.populated-db.int-spec.ts` (two `NFR-29` tests, run by `pnpm test:int`/`verify`/CI) and a
+section in `docs/testing.md`. Populated case: baseline `init` deployed from a temp copy of the migration folder into its own
+schema, realistic data seeded, remaining migrations deployed, data/derived rows/index/drift asserted, engine recalculation
+checked against hand-computed values. Empty case: all migrations from scratch.
+
+Notes: `prisma migrate diff` cannot see the MON-13 partial index, so zero drift is expected and the index is asserted via
+`pg_indexes`. The seed has no data-fixing migration to exercise yet (`single_reopened_month` only adds an index); extend the
+seed when one appears. No new migrations.
