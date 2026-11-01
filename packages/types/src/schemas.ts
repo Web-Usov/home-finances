@@ -437,12 +437,7 @@ export const YearlyEnvelopeRowSchema = z.object({
 });
 
 /** REP-08 / REP-09: uncovered amounts by type, with the history link (REP-10). Never carried over (REP-11). */
-export const YearlyUncoveredValueSchema = z.object({
-  total: MoneyStringSchema,
-  expense: MoneyStringSchema,
-  transfer: MoneyStringSchema,
-  adjustment: MoneyStringSchema,
-});
+export const YearlyUncoveredValueSchema = DashboardUncoveredSchema;
 
 /** REP-10: uncovered amount of one envelope in one month, with one drill-down key per non-zero type. */
 export const YearlyUncoveredEnvelopeSchema = YearlyUncoveredValueSchema.extend({
