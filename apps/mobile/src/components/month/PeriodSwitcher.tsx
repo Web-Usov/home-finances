@@ -28,7 +28,7 @@ function StepButton({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={() => target && onChange(target)}
-      className="w-11 h-11 items-center justify-center rounded-lg bg-gray-100 active:bg-gray-200 disabled:opacity-40"
+      className="w-10 h-10 items-center justify-center rounded-lg bg-gray-100 active:bg-gray-200 disabled:opacity-40"
     >
       <Text className="text-lg font-semibold text-gray-800">{glyph}</Text>
     </Pressable>
@@ -43,7 +43,8 @@ export function PeriodSwitcher({ periods, current, onChange }: PeriodSwitcherPro
       <StepButton label="Предыдущий месяц" glyph="‹" target={neighbourPeriod(periods, current, -1)} onChange={onChange} />
       <Text
         accessibilityRole="header"
-        className="flex-1 text-center text-lg font-bold text-gray-900"
+        numberOfLines={1}
+        className="flex-1 text-center text-base font-bold text-gray-900"
       >
         {formatPeriodLabel(current)}
       </Text>
