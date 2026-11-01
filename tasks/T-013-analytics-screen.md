@@ -1,7 +1,7 @@
 ---
 id: T-013
 title: Mobile: yearly analytics screen
-status: in_progress
+status: done
 epic: E-05
 depends: [T-008, T-012]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-20]
 area: mobile
 size: M
 branch: task/T-013-analytics-screen
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/41
 ---
 
 # T-013. Mobile: yearly analytics screen

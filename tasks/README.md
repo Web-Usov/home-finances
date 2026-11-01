@@ -94,7 +94,7 @@
 
 Эпик: [E-05-analytics-ui.md](../epics/E-05-analytics-ui.md)
 
-- [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **in_progress** · mobile · M · depends: T-008, T-012 · —
+- [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **done** · mobile · M · depends: T-008, T-012 · [PR](https://github.com/Web-Usov/home-finances/pull/41)
 
 ## E-06. Приёмка MVP и поставка — planned
 
