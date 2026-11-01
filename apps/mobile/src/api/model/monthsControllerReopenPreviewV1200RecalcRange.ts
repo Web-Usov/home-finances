@@ -7,8 +7,8 @@
  */
 
 export type MonthsControllerReopenPreviewV1200RecalcRange = {
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   from: string;
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   to: string;
 };

@@ -14,11 +14,11 @@ export type ReportingControllerYearlyAnalyticsV1200EnvelopeBalancesEnvelopesItem
   status: ReportingControllerYearlyAnalyticsV1200EnvelopeBalancesEnvelopesItemStatus;
   /** @minimum 0 */
   displayOrder: number;
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   createdPeriod: string;
   /**
    * @nullable
-   * @pattern ^\d{4}-\d{2}$
+   * @pattern ^\d{4}-(0[1-9]|1[0-2])$
    */
   archivedPeriod: string | null;
   months: ReportingControllerYearlyAnalyticsV1200EnvelopeBalancesEnvelopesItemMonthsItem[];

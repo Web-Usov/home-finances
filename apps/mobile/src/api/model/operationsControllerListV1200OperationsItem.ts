@@ -30,7 +30,7 @@ export type OperationsControllerListV1200OperationsItem = {
   comment: string | null;
   createdAt: string;
   updatedAt: string;
-  /** @pattern ^\d{4}-\d{2}$ */
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   period: string;
   /** @nullable */
   result: OperationsControllerListV1200OperationsItemResult;

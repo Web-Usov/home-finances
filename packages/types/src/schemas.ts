@@ -9,9 +9,10 @@ import { z } from 'zod';
 // Primitive schemas
 // ---------------------------------------------------------------------------
 
+/** ADR 0006 / API-17: `YYYY-MM` with a real month number (01-12); "2026-13" and "2026-00" are invalid. */
 export const PeriodSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}$/, 'Period must be YYYY-MM format');
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Period must be YYYY-MM format with month 01-12');
 
 export const MoneyMinorSchema = z
   .number()

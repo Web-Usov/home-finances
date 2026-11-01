@@ -115,7 +115,7 @@
                             },
                             "period": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "status": {
                               "type": "string",
@@ -255,7 +255,7 @@
                             },
                             "period": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "status": {
                               "type": "string",
@@ -299,7 +299,7 @@
                             },
                             "period": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "status": {
                               "type": "string",
@@ -429,7 +429,7 @@
                         },
                         "period": {
                           "type": "string",
-                          "pattern": "^\\d{4}-\\d{2}$"
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                         },
                         "status": {
                           "type": "string",
@@ -469,11 +469,11 @@
                       "properties": {
                         "from": {
                           "type": "string",
-                          "pattern": "^\\d{4}-\\d{2}$"
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                         },
                         "to": {
                           "type": "string",
-                          "pattern": "^\\d{4}-\\d{2}$"
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                         }
                       },
                       "required": [
@@ -556,7 +556,7 @@
                             },
                             "period": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "status": {
                               "type": "string",
@@ -596,11 +596,11 @@
                           "properties": {
                             "from": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "to": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             }
                           },
                           "required": [
@@ -880,7 +880,7 @@
                             },
                             "period": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "status": {
                               "type": "string",
@@ -1100,7 +1100,7 @@
                           },
                           "period": {
                             "type": "string",
-                            "pattern": "^\\d{4}-\\d{2}$"
+                            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                           },
                           "result": {
                             "type": "object",
@@ -1256,7 +1256,7 @@
                   },
                   "period": {
                     "type": "string",
-                    "pattern": "^\\d{4}-\\d{2}$"
+                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                   }
                 },
                 "required": [
@@ -1435,7 +1435,7 @@
                             },
                             "period": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "status": {
                               "type": "string",
@@ -1745,7 +1745,7 @@
                             },
                             "period": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "status": {
                               "type": "string",
@@ -1886,7 +1886,7 @@
                             },
                             "period": {
                               "type": "string",
-                              "pattern": "^\\d{4}-\\d{2}$"
+                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                             },
                             "status": {
                               "type": "string",
@@ -2012,7 +2012,7 @@
                         },
                         "period": {
                           "type": "string",
-                          "pattern": "^\\d{4}-\\d{2}$"
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                         },
                         "status": {
                           "type": "string",
@@ -2286,7 +2286,7 @@
                             "properties": {
                               "period": {
                                 "type": "string",
-                                "pattern": "^\\d{4}-\\d{2}$"
+                                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                               },
                               "status": {
                                 "type": "string",
@@ -2361,7 +2361,7 @@
                           "type": "array",
                           "items": {
                             "type": "string",
-                            "pattern": "^\\d{4}-\\d{2}$"
+                            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                           }
                         },
                         "envelopes": {
@@ -2389,11 +2389,11 @@
                               },
                               "createdPeriod": {
                                 "type": "string",
-                                "pattern": "^\\d{4}-\\d{2}$"
+                                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                               },
                               "archivedPeriod": {
                                 "type": "string",
-                                "pattern": "^\\d{4}-\\d{2}$",
+                                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
                                 "nullable": true
                               },
                               "months": {
@@ -2403,7 +2403,7 @@
                                   "properties": {
                                     "period": {
                                       "type": "string",
-                                      "pattern": "^\\d{4}-\\d{2}$"
+                                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                                     },
                                     "closing": {
                                       "type": "string",
@@ -2464,7 +2464,7 @@
                               },
                               "period": {
                                 "type": "string",
-                                "pattern": "^\\d{4}-\\d{2}$"
+                                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                               },
                               "exists": {
                                 "type": "boolean"
@@ -2474,7 +2474,7 @@
                                 "properties": {
                                   "period": {
                                     "type": "string",
-                                    "pattern": "^\\d{4}-\\d{2}$"
+                                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                                   },
                                   "envelopeId": {
                                     "type": "string",
@@ -2503,7 +2503,7 @@
                                     "properties": {
                                       "period": {
                                         "type": "string",
-                                        "pattern": "^\\d{4}-\\d{2}$"
+                                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                                       },
                                       "envelopeId": {
                                         "type": "string",
@@ -2529,7 +2529,7 @@
                                     "properties": {
                                       "period": {
                                         "type": "string",
-                                        "pattern": "^\\d{4}-\\d{2}$"
+                                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                                       },
                                       "envelopeId": {
                                         "type": "string",
@@ -2555,7 +2555,7 @@
                                     "properties": {
                                       "period": {
                                         "type": "string",
-                                        "pattern": "^\\d{4}-\\d{2}$"
+                                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                                       },
                                       "envelopeId": {
                                         "type": "string",
@@ -2617,7 +2617,7 @@
                                       "properties": {
                                         "period": {
                                           "type": "string",
-                                          "pattern": "^\\d{4}-\\d{2}$"
+                                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                                         },
                                         "envelopeId": {
                                           "type": "string",

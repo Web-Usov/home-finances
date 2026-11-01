@@ -185,4 +185,58 @@ describe('Operations create with period (integration)', () => {
 
     expect(response.body.error).toBe('VALIDATION_ERROR');
   });
+  it.each(['2026-13', '2026-00'])('API-17 / API-21: body period %s answers 422 VALIDATION_ERROR, not 404', async (period) => {
+    const { food } = await setup();
+
+    const response = await post(expense(food.id, '1.00', { period, version: 1 })).expect(422);
+
+    expect(response.body.error).toBe('VALIDATION_ERROR');
+  });
+
+  it.each(['2026-13', '2026-00'])('API-17: GET /operations?period=%s answers 422 VALIDATION_ERROR', async (period) => {
+    const response = await http().get('/api/v1/operations').query({ period }).expect(422);
+
+    expect(response.body.error).toBe('VALIDATION_ERROR');
+  });
+
+  it('OP-07 / API-21: transfer with explicit period checks the target month balance, not the working month one', async () => {
+    // 2026-01 reopened (Food: 10 000 ₽), 2026-02 open (Food: 10 000 carried + 20 000 allocated = 30 000)
+    await createMonth(t.prisma, { period: '2026-01', status: 'reopened', incomeMinor: 5_000_000 });
+    await createMonth(t.prisma, { period: '2026-02', status: 'open', incomeMinor: 5_000_000 });
+    const food = await createEnvelope(t.prisma, { name: 'Food' });
+    const home = await createEnvelope(t.prisma, { name: 'Home' });
+    const allocate = async (period: string, amount: string) =>
+      http()
+        .put(`/api/v1/months/${period}/allocations`)
+        .set('If-Match', etag((await monthOf(period)).version))
+        .send({ allocations: { [food.id]: amount } })
+        .expect(200);
+    await allocate('2026-01', '10000.00');
+    await allocate('2026-02', '20000.00');
+    expect((await foodClosing('2026-01', food.id)).closing).toBe(1_000_000);
+    expect((await foodClosing('2026-02', food.id)).closing).toBe(3_000_000);
+
+    const transfer = (amount: string, status: number, period?: string) =>
+      Promise.resolve(monthOf(period ?? '2026-02')).then((month) =>
+      post({
+        type: 'transfer',
+        sourceEnvelopeId: food.id,
+        destinationEnvelopeId: home.id,
+        amount,
+        ...(period !== undefined ? { period } : {}),
+        version: month.version,
+      }).expect(status));
+
+    // 15 000 fits the open month (30 000) but exceeds the target month balance (10 000)
+    const rejected = await transfer('15000.00', 409, '2026-01');
+    expect(rejected.body.error).toBe('TRANSFER_EXCEEDS_BALANCE');
+    expect(await t.prisma.operation.count({ where: { type: 'transfer' } })).toBe(0);
+
+    // exactly the target month balance is allowed
+    const accepted = await transfer('10000.00', 201, '2026-01');
+    expect(accepted.body.data.summary.period).toBe('2026-01');
+
+    // without period the same 15 000 uses the working month (2026-02): 20 000 left after the cascade
+    await transfer('15000.00', 201);
+  });
 });

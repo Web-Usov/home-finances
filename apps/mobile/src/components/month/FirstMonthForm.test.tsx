@@ -43,7 +43,17 @@ describe('FirstMonthForm', () => {
     fireEvent.changeText(screen.getByLabelText('Первый месяц'), '2026-01-15');
     fireEvent.press(screen.getByRole('button', { name: 'Создать месяц' }));
 
-    expect(await screen.findByText('Введите месяц как ГГГГ-ММ, например 2026-01')).toBeTruthy();
+    expect(await screen.findByText('Введите месяц как ГГГГ-ММ (месяц от 01 до 12), например 2026-01')).toBeTruthy();
+    expect(mockRequest).not.toHaveBeenCalled();
+  });
+
+  it('API-17 / AC-21: month 13 shows the hint about months 01-12 and sends nothing', async () => {
+    renderWithProviders(<FirstMonthForm onCreated={jest.fn()} />);
+
+    fireEvent.changeText(screen.getByLabelText('Первый месяц'), '2026-13');
+    fireEvent.press(screen.getByRole('button', { name: 'Создать месяц' }));
+
+    expect(await screen.findByText('Введите месяц как ГГГГ-ММ (месяц от 01 до 12), например 2026-01')).toBeTruthy();
     expect(mockRequest).not.toHaveBeenCalled();
   });
 });
