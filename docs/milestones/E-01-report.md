@@ -172,9 +172,8 @@ covered by tests: 127/261
 | T-042 | [#48](https://github.com/Web-Usov/home-finances/pull/48) | Период вне 01–12 (`2026-13`, `2026-00`) теперь даёт 422 `VALIDATION_ERROR`, а не 404 `MONTH_NOT_FOUND` (снимает ограничение, указанное в отчёте выше); `POST /months` проверяет тело схемой; добавлен тест OP-07 для перевода с явным `period` | API-18, OP-07 |
 | T-043 | [#45](https://github.com/Web-Usov/home-finances/pull/45) | `ENVELOPE_NOT_EMPTY` отвечает дословным текстом MSG-05; тест предупреждения об архивном конверте с отрицательным остатком | MSG-05, ENV-11, CALC-12 |
 | T-044 | [#50](https://github.com/Web-Usov/home-finances/pull/50) | Рефакторинг без изменения поведения: общие `pickWorkingMonth` и `freeFundsMinor` вместо копий в модулях | MON-16, FIN-11 |
+| T-046 | [#52](https://github.com/Web-Usov/home-finances/pull/52) | Только описание API: в OpenAPI (Swagger) появились тела и типы ответов `POST /months`, `GET /months`, конвертов, health и query-параметров; поведение не менялось | API-14, API-15 |
 | T-045 | [#49](https://github.com/Web-Usov/home-finances/pull/49) | `GET /operations` принимает `uncoveredOnly=true` и `role=source` (нужны для детализации аналитики, эпик E-02/E-05) | REP-10, HIST-11 |
-
-T-046 (типы OpenAPI для тела и ответов `/months`) на момент подготовки дополнения не смёржена и сюда не входит.
 
 **Как менять сценарий приёмки из отчёта выше.** Шаги «Демо-сценарий» писались до T-050: теперь `version` в теле запроса и `?version=` в `DELETE` не принимаются. Версию берите из заголовка `ETag` предыдущего ответа (или из `GET /months`) и передавайте в заголовке `If-Match: "<версия>"` (в Swagger UI поле «If-Match» у мутаций). Версия нового месяца по-прежнему 2 (T-032). Остальные коды ответов сценария не изменились.
 
