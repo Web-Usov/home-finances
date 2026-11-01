@@ -1,7 +1,7 @@
 ---
 id: T-053
 title: "Structured available field in TRANSFER_EXCEEDS_BALANCE 409 and client usage"
-status: in_progress
+status: done
 epic: E-04
 depends: [T-011, T-012, T-050]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: M
 branch: task/T-053-transfer-exceeds-balance-available-field
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/57
 ---
 
 # T-053. Structured available field in TRANSFER_EXCEEDS_BALANCE 409 and client usage
