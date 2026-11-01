@@ -1,7 +1,7 @@
 ---
 id: T-046
 title: "OpenAPI: typed POST /months body, GET /months response and query params"
-status: in_progress
+status: done
 epic: E-00
 depends: [T-027, T-037, T-050]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: task/T-046-openapi-months-body-response-query-types
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/52
 ---
 
 # T-046. OpenAPI: typed POST /months body, GET /months response and query params
