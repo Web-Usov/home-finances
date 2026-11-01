@@ -13,9 +13,9 @@ echo "$*" >> "$GH_CALLS"
 # like the real gh, pr list and repo view need a git checkout as cwd
 case "$1 $2" in "pr list"|"repo view") git rev-parse --git-dir >/dev/null 2>&1 || { echo "failed to run git" >&2; exit 1; } ;; esac
 case "$1 $2" in
-  "pr list") cat "$GH_PRS" ;;
+  "pr list") [ -z "\${GH_LIST_FAIL:-}" ] || exit 1; cat "$GH_PRS" ;;
   "repo view") echo "Owner/repo" ;;
-  "api -X") [ -z "\${GH_API_FAIL:-}" ] ;;
+  "api -X") [ -z "\${GH_API_FAIL:-}" ] && { [ -z "\${GH_API_FAIL_PR:-}" ] || [[ "$4" != */pulls/$GH_API_FAIL_PR/* ]]; } ;;
 esac
 `;
 
@@ -100,9 +100,37 @@ test('DRY_RUN logs without calling the API', () => {
   assert.match(r.stdout, /would update-branch/);
 });
 
-test('a failed update-branch is logged and does not abort the run', () => {
+test('a failed update-branch is logged, every PR is still processed, and the run exits non-zero', () => {
   const { r, apiCalls } = run([pr(1, 'BEHIND'), pr(2, 'BEHIND')], { GH_API_FAIL: '1' });
-  assert.equal(r.status, 0, r.stderr);
+  assert.notEqual(r.status, 0);
   assert.equal(apiCalls.length, 2);
   assert.match(r.stderr, /#1 .*FAILED/);
+  assert.match(r.stderr, /#2 .*FAILED/);
+  assert.match(r.stderr, /2 update-branch call\(s\) failed/);
+});
+
+test('one failure among successes still exits non-zero after updating the rest', () => {
+  const { r, apiCalls } = run([pr(1, 'BEHIND'), pr(2, 'BEHIND')], { GH_API_FAIL_PR: '1' });
+  assert.notEqual(r.status, 0);
+  assert.equal(apiCalls.length, 2);
+  assert.match(r.stdout, /#2 .*update-branch requested/);
+});
+
+test('invalid JSON from gh pr list (jq error) fails the run without API calls', () => {
+  const dir = makeTmp('auto-update-badjson-');
+  const bin = path.join(dir, 'bin');
+  fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'gh'), '#!/usr/bin/env bash\ncase "$1 $2" in "pr list") echo "not json" ;; "repo view") echo Owner/repo ;; *) echo "$*" >> "$GH_CALLS" ;; esac\n', { mode: 0o755 });
+  const calls = path.join(dir, 'calls.log');
+  const r = spawnSync('bash', [path.join(repoRoot, 'scripts/ops/auto-update-prs.sh')], {
+    env: { PATH: `${bin}:${process.env.PATH}`, GH_CALLS: calls },
+    encoding: 'utf8',
+  });
+  assert.notEqual(r.status, 0);
+  assert.equal(fs.existsSync(calls), false);
+});
+
+test('a failing gh pr list fails the run', () => {
+  const { r } = run([], { GH_LIST_FAIL: '1' });
+  assert.notEqual(r.status, 0);
 });

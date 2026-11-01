@@ -2,13 +2,12 @@
 **/dist
 **/.turbo
 **/.expo
+**/.preview
 **/coverage
 .git
 .github
 docs
 e2e
-apps/mobile
-!apps/mobile/package.json
 !e2e/package.json
 **/.env
 **/.env.test

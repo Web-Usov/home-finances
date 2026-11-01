@@ -16,6 +16,7 @@ A GitHub Action cannot fix this: commits pushed with `GITHUB_TOKEN` do not trigg
 - lists open PRs; for each one that is not a draft, has auto-merge enabled and `mergeStateStatus == BEHIND` it calls
   `gh api -X PUT repos/<owner/repo>/pulls/<n>/update-branch` (merge method only, never rebase). GitHub merges master in and re-runs CI.
 - `DIRTY` (conflicts) is only logged: the author must merge `origin/master` locally and resolve.
+- The run exits non-zero (after processing all PRs) if any update-branch call failed, or if `gh`/`jq` fail, so the failed unit shows up in `systemctl`/`journalctl`.
 - Everything else (CLEAN, BLOCKED, no auto-merge, draft) is ignored. Idempotent; no-op when nothing needs an update.
 - The repo slug comes from `gh repo view` (override with `REPO=owner/name`); `DRY_RUN=1` logs without calling the API.
 
@@ -24,8 +25,8 @@ Reviewers still run update-branch by hand on LGTM (`docs/workflow.md`, section 6
 ## Install, status, logs
 
 The unit runs as **root** because the `gh` auth lives in `/root/.config/gh`. Hardening is minimal (`NoNewPrivileges`, `PrivateTmp`,
-`ProtectSystem=strict`, kernel/cgroup protections); no `ProtectHome`, since `gh` needs `/root`. The units point at the checkout
-the installer is run from, so install from the main checkout on master.
+`ProtectSystem=strict`, kernel/cgroup protections); no `ProtectHome`, since `gh` needs `/root`. The units point at the main checkout; the installer
+refuses to run from a task worktree, so run it from the main checkout on master.
 
 ```bash
 scripts/ops/install-systemd.sh                       # as root, idempotent: renders units, enables the timer

@@ -300,9 +300,11 @@ Never edit `apps/mobile/src/api/**` by hand.
 
 ## Compose smoke
 
-`pnpm smoke:compose` (`scripts/smoke-compose.sh`) builds the production API image and checks the
-real deployment path: `docker compose up --build` under an isolated project name and ports
-(`docker-compose.smoke.yml` override, no clash with the dev `family-budget-db` on 5432), waits for
-healthy, creates data over HTTP, restarts api + postgres, checks the data persisted and tears
-everything down (including the volume). Takes a few minutes; not part of `verify`. Run it when you
-touch `Dockerfile`, `docker-compose*.yml` or the API start-up.
+`pnpm smoke:compose` (`scripts/smoke-compose.sh`) builds the production API and web images and checks the
+real deployment path: `docker compose up --build` under an isolated project name and free host ports
+(`POSTGRES_PORT`/`API_HOST_PORT`/`WEB_HOST_PORT`, `docker-compose.smoke.yml` override drops fixed container names, so no clash
+with the dev `family-budget-db` on 5432 or the preview on 3100/8100), waits for healthy, checks `/api/v1/health` directly and through
+the web proxy and that the web index is served, creates a month, envelopes, an expense and a transfer over HTTP, snapshots
+operations / months / envelopes / dashboard, restarts the whole stack, and requires the snapshot to be byte-identical
+(AC-22 / DOD-01). It then tears everything down, including the volume. Takes ~5-15 minutes (cold web export); not part of `verify`.
+Run it when you touch `Dockerfile`, `docker/web/`, `docker-compose*.yml` or the API start-up.
