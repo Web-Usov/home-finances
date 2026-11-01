@@ -24,7 +24,9 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
       target: production
-    command: ["pnpm", "exec", "prisma", "migrate", "deploy"]
+    # Direct binary, no pnpm/corepack: the image runs as `node`, whose corepack cache is empty, so `pnpm exec`
+    # would download pnpm at start (fails offline). WORKDIR is /app/apps/api (prisma is a production dependency).
+    command: ["node_modules/.bin/prisma", "migrate", "deploy"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-budget}:${POSTGRES_PASSWORD:-budget}@postgres:5432/${POSTGRES_DB:-family_budget}?schema=public
     depends_on:
