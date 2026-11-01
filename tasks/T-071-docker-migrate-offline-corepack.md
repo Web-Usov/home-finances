@@ -29,11 +29,11 @@ The compose `migrate` service applies migrations without network access: it no l
 
 Every item must be verifiable by a command or a named test.
 
-- [ ] Running the `migrate` container with the network disabled (e.g. `docker compose run --rm --no-deps --network none`-style check with a reachable DB, or an equivalent documented procedure) applies migrations successfully; the exact command is written into `scripts/smoke-compose.sh` or `docs/testing.md`. If a network-less run is not feasible in CI, document why and verify manually, noting the result in `## Result`.
-- [ ] `docker compose build` and `pnpm smoke:compose` are green.
-- [ ] No pnpm/corepack download is attempted at container start (verified by the offline run).
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Running the `migrate` container with the network disabled (e.g. `docker compose run --rm --no-deps --network none`-style check with a reachable DB, or an equivalent documented procedure) applies migrations successfully; the exact command is written into `scripts/smoke-compose.sh` or `docs/testing.md`. If a network-less run is not feasible in CI, document why and verify manually, noting the result in `## Result`.
+- [x] `docker compose build` and `pnpm smoke:compose` are green.
+- [x] No pnpm/corepack download is attempted at container start (verified by the offline run).
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -46,4 +46,13 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Approach: `migrate` now runs `node_modules/.bin/prisma migrate deploy` directly (WORKDIR `/app/apps/api`); the runtime
+no longer touches pnpm/corepack. Chosen over `COREPACK_HOME=/opt/corepack` because it removes the runtime dependency
+instead of relocating a cache (smaller, no extra image state). `apps/api/Dockerfile` is unchanged (corepack is still used at build time).
+`docker/web/Dockerfile` has no issue: its runtime is plain `node serve-web.mjs`, pnpm is only used in the builder stage.
+
+Offline proof: `docker-compose.smoke.yml` adds service `migrate-offline` (same image/command) on an `internal: true` network that
+reaches postgres but has no outbound route; `scripts/smoke-compose.sh` runs it right after `up` and requires
+"No pending migrations to apply" and no corepack output. Manual control on the built image with `--network none`:
+`node_modules/.bin/prisma --version` works; the old `pnpm exec prisma --version` fails with "Corepack is about to download ...pnpm-9.15.0.tgz".
+`pnpm smoke:compose` passed (isolated project, free ports). Documented in `docs/testing.md`.

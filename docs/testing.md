@@ -319,5 +319,8 @@ real deployment path: `docker compose up --build` under an isolated project name
 with the dev `family-budget-db` on 5432 or the preview on 3100/8100), waits for healthy, checks `/api/v1/health` directly and through
 the web proxy and that the web index is served, creates a month, envelopes, an expense and a transfer over HTTP, snapshots
 operations / months / envelopes / dashboard, restarts the whole stack, and requires the snapshot to be byte-identical
-(AC-22 / DOD-01). It then tears everything down, including the volume. Takes ~5-15 minutes (cold web export); not part of `verify`.
+(AC-22 / DOD-01). Right after `up` it re-runs `migrate` as the `migrate-offline` service of the smoke override on an `internal: true` network
+(reaches postgres, no outbound route; `docker compose ... --profile offline run --rm --no-deps migrate-offline`) and requires
+"No pending migrations to apply" without any corepack/pnpm download (T-071; `migrate` calls `node_modules/.bin/prisma` directly).
+It then tears everything down, including the volume. Takes ~5-15 minutes (cold web export); not part of `verify`.
 Run it when you touch `Dockerfile`, `docker/web/`, `docker-compose*.yml` or the API start-up.
