@@ -145,6 +145,9 @@ it('API-17: ...', async () => {
 (see `envelopes.int-spec.ts`). The helper lives in `test/` and is imported only by `*.int-spec.ts`; HTTP tests with a mocked
 `PrismaService` stay `*.spec.ts` (`envelopes.http.spec.ts`).
 
+**`If-Match` (API-25):** month-scoped mutations need the header; send it with `.set('If-Match', etag(version))` (`etag` from `test/http.ts`),
+never in the body. `src/common/if-match.etag.int-spec.ts` is the reference: 428 / 422 / 409 / `ETag` / CORS for every endpoint.
+
 **Concurrent requests:** supertest on the unlistened `getHttpServer()` binds a new `listen(0)` per request, so parallel requests fail
 with `read ECONNRESET` (a harness artefact, not a product defect). For races use `const base = await t.listen()` (the app on an
 ephemeral port) with `request(base)` or `fetch`. `test/races.ts` (`useRaceHarness`) builds on it: per-round world, both

@@ -57,8 +57,22 @@ Rules:
   client is passed to the engine as `db`. This includes creating an envelope with an initial balance: the `initial_balance`
   operation is inserted and the month is recalculated in the same transaction, otherwise `GET /envelopes` (which reads
   `EnvelopeMonthSnapshot.closing`) would show 0.
-- Month-scoped mutations check, in this order: existence (`MONTH_NOT_FOUND`) → `version` (`VERSION_CONFLICT`, ADR 0005)
-  → month status (`MONTH_LOCKED`, MON-03, NFR-18) → domain rules. See `AllocationsService.save` for the reference flow.
+- Month-scoped mutations check, in this order: existence (`MONTH_NOT_FOUND`) → `If-Match` version (`PRECONDITION_REQUIRED` 428 /
+  `VALIDATION_ERROR` 422 / `VERSION_CONFLICT` 409, ADR 0005, API-27) → month status (`MONTH_LOCKED`, MON-03, NFR-18) → domain
+  rules. See `AllocationsService.save` for the reference flow.
+- **Optimistic locking through `If-Match` / `ETag`** (API-25…API-27, ADR 0005 addendum). The expected month version travels ONLY in
+  the request header `If-Match: "<version>"` of `PATCH /months/{period}`, `PUT /months/{period}/allocations`,
+  `POST /months/{period}/close|reopen`, `POST /operations` (target month), `PATCH|DELETE /operations/{id}` (operation month);
+  never in a body or query. One shared mechanism in `common/`: the `@IfMatch()` parameter decorator (`if-match.ts`) classifies the
+  header into an `ExpectedVersion` (`version` | `missing` | `malformed`; the strong form `"7"` and the weak `W/"7"` are accepted)
+  and the service hands it to `lockMonthForMutation` / `lockWorkingMonth`, which call `assertExpectedVersion` right after the month
+  row exists and is locked (so 404 wins over 428/422, and the version is judged before the status). `@ApiIfMatch()` documents the
+  header parameter and the 428 response in OpenAPI. Month-scoped reads and mutations return `ETag: "<version>"` of the
+  addressed month (for cascades the target month AFTER the recalculation): handlers marked `@MonthETag()` are served by the global
+  `MonthETagInterceptor` (`month-etag.ts`), which reads the version from the response body (`data.summary`, `data.month`, `month`).
+  ETag is set on `GET /dashboard/monthly`, `GET /months/{period}/reopen-preview` and every mutation above; `GET /months`, analytics
+  and the envelope endpoints carry none. CORS (`configureApp`) exposes `ETag` and allows `If-Match`. Creating a month
+  (`POST /months`) and envelope operations need no header; `GET .../reopen-preview` needs none either.
 - All of these checks run **inside** the mutation's `$transaction`, after `lockMonthForMutation(tx, ...)` (`common/month-lock.ts`):
   one `SELECT ... WHERE period >= <target> ORDER BY period FOR UPDATE` locks the target month and every later month, because
   the cascade rewrites and bumps `version` of all of them (ADR 0004/0005). Locks are therefore always taken in ascending period
@@ -105,15 +119,16 @@ Source data is never modified by the engine; derived data is always reproducible
 ## 5. Error model
 
 ```
-service throws  ValidationException (422) | ConflictException (409) | NotFoundException (404)
+service throws  ValidationException (422) | ConflictException (409) | NotFoundException (404) | PreconditionRequiredException (428)
                       each carries  code: ApiErrorCode  and a Russian message
-   → DomainExceptionFilter  (@Catch of exactly these three)
+   → DomainExceptionFilter  (@Catch of exactly these four)
    → reply  { "error": "<ApiErrorCode>", "message": "<text>" }  with the exception's status code
 ```
 
 - `ApiErrorCode` (in `packages/types/src/entities.ts`): `ALLOCATION_EXCEEDS_INCOME`, `MONTH_LOCKED`, `TRANSFER_EXCEEDS_BALANCE`,
   `ENVELOPE_NOT_EMPTY`, `ENVELOPE_NOT_FOUND`, `MONTH_NOT_FOUND`, `VERSION_CONFLICT`, `INVALID_STATUS_TRANSITION`,
-  `INVALID_PERIOD`, `ENVELOPE_NAME_DUPLICATE`, `VALIDATION_ERROR`, `OPERATION_NOT_FOUND`. New codes are added there, never locally.
+  `INVALID_PERIOD`, `ENVELOPE_NAME_DUPLICATE`, `VALIDATION_ERROR`, `OPERATION_NOT_FOUND`, `PRECONDITION_REQUIRED` (428, no `If-Match`).
+  New codes are added there, never locally.
 - Message texts mirror spec `MSG-*` where one exists (e.g. MSG-01, MSG-06).
 - Non-fatal conditions are returned as `warnings` (`{ code, message }`) in mutation responses, not as errors (API-16).
 - Unhandled errors fall through to Nest's default 500 handling.
@@ -142,6 +157,12 @@ Derived tables may be wiped and rebuilt from source tables at any time.
   `pnpm api:generate`, drift checked by `pnpm api:contract`); requests go through `customAxiosInstance` with base URL
   `EXPO_PUBLIC_API_URL` = API origin without `/api` (default `http://localhost:3000`).
 - **Server state:** TanStack Query (`QueryProvider`: 5 min `staleTime`, no refetch on window focus).
+- **Optimistic locking (API-25, API-26):** month-scoped mutations go through `useMonthMutation` (`src/lib/useMonthMutation.ts`): the
+  variables carry the displayed month's cached `version`, the helper sends it as `If-Match: "<version>"` (`ifMatch` in
+  `src/lib/monthVersion.ts`, through the second argument of the Orval mutator) and refetches the budget data after every settled
+  request. An axios response interceptor feeds the `ETag` of every month-scoped response to `syncMonthVersionFromETag`, which
+  refreshes the cached dashboard version. 409 `VERSION_CONFLICT` shows the server message (data is refetched); 428 (a client bug)
+  shows a generic hint.
 - **Local UI state:** Zustand stores — `monthStore` (current period), `envelopeStore` (selected envelope), `uiStore`
   (sidebar, active tab).
 - **Forms:** React Hook Form + Zod resolver using schemas from `@family-budget/types`; shared `FormInput` component.
