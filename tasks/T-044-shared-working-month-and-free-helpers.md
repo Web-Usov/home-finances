@@ -1,7 +1,7 @@
 ---
 id: T-044
 title: "API: shared working-month and free-funds helpers, dedup yearly uncovered schema"
-status: todo
+status: in_progress
 epic: E-00
 depends: [T-043, T-008]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [MON-16, FIN-11, REP-08]
 acceptance: []
 area: api
 size: S
-branch: null
+branch: task/T-044-shared-working-month-and-free-helpers
 pr: null
 ---
 
