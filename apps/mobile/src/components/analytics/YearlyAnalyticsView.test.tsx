@@ -57,7 +57,7 @@ describe('yearly analytics reports', () => {
     render(<YearlyAnalyticsView data={makeYearly()} onDrillDown={onDrillDown} />);
     fireEvent.press(screen.getByLabelText(new RegExp(`^Февраль 2026, списания: 1${NBSP}000,00`)));
     expect(onDrillDown).toHaveBeenLastCalledWith({ period: '2026-02', type: 'expense' });
-    expect(buildHistoryLink(onDrillDown.mock.calls[0][0])).toEqual({ pathname: '/history', params: { period: '2026-02', type: 'expense', uncoveredOnly: 'true', role: 'source' } });
+    expect(buildHistoryLink(onDrillDown.mock.calls[0][0])).toEqual({ pathname: '/history', params: { period: '2026-02', type: 'expense', uncoveredOnly: 'true' } });
     fireEvent.press(screen.getByLabelText(new RegExp('^Февраль 2026, всего')));
     expect(onDrillDown).toHaveBeenLastCalledWith({ period: '2026-02' });
   });

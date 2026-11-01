@@ -96,7 +96,7 @@
 
 - [T-045](T-045-operations-filters-uncovered-only-role-source.md) Operations: uncoveredOnly and role=source filters for analytics drill-down — **done** · api · M · depends: T-008, T-025 · [PR](https://github.com/Web-Usov/home-finances/pull/49)
 
-- [T-052](T-052-operations-role-source-requires-envelope-id.md) Operations: role=source without envelopeId is a 422 — **todo** · api · S · depends: T-045 · —
+- [T-052](T-052-operations-role-source-requires-envelope-id.md) Operations: role=source without envelopeId is a 422 — **done** · api · S · depends: T-045 · [PR](https://github.com/Web-Usov/home-finances/pull/54)
 
 ## E-03. Экран «Месяц» и редактор распределения — planned
 
