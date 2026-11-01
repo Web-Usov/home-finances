@@ -1,7 +1,7 @@
 ---
 id: T-043
 title: "Envelopes: align MSG-05 text with the spec, test negative closing warning"
-status: in_progress
+status: done
 epic: E-00
 depends: [T-026]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: task/T-043-msg-05-text-and-negative-closing-warning
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/45
 ---
 
 # T-043. Envelopes: align MSG-05 text with the spec, test negative closing warning
