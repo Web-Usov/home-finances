@@ -56,8 +56,10 @@ Read `AGENTS.md` (hard invariants) and `docs/workflow.md` (full lifecycle) befor
   no auth, periods are `YYYY-MM` (see AGENTS.md).
 - Do NOT edit `docs/spec/**`, `docs/decisions/**` or `epics/**` (denied by permissions). If the spec is ambiguous or wrong,
   set the task `blocked`, put a `Q-proposal` (question, options, recommendation) into the Handoff log, run
-  `/handoff`, and tell the user. The planner handles spec changes.
+  `/handoff`, and tell the user. The planner handles spec changes. Escalations to the human (the `Q-proposal`, the
+  message to the user) are written in RUSSIAN: Вопрос / Варианты / Рекомендация / Затронутые правила / Задачи
+  (`docs/workflow.md` section 7).
 - Do not hand-edit generated code (`apps/mobile/src/api`); use `pnpm api:generate`.
 - Never force-push, never push to `master`, never merge and never enable auto-merge (all `gh pr merge` is denied). Only the reviewer, after
   `VERDICT: LGTM`, enables auto-merge. After `/ship`, tell the user to run `/review <pr>`; on CHANGES REQUESTED fix, push and ask for `/review` again.
-- Use `apps/*/AGENTS.md` for package-specific guidance. Tasks and docs you write are English.
+- Use `apps/*/AGENTS.md` for package-specific guidance. Tasks, code, commits and agent-only PRs are English; anything the human must decide or review is Russian (`AGENTS.md` "Language rule").

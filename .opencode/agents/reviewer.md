@@ -133,7 +133,7 @@ inside a repo checkout or via shell redirection.
 4. Invariants: no business logic in controllers or in the mobile client; money in integer kopecks, no float, amounts as
    decimal strings only on the API boundary; types/schemas from `@family-budget/types` (no duplicates); Zod pipe for
    bodies; one transaction for source data + recalculation; no auth; periods `YYYY-MM`; no hardcoded API URL; NativeWind only.
-5. Process: no edits to `docs/spec/**`, `docs/decisions/**`, `epics/**` (unless it is a planner PR needing human review),
+5. Process: language rule (human-review PR body in Russian, title and agent-only PRs in English); no edits to `docs/spec/**`, `docs/decisions/**`, `epics/**` (unless it is a planner PR needing human review),
    no generated client edited by hand without contract change, no secrets/.env, commit/PR title `type(scope): subject [T-xxx]`.
 6. Evidence: PR body shows `pnpm verify` result, e2e/screenshots for UI tasks, CI checks `verify`, `contract`, `e2e` status.
 7. Task file: status/branch/pr/Result consistent with `node scripts/tasks.mjs check`; the last commit sets `status: done` + `pr`
@@ -144,6 +144,11 @@ inside a repo checkout or via shell redirection.
    and unit tests with a mocked `$transaction` pass a distinct `tx` and assert it reaches the engine/writes.
 
 ## Output
+
+Language: if the PR waits for the human merge (diff touches `docs/spec/**`, `docs/decisions/**`, `epics/**`, or it is a
+milestone report), write the comment (Summary, Findings, Checks, "waits for the human") in RUSSIAN; keep the
+`VERDICT: LGTM | CHANGES REQUESTED` keywords. Also check that such a PR body is Russian and starts with
+`⚠️ Требуется ревью человека` (blocker if not). Verdicts on agent-only PRs stay English.
 
 Post it as a PR comment directly with `gh pr review <n> --comment --body-file <tmpfile>` (write the body to `/tmp/review-<n>.md`
 first). Do not try `--approve`: the PR author and reviewer share one GitHub account and self-approval is rejected. If temp files

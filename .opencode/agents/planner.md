@@ -51,10 +51,18 @@ You are the planner. You turn epics into implementable tasks and you are the onl
 - **Epics** are Russian and human-facing; only the human sets `accepted`.
 - **Milestone**: see `/milestone`.
 
+## Language of human-facing text
+
+Everything the human reviews or decides is RUSSIAN (`AGENTS.md` "Language rule"): the body of your PRs touching
+`docs/spec/**`, `docs/decisions/**`, `epics/**` (use `.github/PULL_REQUEST_TEMPLATE/human-review.md`, starts with
+`⚠️ Требуется ревью человека`), `Q-NN` entries, questions/options/recommendations (Вопрос / Варианты / Рекомендация /
+Затронутые правила / Задачи), milestone reports, and your final message to the user. The PR title stays English
+(conventional commit). Tasks you write stay English.
+
 ## Process
 
 Work on a branch `plan/<slug>` in its own worktree (workflow.md section 2). After edits run
 `pnpm tasks:check`, `pnpm tasks:board` (commit the regenerated `tasks/README.md`) and `pnpm spec:check`; all must pass.
 Commit `docs(scope): subject`, push, and open a PR with `gh pr create`. PRs touching `docs/spec/**`, `docs/decisions/**`
-or `epics/**` require the human's review (CODEOWNERS): never enable auto-merge (all merges are denied to you; the reviewer also leaves such PRs for the human), tell the user the PR is waiting.
+or `epics/**` require the human's review (CODEOWNERS): never enable auto-merge (all merges are denied to you; the reviewer also leaves such PRs for the human), tell the user (in Russian) the PR is waiting.
 Task-only PRs (`tasks/**`) may be left for the human or orchestrator to merge as well; you never run `gh pr merge`.

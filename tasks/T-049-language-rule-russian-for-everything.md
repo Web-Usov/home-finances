@@ -26,28 +26,30 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+Make the owner's language decision (2026-11-01) concrete and enforced in the process: everything a human reviews or
+decides is written in Russian; agent-only artifacts stay English.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- ADR 0010 (language of artifacts), ADR 0009 (process). Files: `AGENTS.md`, `docs/workflow.md`,
+  `.github/PULL_REQUEST_TEMPLATE/human-review.md`, `.opencode/agents/{planner,reviewer,implementer}.md`,
+  `.opencode/commands/{ship,review,milestone}.md`.
 
 ## Definition of Done
 
 Every item must be verifiable by a command or a named test.
 
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] AGENTS.md "Language rule" lists what is Russian (human review/decision) and what stays English
+- [x] docs/workflow.md applies the rule in ship, review, blocked/escalation, milestones and has a Russian "question to the human" template
+- [x] Human-review PR template exists and `/ship` uses it for PRs that need human review
+- [x] Agent prompts and commands (planner, reviewer, implementer, ship, review, milestone) carry the rule
+- [x] ADR 0010 has a dated Russian addendum
+- [x] `pnpm spec:check`, `pnpm tasks:check`, `pnpm verify:quick` are green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Translating existing agent-facing docs or changing the code/commit language.
 
 ## Handoff log
 
@@ -55,4 +57,4 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Language rule made concrete (AGENTS.md, workflow.md, ADR 0010 addendum, human-review PR template, agent prompts and commands). Chose a separate template file `.github/PULL_REQUEST_TEMPLATE/human-review.md` (used by `/ship` via `--body-file`). PR titles stay English. No deviations.
