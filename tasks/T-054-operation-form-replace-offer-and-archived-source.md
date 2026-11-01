@@ -1,7 +1,7 @@
 ---
 id: T-054
 title: "OperationForm: replace offer when the transfer source changed, preselect archived source"
-status: todo
+status: done
 epic: E-04
 depends: [T-053]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [OP-07, HIST-09]
 acceptance: []
 area: mobile
 size: M
-branch: null
-pr: null
+branch: task/T-054-operation-form-replace-offer-and-archived-source
+pr: https://github.com/Web-Usov/home-finances/pull/61
 ---
 
 # T-054. OperationForm: replace offer when the transfer source changed, preselect archived source
@@ -27,10 +27,10 @@ When editing a transfer and the user changes its source envelope, the form offer
 
 ## Definition of Done
 
-- [ ] `it('HIST-09: changing the transfer source offers the replace flow')` mobile component test passes
-- [ ] `it('HIST-09: edit preselects an archived source envelope')` mobile component test passes
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('HIST-09: changing the transfer source offers the replace flow')` mobile component test passes
+- [x] `it('HIST-09: edit preselects an archived source envelope')` mobile component test passes
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -42,4 +42,4 @@ When editing a transfer and the user changes its source envelope, the form offer
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+`OperationForm` in edit mode keeps the operation's own archived source/destination envelope in the pickers, preselected and flagged "(архив)" (ENV-12 still hides archived envelopes from new choices and new forms). The "Перевести только X" offer uses the 409 `available` field (T-053), so it also works after the transfer source was changed in edit mode; the stored `sourceBalanceBefore` fallback applies only to an unchanged source. Component tests added in `OperationForm.test.tsx`. No e2e (T-055).
