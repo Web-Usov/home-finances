@@ -1,7 +1,7 @@
 ---
 id: T-042
 title: "Types: PeriodSchema rejects months outside 01-12, explicit-period transfer test"
-status: in_progress
+status: done
 epic: E-00
 depends: [T-025]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: task/T-042-period-month-range-and-transfer-period-test
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/48
 ---
 
 # T-042. Types: PeriodSchema rejects months outside 01-12, explicit-period transfer test
