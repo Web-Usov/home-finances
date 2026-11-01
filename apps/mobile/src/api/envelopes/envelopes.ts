@@ -32,6 +32,8 @@ import type {
 import { customAxiosInstance } from '.././axios-instance';
 
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 /**
@@ -39,14 +41,14 @@ import { customAxiosInstance } from '.././axios-instance';
  */
 export const envelopesControllerListV1 = (
     
- signal?: AbortSignal
+ options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
       return customAxiosInstance<void>(
       {url: `/api/v1/envelopes`, method: 'GET', signal
     },
-      );
+      options);
     }
   
 
@@ -59,16 +61,16 @@ export const getEnvelopesControllerListV1QueryKey = () => {
     }
 
     
-export const getEnvelopesControllerListV1QueryOptions = <TData = Awaited<ReturnType<typeof envelopesControllerListV1>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof envelopesControllerListV1>>, TError, TData>>, }
+export const getEnvelopesControllerListV1QueryOptions = <TData = Awaited<ReturnType<typeof envelopesControllerListV1>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof envelopesControllerListV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getEnvelopesControllerListV1QueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof envelopesControllerListV1>>> = ({ signal }) => envelopesControllerListV1(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof envelopesControllerListV1>>> = ({ signal }) => envelopesControllerListV1(requestOptions, signal);
 
       
 
@@ -88,7 +90,7 @@ export function useEnvelopesControllerListV1<TData = Awaited<ReturnType<typeof e
           TError,
           Awaited<ReturnType<typeof envelopesControllerListV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useEnvelopesControllerListV1<TData = Awaited<ReturnType<typeof envelopesControllerListV1>>, TError = unknown>(
@@ -98,11 +100,11 @@ export function useEnvelopesControllerListV1<TData = Awaited<ReturnType<typeof e
           TError,
           Awaited<ReturnType<typeof envelopesControllerListV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useEnvelopesControllerListV1<TData = Awaited<ReturnType<typeof envelopesControllerListV1>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof envelopesControllerListV1>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof envelopesControllerListV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -110,7 +112,7 @@ export function useEnvelopesControllerListV1<TData = Awaited<ReturnType<typeof e
  */
 
 export function useEnvelopesControllerListV1<TData = Awaited<ReturnType<typeof envelopesControllerListV1>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof envelopesControllerListV1>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof envelopesControllerListV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -131,7 +133,7 @@ export function useEnvelopesControllerListV1<TData = Awaited<ReturnType<typeof e
  */
 export const envelopesControllerCreateV1 = (
     envelopesControllerCreateV1Body: EnvelopesControllerCreateV1Body,
- signal?: AbortSignal
+ options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
@@ -140,21 +142,21 @@ export const envelopesControllerCreateV1 = (
       headers: {'Content-Type': 'application/json', },
       data: envelopesControllerCreateV1Body, signal
     },
-      );
+      options);
     }
   
 
 
 export const getEnvelopesControllerCreateV1MutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerCreateV1>>, TError,{data: EnvelopesControllerCreateV1Body}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerCreateV1>>, TError,{data: EnvelopesControllerCreateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerCreateV1>>, TError,{data: EnvelopesControllerCreateV1Body}, TContext> => {
 
 const mutationKey = ['envelopesControllerCreateV1'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
       
 
@@ -162,7 +164,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof envelopesControllerCreateV1>>, {data: EnvelopesControllerCreateV1Body}> = (props) => {
           const {data} = props ?? {};
 
-          return  envelopesControllerCreateV1(data,)
+          return  envelopesControllerCreateV1(data,requestOptions)
         }
 
         
@@ -178,7 +180,7 @@ const {mutation: mutationOptions} = options ?
  * @summary Create a new envelope
  */
 export const useEnvelopesControllerCreateV1 = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerCreateV1>>, TError,{data: EnvelopesControllerCreateV1Body}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerCreateV1>>, TError,{data: EnvelopesControllerCreateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof envelopesControllerCreateV1>>,
         TError,
@@ -196,7 +198,7 @@ export const useEnvelopesControllerCreateV1 = <TError = void,
 export const envelopesControllerUpdateV1 = (
     id: string,
     envelopesControllerUpdateV1Body: EnvelopesControllerUpdateV1Body,
- ) => {
+ options?: SecondParameter<typeof customAxiosInstance>,) => {
       
       
       return customAxiosInstance<void>(
@@ -204,21 +206,21 @@ export const envelopesControllerUpdateV1 = (
       headers: {'Content-Type': 'application/json', },
       data: envelopesControllerUpdateV1Body
     },
-      );
+      options);
     }
   
 
 
 export const getEnvelopesControllerUpdateV1MutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerUpdateV1>>, TError,{id: string;data: EnvelopesControllerUpdateV1Body}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerUpdateV1>>, TError,{id: string;data: EnvelopesControllerUpdateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerUpdateV1>>, TError,{id: string;data: EnvelopesControllerUpdateV1Body}, TContext> => {
 
 const mutationKey = ['envelopesControllerUpdateV1'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
       
 
@@ -226,7 +228,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof envelopesControllerUpdateV1>>, {id: string;data: EnvelopesControllerUpdateV1Body}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  envelopesControllerUpdateV1(id,data,)
+          return  envelopesControllerUpdateV1(id,data,requestOptions)
         }
 
         
@@ -242,7 +244,7 @@ const {mutation: mutationOptions} = options ?
  * @summary Rename or change display order
  */
 export const useEnvelopesControllerUpdateV1 = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerUpdateV1>>, TError,{id: string;data: EnvelopesControllerUpdateV1Body}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerUpdateV1>>, TError,{id: string;data: EnvelopesControllerUpdateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof envelopesControllerUpdateV1>>,
         TError,
@@ -259,28 +261,28 @@ export const useEnvelopesControllerUpdateV1 = <TError = void,
  */
 export const envelopesControllerArchiveV1 = (
     id: string,
- signal?: AbortSignal
+ options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
       return customAxiosInstance<void>(
       {url: `/api/v1/envelopes/${id}/archive`, method: 'POST', signal
     },
-      );
+      options);
     }
   
 
 
 export const getEnvelopesControllerArchiveV1MutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, TError,{id: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['envelopesControllerArchiveV1'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
       
 
@@ -288,7 +290,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, {id: string}> = (props) => {
           const {id} = props ?? {};
 
-          return  envelopesControllerArchiveV1(id,)
+          return  envelopesControllerArchiveV1(id,requestOptions)
         }
 
         
@@ -304,7 +306,7 @@ const {mutation: mutationOptions} = options ?
  * @summary Archive envelope with zero balance
  */
 export const useEnvelopesControllerArchiveV1 = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, TError,{id: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof envelopesControllerArchiveV1>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof envelopesControllerArchiveV1>>,
         TError,

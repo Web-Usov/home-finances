@@ -30,6 +30,8 @@ import type {
 import { customAxiosInstance } from '.././axios-instance';
 
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 /**
@@ -37,7 +39,7 @@ import { customAxiosInstance } from '.././axios-instance';
  */
 export const reportingControllerMonthlyDashboardV1 = (
     params?: ReportingControllerMonthlyDashboardV1Params,
- signal?: AbortSignal
+ options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
@@ -45,7 +47,7 @@ export const reportingControllerMonthlyDashboardV1 = (
       {url: `/api/v1/dashboard/monthly`, method: 'GET',
         params, signal
     },
-      );
+      options);
     }
   
 
@@ -58,16 +60,16 @@ export const getReportingControllerMonthlyDashboardV1QueryKey = (params?: Report
     }
 
     
-export const getReportingControllerMonthlyDashboardV1QueryOptions = <TData = Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError = void>(params?: ReportingControllerMonthlyDashboardV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError, TData>>, }
+export const getReportingControllerMonthlyDashboardV1QueryOptions = <TData = Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError = void>(params?: ReportingControllerMonthlyDashboardV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getReportingControllerMonthlyDashboardV1QueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>> = ({ signal }) => reportingControllerMonthlyDashboardV1(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>> = ({ signal }) => reportingControllerMonthlyDashboardV1(params, requestOptions, signal);
 
       
 
@@ -87,7 +89,7 @@ export function useReportingControllerMonthlyDashboardV1<TData = Awaited<ReturnT
           TError,
           Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReportingControllerMonthlyDashboardV1<TData = Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError = void>(
@@ -97,11 +99,11 @@ export function useReportingControllerMonthlyDashboardV1<TData = Awaited<ReturnT
           TError,
           Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReportingControllerMonthlyDashboardV1<TData = Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError = void>(
- params?: ReportingControllerMonthlyDashboardV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError, TData>>, }
+ params?: ReportingControllerMonthlyDashboardV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -109,7 +111,7 @@ export function useReportingControllerMonthlyDashboardV1<TData = Awaited<ReturnT
  */
 
 export function useReportingControllerMonthlyDashboardV1<TData = Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError = void>(
- params?: ReportingControllerMonthlyDashboardV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError, TData>>, }
+ params?: ReportingControllerMonthlyDashboardV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerMonthlyDashboardV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -130,7 +132,7 @@ export function useReportingControllerMonthlyDashboardV1<TData = Awaited<ReturnT
  */
 export const reportingControllerYearlyAnalyticsV1 = (
     params: ReportingControllerYearlyAnalyticsV1Params,
- signal?: AbortSignal
+ options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
@@ -138,7 +140,7 @@ export const reportingControllerYearlyAnalyticsV1 = (
       {url: `/api/v1/analytics/yearly`, method: 'GET',
         params, signal
     },
-      );
+      options);
     }
   
 
@@ -151,16 +153,16 @@ export const getReportingControllerYearlyAnalyticsV1QueryKey = (params?: Reporti
     }
 
     
-export const getReportingControllerYearlyAnalyticsV1QueryOptions = <TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
+export const getReportingControllerYearlyAnalyticsV1QueryOptions = <TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getReportingControllerYearlyAnalyticsV1QueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>> = ({ signal }) => reportingControllerYearlyAnalyticsV1(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>> = ({ signal }) => reportingControllerYearlyAnalyticsV1(params, requestOptions, signal);
 
       
 
@@ -180,7 +182,7 @@ export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnTy
           TError,
           Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(
@@ -190,11 +192,11 @@ export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnTy
           TError,
           Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(
- params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
+ params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -202,7 +204,7 @@ export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnTy
  */
 
 export function useReportingControllerYearlyAnalyticsV1<TData = Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError = void>(
- params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, }
+ params: ReportingControllerYearlyAnalyticsV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportingControllerYearlyAnalyticsV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 

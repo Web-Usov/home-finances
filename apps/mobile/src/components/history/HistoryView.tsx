@@ -106,7 +106,7 @@ export function HistoryView({
   const confirmDelete = (operation: HistoryOperation) => {
     setDeleteError(null);
     remove.mutate(
-      { id: operation.id, params: { version: month.version } },
+      { id: operation.id, version: month.version },
       {
         onSuccess: (response) => {
           setDeletingId(null);

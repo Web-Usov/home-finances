@@ -4,16 +4,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import {
   monthsControllerReopenPreviewV1,
-  useMonthsControllerCloseV1,
   useMonthsControllerReopenPreviewV1,
-  useMonthsControllerReopenV1,
 } from '../../api/months/months';
 import { describeMonthError } from '../../lib/apiErrors';
 import { formatPeriodGenitive, formatPeriodLabel, formatPeriodLower, nextPeriod } from '../../lib/period';
 import type { ApiErrorResponse } from '../envelopes/types';
 import { ReopenConfirm } from './ReopenConfirm';
 import { invalidateBudgetData } from '../../lib/queryKeys';
-import { useCreateMonth } from './useMonthMutations';
+import { useCloseMonth, useCreateMonth, useReopenMonth } from './useMonthMutations';
 import type { Dashboard, MonthSummary } from './types';
 
 interface MonthActionsProps {
@@ -70,8 +68,8 @@ export function MonthActions({ month, months }: MonthActionsProps) {
   };
 
   const createMutation = useCreateMonth();
-  const closeMutation = useMonthsControllerCloseV1<AxiosError<ApiErrorResponse>>();
-  const reopenMutation = useMonthsControllerReopenV1<AxiosError<ApiErrorResponse>>();
+  const closeMutation = useCloseMonth();
+  const reopenMutation = useReopenMonth();
   // MON-12 / API-20: advisory range, fetched fresh every time the confirmation opens; the reopen response stays authoritative.
   const reopenPreview = useMonthsControllerReopenPreviewV1<
     Awaited<ReturnType<typeof monthsControllerReopenPreviewV1>>,
@@ -112,10 +110,9 @@ export function MonthActions({ month, months }: MonthActionsProps) {
   const handleClose = () => {
     setNotice(null);
     closeMutation.mutate(
-      { period: month.period, data: { version: month.version } },
+      { period: month.period, version: month.version },
       {
         onSuccess: ({ data }) => {
-          void invalidateBudgetData(queryClient);
           const promoted = data.promotedDraft
             ? ` ${formatPeriodLabel(data.promotedDraft.period)} теперь открыт.`
             : '';
@@ -129,11 +126,10 @@ export function MonthActions({ month, months }: MonthActionsProps) {
   const handleReopen = () => {
     setNotice(null);
     reopenMutation.mutate(
-      { period: month.period, data: { version: month.version } },
+      { period: month.period, version: month.version },
       {
         onSuccess: ({ data }) => {
           setConfirmingReopen(false);
-          void invalidateBudgetData(queryClient);
           // MON-12: the range of the performed reopening comes from the response (the preview was advisory).
           const { from, to } = data.recalcRange;
           setNotice({

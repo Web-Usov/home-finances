@@ -30,13 +30,14 @@ import type {
   OperationsControllerListV1200,
   OperationsControllerListV1Params,
   OperationsControllerRemoveV1200,
-  OperationsControllerRemoveV1Params,
   OperationsControllerUpdateV1200,
   OperationsControllerUpdateV1Body
 } from '.././model';
 
 import { customAxiosInstance } from '.././axios-instance';
 
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -45,7 +46,7 @@ import { customAxiosInstance } from '.././axios-instance';
  */
 export const operationsControllerListV1 = (
     params?: OperationsControllerListV1Params,
- signal?: AbortSignal
+ options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
@@ -53,7 +54,7 @@ export const operationsControllerListV1 = (
       {url: `/api/v1/operations`, method: 'GET',
         params, signal
     },
-      );
+      options);
     }
   
 
@@ -66,16 +67,16 @@ export const getOperationsControllerListV1QueryKey = (params?: OperationsControl
     }
 
     
-export const getOperationsControllerListV1QueryOptions = <TData = Awaited<ReturnType<typeof operationsControllerListV1>>, TError = void>(params?: OperationsControllerListV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof operationsControllerListV1>>, TError, TData>>, }
+export const getOperationsControllerListV1QueryOptions = <TData = Awaited<ReturnType<typeof operationsControllerListV1>>, TError = void>(params?: OperationsControllerListV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof operationsControllerListV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getOperationsControllerListV1QueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof operationsControllerListV1>>> = ({ signal }) => operationsControllerListV1(params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof operationsControllerListV1>>> = ({ signal }) => operationsControllerListV1(params, requestOptions, signal);
 
       
 
@@ -95,7 +96,7 @@ export function useOperationsControllerListV1<TData = Awaited<ReturnType<typeof 
           TError,
           Awaited<ReturnType<typeof operationsControllerListV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useOperationsControllerListV1<TData = Awaited<ReturnType<typeof operationsControllerListV1>>, TError = void>(
@@ -105,11 +106,11 @@ export function useOperationsControllerListV1<TData = Awaited<ReturnType<typeof 
           TError,
           Awaited<ReturnType<typeof operationsControllerListV1>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useOperationsControllerListV1<TData = Awaited<ReturnType<typeof operationsControllerListV1>>, TError = void>(
- params?: OperationsControllerListV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof operationsControllerListV1>>, TError, TData>>, }
+ params?: OperationsControllerListV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof operationsControllerListV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -117,7 +118,7 @@ export function useOperationsControllerListV1<TData = Awaited<ReturnType<typeof 
  */
 
 export function useOperationsControllerListV1<TData = Awaited<ReturnType<typeof operationsControllerListV1>>, TError = void>(
- params?: OperationsControllerListV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof operationsControllerListV1>>, TError, TData>>, }
+ params?: OperationsControllerListV1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof operationsControllerListV1>>, TError, TData>>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -138,7 +139,7 @@ export function useOperationsControllerListV1<TData = Awaited<ReturnType<typeof 
  */
 export const operationsControllerCreateV1 = (
     operationsControllerCreateV1Body: OperationsControllerCreateV1Body,
- signal?: AbortSignal
+ options?: SecondParameter<typeof customAxiosInstance>,signal?: AbortSignal
 ) => {
       
       
@@ -147,21 +148,21 @@ export const operationsControllerCreateV1 = (
       headers: {'Content-Type': 'application/json', },
       data: operationsControllerCreateV1Body, signal
     },
-      );
+      options);
     }
   
 
 
 export const getOperationsControllerCreateV1MutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext> => {
 
 const mutationKey = ['operationsControllerCreateV1'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
       
 
@@ -169,7 +170,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof operationsControllerCreateV1>>, {data: OperationsControllerCreateV1Body}> = (props) => {
           const {data} = props ?? {};
 
-          return  operationsControllerCreateV1(data,)
+          return  operationsControllerCreateV1(data,requestOptions)
         }
 
         
@@ -185,7 +186,7 @@ const {mutation: mutationOptions} = options ?
  * @summary Create an operation in the given period (default: the working month)
  */
 export const useOperationsControllerCreateV1 = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerCreateV1>>, TError,{data: OperationsControllerCreateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof operationsControllerCreateV1>>,
         TError,
@@ -203,7 +204,7 @@ export const useOperationsControllerCreateV1 = <TError = void,
 export const operationsControllerUpdateV1 = (
     id: string,
     operationsControllerUpdateV1Body: OperationsControllerUpdateV1Body,
- ) => {
+ options?: SecondParameter<typeof customAxiosInstance>,) => {
       
       
       return customAxiosInstance<OperationsControllerUpdateV1200>(
@@ -211,21 +212,21 @@ export const operationsControllerUpdateV1 = (
       headers: {'Content-Type': 'application/json', },
       data: operationsControllerUpdateV1Body
     },
-      );
+      options);
     }
   
 
 
 export const getOperationsControllerUpdateV1MutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext> => {
 
 const mutationKey = ['operationsControllerUpdateV1'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
       
 
@@ -233,7 +234,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, {id: string;data: OperationsControllerUpdateV1Body}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  operationsControllerUpdateV1(id,data,)
+          return  operationsControllerUpdateV1(id,data,requestOptions)
         }
 
         
@@ -249,7 +250,7 @@ const {mutation: mutationOptions} = options ?
  * @summary Edit an operation; sequence_no is kept, the cascade is recalculated
  */
 export const useOperationsControllerUpdateV1 = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerUpdateV1>>, TError,{id: string;data: OperationsControllerUpdateV1Body}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof operationsControllerUpdateV1>>,
         TError,
@@ -266,37 +267,35 @@ export const useOperationsControllerUpdateV1 = <TError = void,
  */
 export const operationsControllerRemoveV1 = (
     id: string,
-    params: OperationsControllerRemoveV1Params,
- ) => {
+ options?: SecondParameter<typeof customAxiosInstance>,) => {
       
       
       return customAxiosInstance<OperationsControllerRemoveV1200>(
-      {url: `/api/v1/operations/${id}`, method: 'DELETE',
-        params
+      {url: `/api/v1/operations/${id}`, method: 'DELETE'
     },
-      );
+      options);
     }
   
 
 
 export const getOperationsControllerRemoveV1MutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string;params: OperationsControllerRemoveV1Params}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string;params: OperationsControllerRemoveV1Params}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['operationsControllerRemoveV1'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, {id: string;params: OperationsControllerRemoveV1Params}> = (props) => {
-          const {id,params} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
 
-          return  operationsControllerRemoveV1(id,params,)
+          return  operationsControllerRemoveV1(id,requestOptions)
         }
 
         
@@ -312,11 +311,11 @@ const {mutation: mutationOptions} = options ?
  * @summary Delete an operation; the sequence_no gap stays, the cascade is recalculated
  */
 export const useOperationsControllerRemoveV1 = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string;params: OperationsControllerRemoveV1Params}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof operationsControllerRemoveV1>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxiosInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof operationsControllerRemoveV1>>,
         TError,
-        {id: string;params: OperationsControllerRemoveV1Params},
+        {id: string},
         TContext
       > => {
 

@@ -1,11 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AxiosError } from 'axios';
 import { allocationsControllerSaveV1 } from '../../api/allocations/allocations';
-import type { ApiErrorResponse } from '../envelopes/types';
-import { invalidateBudgetData } from '../../lib/queryKeys';
+import { useMonthMutation } from '../../lib/useMonthMutation';
 
 export interface SaveAllocationsInput {
   period: string;
+  /** Cached version of the month, sent as `If-Match` (API-25). */
   version: number;
   /** Envelope id -> API decimal string, one entry per active envelope (the whole table is replaced). */
   allocations: Record<string, string>;
@@ -18,11 +16,7 @@ export interface SaveAllocationsInput {
  * atomically by the API (FIN-02, one version bump). On success or failure the month data is refetched.
  */
 export function useSaveAllocations() {
-  const queryClient = useQueryClient();
-  return useMutation<unknown, AxiosError<ApiErrorResponse>, SaveAllocationsInput>({
-    mutationKey: ['saveAllocations'],
-    mutationFn: ({ period, version, allocations, income }) =>
-      allocationsControllerSaveV1(period, { allocations, version, ...(income !== undefined ? { income } : {}) }),
-    onSettled: () => invalidateBudgetData(queryClient),
-  });
+  return useMonthMutation('saveAllocations', ({ period, allocations, income }: SaveAllocationsInput, options) =>
+    allocationsControllerSaveV1(period, { allocations, ...(income !== undefined ? { income } : {}) }, options),
+  );
 }

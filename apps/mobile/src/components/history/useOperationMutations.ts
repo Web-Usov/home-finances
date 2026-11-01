@@ -1,24 +1,19 @@
-import { useQueryClient } from '@tanstack/react-query';
-import type { AxiosError } from 'axios';
-import {
-  useOperationsControllerRemoveV1,
-  useOperationsControllerUpdateV1,
-} from '../../api/operations/operations';
-import type { ApiErrorResponse } from '../envelopes/types';
-import { invalidateBudgetData } from '../../lib/queryKeys';
+import { operationsControllerRemoveV1, operationsControllerUpdateV1 } from '../../api/operations/operations';
+import type { OperationsControllerUpdateV1Body } from '../../api/model';
+import { useMonthMutation } from '../../lib/useMonthMutation';
 
-/** PATCH /api/v1/operations/:id (API-11, HIST-07/08): the body carries the operation month's `version`. */
+/** PATCH /api/v1/operations/:id (API-11, HIST-07/08): `version` is the operation month's cached version (`If-Match`). */
 export function useUpdateOperation() {
-  const queryClient = useQueryClient();
-  return useOperationsControllerUpdateV1<AxiosError<ApiErrorResponse>>({
-    mutation: { onSettled: () => invalidateBudgetData(queryClient) },
-  });
+  return useMonthMutation(
+    'operationsControllerUpdateV1',
+    ({ id, data }: { id: string; data: OperationsControllerUpdateV1Body; version: number }, options) =>
+      operationsControllerUpdateV1(id, data, options),
+  );
 }
 
-/** DELETE /api/v1/operations/:id?version=N (API-11, HIST-07/08, OP-18). */
+/** DELETE /api/v1/operations/:id (API-11, HIST-07/08, OP-18): `version` travels in `If-Match`. */
 export function useDeleteOperation() {
-  const queryClient = useQueryClient();
-  return useOperationsControllerRemoveV1<AxiosError<ApiErrorResponse>>({
-    mutation: { onSettled: () => invalidateBudgetData(queryClient) },
-  });
+  return useMonthMutation('operationsControllerRemoveV1', ({ id }: { id: string; version: number }, options) =>
+    operationsControllerRemoveV1(id, options),
+  );
 }

@@ -10,13 +10,11 @@ import { amountToApiString, amountToMinor } from '../../lib/allocation';
 import { MONTH_LOCKED_MESSAGE, describeMonthError } from '../../lib/apiErrors';
 import { formatRubles, isNonZeroMoney, toInputMoney } from '../../lib/money';
 import { formatPeriodLabel } from '../../lib/period';
-import { invalidateBudgetData } from '../../lib/queryKeys';
 import { useCreateOperation } from './useCreateOperation';
 import { useUpdateOperation } from '../history/useOperationMutations';
 import type { HistoryOperation } from '../history/types';
 import type { QuickActionKind } from './QuickActions';
 import type { Dashboard } from './types';
-import { useQueryClient } from '@tanstack/react-query';
 
 interface OperationFormValues {
   sourceEnvelopeId: string;
@@ -128,7 +126,6 @@ interface OperationFormProps {
  */
 export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: OperationFormProps) {
   const { month, envelopes } = dashboard;
-  const queryClient = useQueryClient();
   const locked = month.status === 'closed';
   const active = envelopes.filter((envelope) => envelope.status === 'active');
   const create = useCreateOperation();
@@ -174,18 +171,17 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: O
       const { code, message } = describeMonthError(error, 'Не удалось сохранить операцию');
       if (code === 'TRANSFER_EXCEEDS_BALANCE') setExceedsOffer({ message });
       else setError('root', { message });
-      if (code === 'VERSION_CONFLICT') void invalidateBudgetData(queryClient);
     };
     if (editing) {
       update.mutate(
         {
           id: editing.id,
+          version: month.version,
           data: {
             amount: amountString,
             sourceEnvelopeId: values.sourceEnvelopeId,
             ...(kind === 'transfer' ? { destinationEnvelopeId: values.destinationEnvelopeId } : {}),
             comment: values.comment.trim(),
-            version: month.version,
           },
         },
         { onSuccess, onError },
@@ -194,6 +190,7 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: O
     }
     create.mutate(
       {
+        version: month.version,
         data: {
           type: kind,
           sourceEnvelopeId: values.sourceEnvelopeId,
@@ -202,7 +199,6 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: O
           amount: amountString,
           ...(values.comment.trim() !== '' ? { comment: values.comment.trim() } : {}),
           period: month.period,
-          version: month.version,
         },
       },
       { onSuccess: (response: OperationsControllerCreateV1201) => onSuccess(response), onError },

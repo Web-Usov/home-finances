@@ -1,4 +1,5 @@
 import React from 'react';
+import { ifMatchOf } from '../../../test/ifMatch';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { renderWithProviders } from '../../../test/render';
@@ -131,7 +132,7 @@ describe('AllocationEditor', () => {
     expect(save().props.accessibilityState.disabled).toBe(true);
   });
 
-  it('API-04: saves the whole table of active envelopes with the month version, then refetches month data', async () => {
+  it('API-04 / API-25: saves the whole table of active envelopes with the month version in If-Match, then refetches month data', async () => {
     mockRequest.mockResolvedValue(undefined as never);
     const { onDone, queryClient } = renderEditor();
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
@@ -144,8 +145,10 @@ describe('AllocationEditor', () => {
     expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({
       url: '/api/v1/months/2026-01/allocations',
       method: 'PUT',
-      data: { allocations: { 'e-food': '50000.00', 'e-home': '20000.50' }, version: 3 },
+      data: { allocations: { 'e-food': '50000.00', 'e-home': '20000.50' } },
     });
+    expect((mockRequest.mock.calls[0]?.[0] as { data: object }).data).not.toHaveProperty('version');
+    expect(ifMatchOf(mockRequest.mock.calls[0])).toBe('"3"');
     const keys = invalidate.mock.calls.map(([filters]) => filters?.queryKey);
     expect(keys).toEqual(expect.arrayContaining([['/api/v1/dashboard/monthly'], ['/api/v1/months']]));
   });
@@ -163,7 +166,7 @@ describe('AllocationEditor', () => {
     expect(mockRequest.mock.calls[0]?.[0]).toMatchObject({
       url: '/api/v1/months/2026-01/allocations',
       method: 'PUT',
-      data: { allocations: { 'e-food': '50000.00', 'e-home': '10000.00' }, income: '120000.50', version: 3 },
+      data: { allocations: { 'e-food': '50000.00', 'e-home': '10000.00' }, income: '120000.50' },
     });
   });
 
