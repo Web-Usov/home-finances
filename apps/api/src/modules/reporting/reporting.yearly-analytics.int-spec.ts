@@ -197,10 +197,10 @@ describe('Yearly analytics (integration)', () => {
     const month = uncoveredOperations.months[0];
 
     /** The client adds the HIST-15 filters to every uncovered-report key (buildHistoryLink). */
-    const rowsSum = async (key: object) => {
+    const rowsSum = async (key: { envelopeId?: string }) => {
       const res = await http()
         .get('/api/v1/operations')
-        .query({ ...key, uncoveredOnly: 'true', role: 'source' })
+        .query({ ...key, uncoveredOnly: 'true', ...(key.envelopeId ? { role: 'source' } : {}) })
         .expect(200);
       const ops = res.body.operations as { result: { uncoveredMinor: number } }[];
       expect(ops.every((op) => op.result.uncoveredMinor > 0)).toBe(true);

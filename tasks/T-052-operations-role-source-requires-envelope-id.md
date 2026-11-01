@@ -1,7 +1,7 @@
 ---
 id: T-052
 title: "Operations: role=source without envelopeId is a 422"
-status: todo
+status: done
 epic: E-02
 depends: [T-045]
 blocked_by: []
@@ -9,8 +9,8 @@ spec: [HIST-15]
 acceptance: []
 area: api
 size: S
-branch: null
-pr: null
+branch: task/T-052-operations-role-source-requires-envelope-id
+pr: https://github.com/Web-Usov/home-finances/pull/54
 ---
 
 # T-052. Operations: role=source without envelopeId is a 422
@@ -27,11 +27,11 @@ pr: null
 
 ## Definition of Done
 
-- [ ] `it('HIST-15: role=source without envelopeId returns 422 VALIDATION_ERROR')` int test passes
-- [ ] `it('HIST-15: role=source with envelopeId still filters by source')` keeps passing
-- [ ] `pnpm api:generate` run, `pnpm api:contract` green
-- [ ] `pnpm verify` is green
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `it('HIST-15: role=source without envelopeId returns 422 VALIDATION_ERROR')` int test passes
+- [x] `it('HIST-15: role=source with envelopeId still filters by source')` keeps passing
+- [x] `pnpm api:generate` run, `pnpm api:contract` green
+- [x] `pnpm verify` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -43,4 +43,4 @@ pr: null
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+`OperationListQuerySchema` (types) is now `OperationListQueryBaseSchema` plus a refinement: `role` without `envelopeId` is a 422 `VALIDATION_ERROR` (HIST-15). `AnalyticsDrillDownSchema` picks from the base schema. Swagger description of `role` updated; OpenAPI and client regenerated. Mobile `buildHistoryLink` now sets `role=source` only together with `envelopeId` (a type-only drill-down used to send a bare `role=source`). Tests: int `operations.list-filters.int-spec.ts`, mobile `drillDown.test.ts`, `YearlyAnalyticsView.test.tsx`.
