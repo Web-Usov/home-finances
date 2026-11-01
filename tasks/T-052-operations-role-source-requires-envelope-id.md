@@ -1,7 +1,7 @@
 ---
 id: T-052
 title: "Operations: role=source without envelopeId is a 422"
-status: in_progress
+status: done
 epic: E-02
 depends: [T-045]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: task/T-052-operations-role-source-requires-envelope-id
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/54
 ---
 
 # T-052. Operations: role=source without envelopeId is a 422
