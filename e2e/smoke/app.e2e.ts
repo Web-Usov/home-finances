@@ -61,3 +61,33 @@ test.describe('app shell', { tag: '@smoke' }, () => {
     expect(body.envelopes.find((e) => e.id === envelope.id)?.balanceMinor).toBe(20_000);
   });
 });
+
+test.describe('wide-screen navigation', { tag: '@smoke' }, () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('UI-01: sidebar replaces the tab bar and switches between the four sections', async ({ page }) => {
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/month$/);
+
+    const sidebar = page.getByRole('navigation', { name: 'Основная навигация' });
+    await expect(sidebar).toBeVisible();
+    await expect(page.getByRole('tablist')).toBeHidden();
+
+    const routes: [string, RegExp][] = [
+      ['История', /\/history$/],
+      ['Аналитика', /\/analytics$/],
+      ['Конверты', /\/envelopes$/],
+      ['Месяц', /\/month$/],
+    ];
+    for (const [title, url] of routes) {
+      const link = sidebar.getByRole('link', { name: title });
+      await link.click();
+      await expect(page).toHaveURL(url);
+      await expect(link).toHaveAttribute('aria-current', 'page');
+    }
+
+    // keyboard: the links are focusable
+    await sidebar.getByRole('link', { name: 'Конверты' }).focus();
+    await expect(sidebar.getByRole('link', { name: 'Конверты' })).toBeFocused();
+  });
+});

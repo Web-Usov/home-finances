@@ -5,7 +5,7 @@ status: in_progress          # todo | in_progress | review | done | blocked
 epic: E-03            # epics/E-xx-*.md
 depends: []           # [T-001, T-002] - must be done before this task starts
 blocked_by: []        # [Q-01] - open questions from docs/spec/99-open-questions.md
-spec: []              # rule IDs this task implements, e.g. [OP-05, MON-08]
+spec: [UI-01]              # rule IDs this task implements, e.g. [OP-05, MON-08]
 acceptance: []        # AC ids this task contributes to, e.g. [AC-06]
 area: mobile             # api | mobile | infra | docs
 size: S               # S | M  (one agent session, ~300-500 LOC max)
@@ -26,28 +26,22 @@ Format rules (checked by `node scripts/tasks.mjs check`):
 
 ## Goal
 
-One or two sentences: the observable outcome.
+From 768 px the bottom tab bar was hidden and nothing replaced it. Show a left sidebar with the four sections (active state, roles/labels, keyboard focusable) on wide screens; phones keep the bottom tab bar.
 
 ## Context
 
-- Files and modules to start from (paths).
-- ADRs (`docs/decisions/NNNN-*.md`) and spec rule IDs (never line numbers).
-- WIP to reuse, e.g. branch `wip/operations-income`.
+- `apps/mobile/app/(tabs)/_layout.tsx`, new `src/components/navigation/*`. Rule UI-01. Found in T-073.
 
 ## Definition of Done
 
-Every item must be verifiable by a command or a named test.
-
-- [ ] `it('OP-05 / AC-06: ...')` passes
-- [ ] `pnpm verify` is green
-- [ ] For UI tasks: mobile component tests and `pnpm e2e:smoke` (or a named e2e spec) are green; screenshot attached as artifact
-- [ ] Tests cite rule IDs in their names (`node scripts/spec-check.mjs` passes)
-- [ ] API tasks that mutate financial data: a test asserts the cascade bumped the BudgetMonth `version` (ADR 0005); drop this line otherwise
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] `UI-01` component tests (`AppShell.test.tsx`) pass: sidebar from 768 px, none below
+- [x] Playwright `@smoke` at 1280x800: sidebar visible, all four sections reachable; existing 390 px tab-bar test unchanged
+- [x] `pnpm verify` is green and `pnpm e2e:smoke` is green
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
-- Things that belong to other tasks.
+- Restyling (epic E-07).
 
 ## Handoff log
 
@@ -55,4 +49,4 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+Added `AppShell` + `SideNav` (expo-router `Link`, `role=navigation`, `aria-current` on the active link) around the tab navigator; Envelopes screen got the same `max-w-3xl` content width as the other screens. No deferred-list entry for UI-01 existed on master, nothing to remove.
