@@ -107,6 +107,14 @@ test('--new validates epic, area and size without creating anything', () => {
   assert.equal(fs.existsSync(path.join(fx.dir, 'main', 'finance-wt')), false);
 });
 
+test('--new accepts the design area (E-07 design tasks)', () => {
+  const fx = fixture();
+  const r = start(fx, ['--new', 'Design tokens', '--epic', 'E-00', '--area', 'design', '--size', 'S']);
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  const file = path.join(fx.dir, 'main', 'finance-wt', 't-031-design-tokens', 'tasks/T-031-design-tokens.md');
+  assert.match(fs.readFileSync(file, 'utf8'), /^area: design( .*)?$/m);
+});
+
 test('a failure after the worktree is created rolls back worktree and branch', () => {
   const fx = fixture();
   fs.writeFileSync(path.join(fx.bin, 'pnpm'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });

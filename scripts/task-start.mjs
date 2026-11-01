@@ -3,7 +3,7 @@
  * task-start - claim a task: worktree + branch + env files + install + claim commit.
  *
  *   pnpm task:start T-xxx [--keep]
- *   pnpm task:start --new "<title>" --epic E-xx --area <api|mobile|infra|docs> --size <S|M> [--keep]
+ *   pnpm task:start --new "<title>" --epic E-xx --area <api|mobile|infra|docs|design> --size <S|M> [--keep]
  *
  * Run it from the main checkout (or any worktree; the main checkout is found through git).
  * Steps: validate the task on origin/master (todo, depends done, blocked_by empty) -> git fetch ->
@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { parseFrontmatter } from './tasks.mjs';
 import { acquireSync } from './lib/lock.mjs';
 
-const AREAS = ['api', 'mobile', 'infra', 'docs'];
+const AREAS = ['api', 'mobile', 'infra', 'docs', 'design'];
 const SIZES = ['S', 'M'];
 
 /**

@@ -69,6 +69,7 @@ Run it before declaring work done. Test details: `docs/testing.md`.
 | Why decisions were made (Russian) | `docs/decisions/README.md` |
 | Modules, request/recalculation flow, error model | `docs/architecture.md` |
 | Testing strategy and commands | `docs/testing.md` |
+| Design brief (RU; the design is made in Doop by a separate session, epic E-07) | `docs/design/README.md` |
 | Agent workflow (one task = one branch = one PR) | `docs/workflow.md` |
 | Owner's preview (auto-deployed master, URLs, logs, reset) | `docs/preview.md` |
 | Host ops (timer that updates BEHIND auto-merge PRs) | `docs/ops.md` |
