@@ -1,7 +1,7 @@
 ---
 id: T-015
 title: E2E: full Playwright scenarios for the MVP flows
-status: in_progress
+status: done
 epic: E-06
 depends: [T-010, T-012, T-013]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: [AC-01, AC-04, AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-21]
 area: mobile
 size: M
 branch: task/T-015-e2e-full-scenarios
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/42
 ---
 
 # T-015. E2E: full Playwright scenarios for the MVP flows
