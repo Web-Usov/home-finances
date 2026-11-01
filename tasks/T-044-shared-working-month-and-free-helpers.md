@@ -1,7 +1,7 @@
 ---
 id: T-044
 title: "API: shared working-month and free-funds helpers, dedup yearly uncovered schema"
-status: in_progress
+status: done
 epic: E-00
 depends: [T-043, T-008]
 blocked_by: []
@@ -10,7 +10,7 @@ acceptance: []
 area: api
 size: S
 branch: task/T-044-shared-working-month-and-free-helpers
-pr: null
+pr: https://github.com/Web-Usov/home-finances/pull/50
 ---
 
 # T-044. API: shared working-month and free-funds helpers, dedup yearly uncovered schema

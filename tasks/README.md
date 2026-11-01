@@ -44,7 +44,7 @@
 
 - [T-043](T-043-msg-05-text-and-negative-closing-warning.md) Envelopes: align MSG-05 text with the spec, test negative closing warning — **done** · api · S · depends: T-026 · [PR](https://github.com/Web-Usov/home-finances/pull/45)
 
-- [T-044](T-044-shared-working-month-and-free-helpers.md) API: shared working-month and free-funds helpers, dedup yearly uncovered schema — **in_progress** · api · S · depends: T-043, T-008 · —
+- [T-044](T-044-shared-working-month-and-free-helpers.md) API: shared working-month and free-funds helpers, dedup yearly uncovered schema — **done** · api · S · depends: T-043, T-008 · [PR](https://github.com/Web-Usov/home-finances/pull/50)
 
 - [T-046](T-046-openapi-months-body-response-query-types.md) OpenAPI: typed POST /months body, GET /months response and query params — **todo** · api · S · depends: T-027, T-037, T-050 · —
 
