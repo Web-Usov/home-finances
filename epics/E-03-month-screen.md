@@ -1,8 +1,8 @@
 ---
 id: E-03
 title: Экран «Месяц» и редактор распределения
-status: planned
-accepted: null
+status: accepted
+accepted: 2026-11-01
 spec: [UI-01, UI-02, UI-06, UI-07, UI-08, UI-09, UI-10, UI-11, UI-12, UI-13, UI-14, UI-15, MSG-01, MSG-06, SCOPE-23, SCOPE-25, SCOPE-26, SCOPE-29, MON-12, FIN-02, NFR-20]
 ---
 

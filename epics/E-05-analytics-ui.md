@@ -1,8 +1,8 @@
 ---
 id: E-05
 title: Годовая аналитика (UI)
-status: planned
-accepted: null
+status: accepted
+accepted: 2026-11-01
 spec: [UI-04, REP-01, REP-02, REP-03, REP-04, REP-05, REP-06, REP-07, REP-08, REP-09, REP-10, REP-11]
 ---
 

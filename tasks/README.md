@@ -86,7 +86,7 @@
 
 - [T-050](T-050-if-match-etag-optimistic-locking.md) Optimistic locking via If-Match / ETag headers for all month-scoped mutations — **done** · api · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/46)
 
-## E-02. Отчётность API — planned
+## E-02. Отчётность API — accepted, принят 2026-11-01
 
 Эпик: [E-02-reporting-api.md](../epics/E-02-reporting-api.md)
 
@@ -98,7 +98,7 @@
 
 - [T-052](T-052-operations-role-source-requires-envelope-id.md) Operations: role=source without envelopeId is a 422 — **done** · api · S · depends: T-045 · [PR](https://github.com/Web-Usov/home-finances/pull/54)
 
-## E-03. Экран «Месяц» и редактор распределения — planned
+## E-03. Экран «Месяц» и редактор распределения — accepted, принят 2026-11-01
 
 Эпик: [E-03-month-screen.md](../epics/E-03-month-screen.md)
 
@@ -108,7 +108,7 @@
 
 - [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **done** · mobile · S · depends: T-009, T-024 · [PR](https://github.com/Web-Usov/home-finances/pull/37)
 
-## E-04. Операции и история (UI) — planned
+## E-04. Операции и история (UI) — accepted, принят 2026-11-01
 
 Эпик: [E-04-operations-ui.md](../epics/E-04-operations-ui.md)
 
@@ -122,13 +122,13 @@
 
 - [T-055](T-055-e2e-transfer-overrun-on-edit.md) E2E: real transfer overrun on edit — **todo** · mobile · S · depends: T-054 · —
 
-## E-05. Годовая аналитика (UI) — planned
+## E-05. Годовая аналитика (UI) — accepted, принят 2026-11-01
 
 Эпик: [E-05-analytics-ui.md](../epics/E-05-analytics-ui.md)
 
 - [T-013](T-013-analytics-screen.md) Mobile: yearly analytics screen — **done** · mobile · M · depends: T-008, T-012 · [PR](https://github.com/Web-Usov/home-finances/pull/41)
 
-## E-06. Приёмка MVP и поставка — planned
+## E-06. Приёмка MVP и поставка — accepted, принят 2026-11-01
 
 Эпик: [E-06-mvp-release.md](../epics/E-06-mvp-release.md)
 
@@ -143,3 +143,5 @@
 - [T-039](T-039-preview-keep-api-up-restart-always.md) Preview: keep API up (Restart=always, health watchdog) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/34)
 
 - [T-048](T-048-mobile-refresh-month-after-envelope-change.md) Refresh the month dashboard after envelope create/rename/archive — **done** · mobile · S · depends: T-015 · [PR](https://github.com/Web-Usov/home-finances/pull/43)
+
+- [T-058](T-058-milestone-reports-e-02-e-06-and-e-01.md) Milestone reports E-02..E-06 and E-01 addendum — **done** · docs · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/53)
