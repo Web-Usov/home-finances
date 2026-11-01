@@ -52,7 +52,7 @@
 
 - [T-049](T-049-language-rule-russian-for-everything.md) Language rule: Russian for everything the human reviews or decides — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/44)
 
-- [T-051](T-051-spec-follow-ups-batch-3.md) Spec follow-ups batch 3 — **in_progress** · docs · S · depends: — · —
+- [T-051](T-051-spec-follow-ups-batch-3.md) Spec follow-ups batch 3 — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/51)
 
 - [T-056](T-056-docker-hardening-and-compose-smoke.md) Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke — **todo** · infra · S · depends: T-050 · —
 
