@@ -56,6 +56,10 @@ pnpm task:start --new "Short imperative title" --epic E-00 --area infra --size S
 It creates `tasks/T-NNN-slug.md` from `tasks/_template.md` (next free id: highest id among task files on `origin/master`, task files in any
 local/remote ref (unmerged PRs) and task branch names, plus one; the epic must exist on `origin/master`), then claims it exactly like a normal task, in a worktree of
 its own, with the task file as the first commit (`chore(tasks): add and start T-NNN [T-NNN]`). Fill in Goal / Context / DoD there.
+The id is allocated under the machine-wide lock `task-id` (`scripts/lib/lock.mjs`, same mechanism as the e2e lock): `--new` takes it
+before `git fetch`, and releases it only after the claim branch has been pushed to origin, so a concurrent `--new` (another agent)
+fetches after that push, sees the id and takes the next one. Only `--new` pushes at claim time (a normal claim has an id that
+already exists on `origin/master`); expect a wait if another `--new` is mid-claim (its `pnpm install` runs under the lock).
 Alternatives: add the task as `status: todo` in the current PR (the task file is part of the diff), or, if it needs a planner
 decision, propose it in `## Result` as before. Do not start a second task inside the current session unless it blocks the
 current one.

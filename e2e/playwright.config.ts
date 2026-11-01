@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { acquireE2eLock } from './support/e2e-lock.mjs';
 import { getE2eEnv } from './support/env.mjs';
+
+// Before anything heavy (webServers) starts; released in global-teardown. See support/e2e-lock.mjs.
+acquireE2eLock();
 
 const env = getE2eEnv();
 
