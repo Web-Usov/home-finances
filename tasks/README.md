@@ -56,7 +56,7 @@
 
 - [T-056](T-056-docker-hardening-and-compose-smoke.md) Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke — **todo** · infra · S · depends: T-050 · —
 
-- [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **todo** · infra · S · depends: — · —
+- [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **in_progress** · infra · S · depends: — · —
 
 ## E-01. Ядро API: месяцы и операции — accepted, принят 2026-11-01
 

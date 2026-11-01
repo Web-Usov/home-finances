@@ -1,7 +1,7 @@
 ---
 id: T-057
 title: "E2E: take the machine-wide lock inside Playwright globalSetup"
-status: todo
+status: in_progress
 epic: E-00
 depends: []
 blocked_by: []
@@ -9,7 +9,7 @@ spec: []
 acceptance: []
 area: infra
 size: S
-branch: null
+branch: task/T-057-e2e-lock-in-playwright-global-setup
 pr: null
 ---
 
