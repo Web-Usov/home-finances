@@ -1,0 +1,24 @@
+# Вехи MVP: сводка
+
+Отчёты по вехам для приёмки владельцем. Формат: итог, смёрженные PR, покрытие правил и AC, демо-сценарий со скриншотами, ограничения, что проверить человеку (см. `docs/workflow.md`, раздел 8). Статус `accepted` и дату приёмки ставит только владелец.
+
+Состояние на 2026-11-01: MVP принят владельцем. Стенд для ручной проверки: http://192.168.1.114:8100/ (Swagger: http://192.168.1.114:8100/api, описание: [`docs/preview.md`](../preview.md)).
+
+| Эпик | Название | Статус | Отчёт | PR отчёта |
+|------|----------|--------|-------|-----------|
+| [E-00](../../epics/E-00-tech-debt.md) | Технический долг и соответствие спеке | `planned` (задачи выполняются по мере появления) | нет (сквозной эпик, не веха) | нет |
+| [E-01](../../epics/E-01-core-api.md) | Ядро API: месяцы и операции | `accepted` 2026-11-01 (дополнение подтверждено 2026-11-01) | [E-01-report.md](E-01-report.md) | [#15](https://github.com/Web-Usov/home-finances/pull/15), дополнение: [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-02](../../epics/E-02-reporting-api.md) | Отчётность API | `accepted` 2026-11-01 | [E-02-report.md](E-02-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-03](../../epics/E-03-month-screen.md) | Экран «Месяц» и редактор распределения | `accepted` 2026-11-01 | [E-03-report.md](E-03-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-04](../../epics/E-04-operations-ui.md) | Операции и история (UI) | `accepted` 2026-11-01 | [E-04-report.md](E-04-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-05](../../epics/E-05-analytics-ui.md) | Годовая аналитика (UI) | `accepted` 2026-11-01 | [E-05-report.md](E-05-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+| [E-06](../../epics/E-06-mvp-release.md) | Приёмка MVP и поставка | `accepted` 2026-11-01 | [E-06-report.md](E-06-report.md) | [#53](https://github.com/Web-Usov/home-finances/pull/53) |
+
+## Известные пробелы MVP (сводно)
+
+- Правила без ссылок из тестов по ID: `UI-01`, `UI-15` (E-03), `HIST-01`…`HIST-04` (E-04), `UI-04` (E-05), `DOD-01/03/04/05/06`, `NFR-27`, `NFR-29` (E-06). Поведение при этом реализовано, пробел в ссылках; исключение `NFR-29`: миграции на наполненной базе не проверены.
+- `smoke:compose` не входит в CI (выполняется вручную).
+- Авторизации нет (`Q-01`, `Q-02`): только приватная сеть.
+- Не вошли в отчёты: T-051 (пакет правок спеки, PR #51) ещё не смёржен. T-046 (типы OpenAPI) смёржена и упомянута в дополнении к E-01.
+
+Скриншоты e2e лежат в [`img/`](img/) (по эпикам, снимает `pnpm e2e:full`; кадр равен видимой области экрана 390×844 или 360×800 px).
