@@ -102,10 +102,12 @@
 
 - [T-014](T-014-ac-test-coverage.md) Acceptance: tests for AC-01..AC-22 and strict spec coverage — **done** · api · M · depends: T-005, T-006, T-007, T-008 · [PR](https://github.com/Web-Usov/home-finances/pull/22)
 
-- [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **todo** · mobile · M · depends: T-010, T-012, T-013 · —
+- [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **done** · mobile · M · depends: T-010, T-012, T-013 · [PR](https://github.com/Web-Usov/home-finances/pull/42)
 
 - [T-016](T-016-docker-compose-e2e.md) Delivery: docker compose from scratch and persistence after restart — **done** · infra · S · depends: T-014 · [PR](https://github.com/Web-Usov/home-finances/pull/40)
 
 - [T-038](T-038-preview-environment-auto-deploy-master.md) Preview environment: auto-deploy master for the owner — **done** · infra · M · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/28)
 
 - [T-039](T-039-preview-keep-api-up-restart-always.md) Preview: keep API up (Restart=always, health watchdog) — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/34)
+
+- [T-048](T-048-mobile-refresh-month-after-envelope-change.md) Refresh the month dashboard after envelope create/rename/archive — **todo** · mobile · S · depends: T-015 · —
