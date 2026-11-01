@@ -58,6 +58,8 @@
 
 - [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/56)
 
+- [T-059](T-059-plan-epic-e-07-design-brief-epic-and.md) Plan epic E-07 design: brief, epic and design tasks — **in_progress** · docs · S · depends: — · —
+
 ## E-01. Ядро API: месяцы и операции — accepted, принят 2026-11-01
 
 Эпик: [E-01-core-api.md](../epics/E-01-core-api.md)
