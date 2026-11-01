@@ -12,7 +12,8 @@ import { describeMonthError } from '../../lib/apiErrors';
 import { formatPeriodGenitive, formatPeriodLabel, formatPeriodLower, nextPeriod } from '../../lib/period';
 import type { ApiErrorResponse } from '../envelopes/types';
 import { ReopenConfirm } from './ReopenConfirm';
-import { invalidateMonthData, useCreateMonth } from './useMonthMutations';
+import { invalidateBudgetData } from '../../lib/queryKeys';
+import { useCreateMonth } from './useMonthMutations';
 import type { Dashboard, MonthSummary } from './types';
 
 interface MonthActionsProps {
@@ -65,7 +66,7 @@ export function MonthActions({ month, months }: MonthActionsProps) {
     const { code, message } = describeMonthError(error, fallback);
     setNotice({ tone: 'error', text: message });
     // The month changed under us: refresh so the retry uses the current version (ADR 0005).
-    if (code === 'VERSION_CONFLICT') void invalidateMonthData(queryClient);
+    if (code === 'VERSION_CONFLICT') void invalidateBudgetData(queryClient);
   };
 
   const createMutation = useCreateMonth();
@@ -114,7 +115,7 @@ export function MonthActions({ month, months }: MonthActionsProps) {
       { period: month.period, data: { version: month.version } },
       {
         onSuccess: ({ data }) => {
-          void invalidateMonthData(queryClient);
+          void invalidateBudgetData(queryClient);
           const promoted = data.promotedDraft
             ? ` ${formatPeriodLabel(data.promotedDraft.period)} теперь открыт.`
             : '';
@@ -132,7 +133,7 @@ export function MonthActions({ month, months }: MonthActionsProps) {
       {
         onSuccess: ({ data }) => {
           setConfirmingReopen(false);
-          void invalidateMonthData(queryClient);
+          void invalidateBudgetData(queryClient);
           // MON-12: the range of the performed reopening comes from the response (the preview was advisory).
           const { from, to } = data.recalcRange;
           setNotice({

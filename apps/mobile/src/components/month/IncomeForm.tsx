@@ -11,7 +11,7 @@ import { useMonthsControllerUpdateIncomeV1 } from '../../api/months/months';
 import { describeMonthError } from '../../lib/apiErrors';
 import { normalizeMoneyInput } from '../../lib/money';
 import type { ApiErrorResponse } from '../envelopes/types';
-import { invalidateMonthData } from './useMonthMutations';
+import { invalidateBudgetData } from '../../lib/queryKeys';
 
 /** Form-level schema: the typed text must normalise to a canonical `MoneyStringSchema` value. */
 const incomeFormSchema = z.object({
@@ -42,13 +42,13 @@ export function IncomeForm({ period, version, initialIncome, onDone }: IncomeFor
   const mutation = useMonthsControllerUpdateIncomeV1<AxiosError<ApiErrorResponse>>({
     mutation: {
       onSuccess: async () => {
-        await invalidateMonthData(queryClient);
+        await invalidateBudgetData(queryClient);
         onDone();
       },
       onError: (error) => {
         const { code, message } = describeMonthError(error, 'Не удалось изменить доход');
         setError('root', { message });
-        if (code === 'VERSION_CONFLICT') void invalidateMonthData(queryClient);
+        if (code === 'VERSION_CONFLICT') void invalidateBudgetData(queryClient);
       },
     },
   });

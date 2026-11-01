@@ -10,7 +10,7 @@ import { amountToApiString, amountToMinor } from '../../lib/allocation';
 import { MONTH_LOCKED_MESSAGE, describeMonthError } from '../../lib/apiErrors';
 import { formatRubles, isNonZeroMoney, toInputMoney } from '../../lib/money';
 import { formatPeriodLabel } from '../../lib/period';
-import { invalidateMonthData } from './useMonthMutations';
+import { invalidateBudgetData } from '../../lib/queryKeys';
 import { useCreateOperation } from './useCreateOperation';
 import { useUpdateOperation } from '../history/useOperationMutations';
 import type { HistoryOperation } from '../history/types';
@@ -174,7 +174,7 @@ export function OperationForm({ kind, dashboard, onSaved, onCancel, editing }: O
       const { code, message } = describeMonthError(error, 'Не удалось сохранить операцию');
       if (code === 'TRANSFER_EXCEEDS_BALANCE') setExceedsOffer({ message });
       else setError('root', { message });
-      if (code === 'VERSION_CONFLICT') void invalidateMonthData(queryClient);
+      if (code === 'VERSION_CONFLICT') void invalidateBudgetData(queryClient);
     };
     if (editing) {
       update.mutate(

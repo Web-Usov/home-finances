@@ -8,10 +8,10 @@ import type { AxiosError } from 'axios';
 import { MoneyStringSchema } from '@family-budget/types';
 import { FormInput } from '../FormInput';
 import {
-  getEnvelopesControllerListV1QueryKey,
   useEnvelopesControllerCreateV1,
 } from '../../api/envelopes/envelopes';
 import type { EnvelopesControllerCreateV1Body } from '../../api/model';
+import { invalidateBudgetData } from '../../lib/queryKeys';
 import { getApiErrorMessage } from './types';
 import type { ApiErrorResponse } from './types';
 
@@ -50,7 +50,7 @@ export function EnvelopeCreateForm({ onCreated, onCancel }: EnvelopeCreateFormPr
   const createMutation = useEnvelopesControllerCreateV1<AxiosError<ApiErrorResponse>>({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getEnvelopesControllerListV1QueryKey() });
+        void invalidateBudgetData(queryClient);
         reset();
         onCreated();
       },
