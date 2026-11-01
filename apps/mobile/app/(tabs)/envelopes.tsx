@@ -18,8 +18,8 @@ export default function EnvelopesScreen() {
   const archived = envelopes.filter((envelope) => envelope.status === 'archived');
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
-      <View className="p-4">
+    <ScrollView className="flex-1 bg-gray-50" contentContainerClassName="items-center">
+      <View className="w-full max-w-3xl p-4">
         <Text className="text-2xl font-bold text-gray-900 mb-2">Конверты</Text>
         <Text className="text-gray-600 mb-6">Управление накопительными конвертами</Text>
 

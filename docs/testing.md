@@ -270,7 +270,7 @@ with `/api/v1`).
 
 Tag a test or a `describe` with `{ tag: '@smoke' }`. Keep smoke small (minutes, not tens of
 minutes): app boots, navigation, one real create-through-UI flow. Everything else goes untagged
-and is covered by `e2e:full`. The viewport is 390×844 because the bottom tab bar is hidden from
+and is covered by `e2e:full`. The default viewport is 390×844 because the bottom tab bar is replaced by the sidebar from
 768px up.
 
 ### Fixtures
