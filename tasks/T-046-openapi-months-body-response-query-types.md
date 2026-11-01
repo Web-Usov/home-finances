@@ -1,7 +1,7 @@
 ---
 id: T-046
 title: "OpenAPI: typed POST /months body, GET /months response and query params"
-status: todo
+status: in_progress
 epic: E-00
 depends: [T-027, T-037, T-050]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [API-01, API-02, API-12, API-14]
 acceptance: []
 area: api
 size: S
-branch: null
+branch: task/T-046-openapi-months-body-response-query-types
 pr: null
 ---
 
