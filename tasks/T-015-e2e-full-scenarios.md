@@ -1,7 +1,7 @@
 ---
 id: T-015
 title: E2E: full Playwright scenarios for the MVP flows
-status: todo
+status: in_progress
 epic: E-06
 depends: [T-010, T-012, T-013]
 blocked_by: []
@@ -9,7 +9,7 @@ spec: [NFR-27, DOD-02, SCOPE-23, SCOPE-24, SCOPE-25, SCOPE-26, SCOPE-27, SCOPE-2
 acceptance: [AC-01, AC-04, AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-21]
 area: mobile
 size: M
-branch: null
+branch: task/T-015-e2e-full-scenarios
 pr: null
 ---
 

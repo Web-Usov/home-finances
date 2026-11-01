@@ -102,7 +102,7 @@
 
 - [T-014](T-014-ac-test-coverage.md) Acceptance: tests for AC-01..AC-22 and strict spec coverage — **done** · api · M · depends: T-005, T-006, T-007, T-008 · [PR](https://github.com/Web-Usov/home-finances/pull/22)
 
-- [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **todo** · mobile · M · depends: T-010, T-012, T-013 · —
+- [T-015](T-015-e2e-full-scenarios.md) E2E: full Playwright scenarios for the MVP flows — **in_progress** · mobile · M · depends: T-010, T-012, T-013 · —
 
 - [T-016](T-016-docker-compose-e2e.md) Delivery: docker compose from scratch and persistence after restart — **done** · infra · S · depends: T-014 · [PR](https://github.com/Web-Usov/home-finances/pull/40)
 
