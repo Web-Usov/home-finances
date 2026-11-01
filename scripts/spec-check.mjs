@@ -6,6 +6,8 @@
  *   node scripts/spec-check.mjs                    # run checks, print coverage report
  *   node scripts/spec-check.mjs --strict-coverage  # additionally fail if any AC-* is not referenced from a test file,
  *                                                  # except the ACs deferred in scripts/spec-coverage-deferred.json
+ *   node scripts/spec-check.mjs --strict-epics     # additionally fail if any rule in an epic `spec:` list is not referenced
+ *                                                  # from a test file, except those in scripts/spec-epics-deferred.json
  *   node scripts/spec-check.mjs --verbose          # list every uncovered rule even when there are many
  *
  * What it does:
@@ -17,7 +19,7 @@
  *   3. Fails if source code (apps/*\/src, apps/*\/test, packages/*\/src, e2e, scripts; not generated code, not
  *      docs/archive) cites the spec by line number ("SPECIFICATION.md ... line 12", "spec line 12"): cite rule IDs.
  *   4. Prints a coverage report: which rule IDs are referenced from test files
- *      (*.spec.ts, *.int-spec.ts, *.e2e.ts, *.test.tsx) and which are not (warning only).
+ *      (*.spec.ts, *.int-spec.ts, *.e2e.ts, *.test.tsx, scripts/__tests__/*.rules.test.mjs) and which are not (warning only).
  *
  * Deferred ACs (scripts/spec-coverage-deferred.json: `{ "AC-21": { "task": "T-xxx", "reason": "..." } }`): ACs whose test
  * can only exist once a later (UI) task lands. Under --strict-coverage a deferred AC may stay uncovered, but an entry
@@ -33,12 +35,16 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const strictCoverage = process.argv.includes('--strict-coverage');
+const strictEpics = process.argv.includes('--strict-epics');
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.turbo', '.expo', 'coverage', 'archive']);
 const SKIP_PATHS = ['apps/mobile/src/api/'];
 const SCAN_ROOTS = ['tasks', 'epics', 'docs', 'apps', 'e2e'];
 const TEXT_EXT = /\.(md|mdx|ts|tsx|js|jsx|mjs|cjs|json|ya?ml)$/;
-const TEST_FILE = /\.(spec\.ts|int-spec\.ts|e2e\.ts|test\.tsx)$/;
+const TEST_FILE = /\.(spec\.ts|int-spec\.ts|e2e\.ts|test\.tsx|rules\.test\.mjs)$/;
+// Repo-state rule tests (DOD-04/05/06 style: the artifact must exist) live in scripts/__tests__/*.rules.test.mjs. Other
+// script tests are not scanned: their fixtures use made-up rule ids.
+const RULE_TEST_DIR = 'scripts/__tests__';
 
 const rel = (p) => path.relative(root, p).split(path.sep).join('/');
 
@@ -115,6 +121,34 @@ export function strictCoverageErrors(uncoveredAc, deferred, acIds) {
   return errors;
 }
 
+/** Rule ids listed in the `spec:` front matter of epics/E-*.md. Exported for tests. */
+export function loadEpicRuleIds(epicsDir = path.join(root, 'epics')) {
+  const ids = new Set();
+  if (!fs.existsSync(epicsDir)) return ids;
+  for (const f of fs.readdirSync(epicsDir).filter((n) => /^E-\d+.*\.md$/.test(n))) {
+    const m = fs.readFileSync(path.join(epicsDir, f), 'utf8').match(/^spec:\s*\[([^\]]*)\]/m);
+    if (m) for (const id of m[1].split(',').map((x) => x.trim()).filter(Boolean)) ids.add(id);
+  }
+  return ids;
+}
+
+/**
+ * Strict-epics verdict. `uncovered`: epic rule ids without a test reference; `allowed`: parsed allowlist
+ * (`{ "XX-nn": { task, reason } }`); `epicIds`: all epic rule ids. Returns error strings (empty = ok). Exported for tests.
+ */
+export function strictEpicsErrors(uncovered, allowed, epicIds) {
+  const errors = [];
+  for (const [id, entry] of Object.entries(allowed)) {
+    if (!epicIds.includes(id)) errors.push(`spec-epics-deferred.json: ${id} is not in any epic spec: list`);
+    else if (!entry || typeof entry.reason !== 'string' || !entry.reason)
+      errors.push(`spec-epics-deferred.json: ${id} needs a non-empty "reason"`);
+    else if (!uncovered.includes(id)) errors.push(`spec-epics-deferred.json: ${id} is covered by a test now; remove it from the allowlist`);
+  }
+  const missing = uncovered.filter((id) => !(id in allowed));
+  if (missing.length) errors.push(`--strict-epics: ${missing.length} epic rule(s) not referenced from tests: ${missing.join(', ')}`);
+  return errors;
+}
+
 function loadDeferred() {
   const file = path.join(root, 'scripts/spec-coverage-deferred.json');
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
@@ -135,6 +169,10 @@ const refRe = new RegExp(`\\b(?:${prefixes.join('|')})-\\d{2,3}\\b`, 'g');
 const refs = new Map(); // id -> Set(files)
 const testRefs = new Map(); // id -> Set(test files)
 const files = SCAN_ROOTS.flatMap((d) => walk(path.join(root, d)));
+const ruleTestDir = path.join(root, RULE_TEST_DIR);
+if (fs.existsSync(ruleTestDir)) {
+  for (const f of fs.readdirSync(ruleTestDir).filter((n) => n.endsWith('.rules.test.mjs'))) files.push(path.join(ruleTestDir, f));
+}
 for (const file of files) {
   const r = rel(file);
   if (r.startsWith('docs/spec/')) continue; // definitions themselves
@@ -197,6 +235,13 @@ if (strictCoverage) {
   const deferredIds = Object.keys(deferred);
   if (deferredIds.length) console.log(`deferred AC (scripts/spec-coverage-deferred.json): ${deferredIds.join(', ')}`);
   errors.push(...strictCoverageErrors(uncoveredAc, deferred, ids.filter((id) => id.startsWith('AC-'))));
+}
+
+if (strictEpics) {
+  const file = path.join(root, 'scripts/spec-epics-deferred.json');
+  const allowed = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
+  const epicIds = [...loadEpicRuleIds()].filter((id) => defs.has(id));
+  errors.push(...strictEpicsErrors(epicIds.filter((id) => !testRefs.has(id)), allowed, epicIds));
 }
 
 if (errors.length) {

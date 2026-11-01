@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures/test';
 import { button, dashboardFromApi, radio, saveAllocation, shot } from '../support/ui';
 
 test.describe('journey: regular month', () => {
-  test('SCOPE-28 / AC-19: expense, transfer and adjustment recalculate at once; the transfer leaves replenished and spent alone', async ({ page, api }, testInfo) => {
+  test('NFR-27 / SCOPE-28 / AC-19: expense, transfer and adjustment recalculate at once; the transfer leaves replenished and spent alone', async ({ page, api }, testInfo) => {
     await api.createMonth('2026-01', '100000.00');
     await api.createEnvelope('Продукты', '10000.00');
     await api.createEnvelope('Дом', '5000.00');

@@ -11,7 +11,24 @@ const YEAR = 2026;
 const JAN = `${YEAR}-01`;
 
 test.describe('analytics', { tag: '@smoke' }, () => {
-  test('AC-20 / REP-01 / REP-10: three yearly reports; an uncovered value opens the matching history rows', async ({ page, api }, testInfo) => {
+  test('UI-04: the year switcher loads the neighbouring year and shows its own yearly totals', async ({ page, api }) => {
+    await api.createMonth(JAN, '100000.00');
+    await page.goto(`/analytics?year=${YEAR}`);
+    await expect(page.getByRole('heading', { name: String(YEAR), exact: true })).toBeVisible();
+    await expect(page.getByLabel('Доход, итого за год')).toContainText(/100\s000,00/);
+
+    await page.getByRole('button', { name: 'Следующий год' }).click();
+    await expect(page.getByRole('heading', { name: String(YEAR + 1), exact: true })).toBeVisible();
+    // the next year has no months: the three reports are still there, the totals are not the previous year's
+    await expect(page.getByRole('heading', { name: 'Доход и распределение' })).toBeVisible();
+    await expect(page.getByLabel('Доход, итого за год')).not.toContainText(/100\s000,00/);
+
+    await page.getByRole('button', { name: 'Предыдущий год' }).click();
+    await expect(page.getByRole('heading', { name: String(YEAR), exact: true })).toBeVisible();
+    await expect(page.getByLabel('Доход, итого за год')).toContainText(/100\s000,00/);
+  });
+
+  test('UI-04 / AC-20 / REP-01 / REP-10: three yearly reports; an uncovered value opens the matching history rows', async ({ page, api }, testInfo) => {
     await api.createMonth(JAN, '100000.00');
     const { envelope } = await api.createEnvelope('Продукты', '1000.00');
     const { envelope: vacation } = await api.createEnvelope('Отпуск', '5000.00');

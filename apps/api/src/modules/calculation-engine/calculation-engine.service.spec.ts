@@ -161,7 +161,7 @@ describe('CalculationEngineService.applyOperation', () => {
       });
     });
 
-    it('spec example: 10 000 RUB balance, 15 000 RUB expense → covered 10 000, uncovered 5 000, balance 0', () => {
+    it('DOD-03: spec example: 10 000 RUB balance, 15 000 RUB expense → covered 10 000, uncovered 5 000, balance 0', () => {
       const result = engine.applyOperation(1_000_000, undefined, 1_500_000, 'expense');
       expect(result).toEqual({
         sourceBalanceAfter: 0,
@@ -170,7 +170,7 @@ describe('CalculationEngineService.applyOperation', () => {
       });
     });
 
-    it('empty envelope: nothing covered, full amount uncovered', () => {
+    it('DOD-03: empty envelope: nothing covered, full amount uncovered', () => {
       const result = engine.applyOperation(0, undefined, 100_000, 'expense');
       expect(result).toEqual({
         sourceBalanceAfter: 0,
@@ -203,7 +203,7 @@ describe('CalculationEngineService.applyOperation', () => {
       });
     });
 
-    it('spec retro-recalculation example: 6 000 RUB source, 10 000 RUB saved transfer → source 0, destination +10 000, uncovered 4 000', () => {
+    it('DOD-03: spec retro-recalculation example: 6 000 RUB source, 10 000 RUB saved transfer → source 0, destination +10 000, uncovered 4 000', () => {
       const result = engine.applyOperation(600_000, 0, 1_000_000, 'transfer');
       expect(result).toEqual({
         sourceBalanceAfter: 0,
@@ -213,14 +213,14 @@ describe('CalculationEngineService.applyOperation', () => {
       });
     });
 
-    it('destination receives the FULL requested amount even when partially uncovered', () => {
+    it('DOD-03: destination receives the FULL requested amount even when partially uncovered', () => {
       const result = engine.applyOperation(300_000, 500_000, 700_000, 'transfer');
       expect(result.destinationBalanceAfter).toBe(1_200_000);
       expect(result.sourceBalanceAfter).toBe(0);
       expect(result.uncovered).toBe(400_000);
     });
 
-    it('empty source: transfer amount still credited to destination in full', () => {
+    it('DOD-03: empty source: transfer amount still credited to destination in full', () => {
       const result = engine.applyOperation(0, 100_000, 250_000, 'transfer');
       expect(result).toEqual({
         sourceBalanceAfter: 0,
@@ -265,7 +265,7 @@ describe('CalculationEngineService.applyOperation', () => {
       });
     });
 
-    it("'-' decreases down to zero only; excess stored as uncovered (OP-14)", () => {
+    it("DOD-03: '-' decreases down to zero only; excess stored as uncovered (OP-14)", () => {
       const result = engine.applyOperation(100_000, undefined, 150_000, 'adjustment', '-');
       expect(result).toEqual({
         sourceBalanceAfter: 0,
@@ -416,7 +416,7 @@ describe('CalculationEngineService.recalculateFrom', () => {
     ]);
   });
 
-  it('records uncovered expense in the result and uncoveredByType', async () => {
+  it('DOD-03: records uncovered expense in the result and uncoveredByType', async () => {
     stubScenario(mock, {
       months: [makeMonth()],
       allocations: [makeAllocation({ amountMinor: 100_000 })],
@@ -520,7 +520,7 @@ describe('CalculationEngineService.recalculateFrom', () => {
     });
   });
 
-  it('negative adjustment nets into adjustmentApplied and stores the excess as uncovered', async () => {
+  it('DOD-03: negative adjustment nets into adjustmentApplied and stores the excess as uncovered', async () => {
     stubScenario(mock, {
       months: [makeMonth()],
       allocations: [makeAllocation({ amountMinor: 100_000 })],

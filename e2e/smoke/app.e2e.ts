@@ -5,7 +5,9 @@ import { getE2eEnv } from '../support/env.mjs';
 const TABS = ['Месяц', 'История', 'Аналитика', 'Конверты'];
 
 test.describe('app shell', { tag: '@smoke' }, () => {
-  test('opens and switches between the four tabs', async ({ page }) => {
+  // Covers the phone half of UI-01 (start screen, bottom navigation). The wide-screen sidebar is not implemented (the tab bar is
+  // hidden from 768 px with no replacement): see the Result of T-073.
+  test('UI-01: opens on the Month dashboard; the bottom navigation switches between the four sections', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/month$/);
 

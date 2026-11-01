@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures/test';
 import { button, dashboardFromApi, monthStatusesFromApi, radio, shot } from '../support/ui';
 
 test.describe('journey: draft and close', () => {
-  test('AC-16 / AC-17 / SCOPE-29 / SCOPE-30: the draft takes operations but cannot close; closing the open month promotes it', async ({ page, api }, testInfo) => {
+  test('NFR-27 / AC-16 / AC-17 / SCOPE-29 / SCOPE-30: the draft takes operations but cannot close; closing the open month promotes it', async ({ page, api }, testInfo) => {
     await api.createMonth('2026-01', '100000.00');
     await api.createEnvelope('Продукты', '10000.00');
 

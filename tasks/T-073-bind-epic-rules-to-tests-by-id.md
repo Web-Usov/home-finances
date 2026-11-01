@@ -1,7 +1,7 @@
 ---
 id: T-073
 title: "Bind remaining epic rules to tests by rule ID"
-status: todo          # todo | in_progress | review | done | blocked
+status: done          # todo | in_progress | review | done | blocked
 epic: E-00            # epics/E-xx-*.md
 depends: []           # [T-001, T-002] - must be done before this task starts
 blocked_by: []        # [Q-01] - open questions from docs/spec/99-open-questions.md
@@ -9,8 +9,8 @@ spec: [UI-01, UI-04, UI-15, HIST-01, HIST-02, HIST-03, HIST-04, DOD-01, DOD-03, 
 acceptance: []        # AC ids this task contributes to, e.g. [AC-06]
 area: api             # api | mobile | infra | docs | design
 size: M               # S | M  (one agent session, ~300-500 LOC max)
-branch: null          # set when work starts, e.g. task/T-000-slug
-pr: null              # PR URL once opened
+branch: task/T-073-bind-epic-rules-to-tests-by-id          # set when work starts, e.g. task/T-000-slug
+pr: https://github.com/Web-Usov/home-finances/pull/65              # PR URL once opened
 ---
 
 # T-073. Bind remaining epic rules to tests by rule ID
@@ -30,12 +30,12 @@ Every rule listed in an epic `spec:` list is referenced by ID from at least one 
 
 Every item must be verifiable by a command or a named test.
 
-- [ ] Every rule listed in Context is referenced by ID in the name or a comment of a test that asserts it (list rule -> test file in `## Result`).
-- [ ] New tests were written only where none existed and each one fails when the behavior is broken (mutation check noted in `## Result`).
-- [ ] `node scripts/spec-check.mjs --verbose` reports none of these rules as unreferenced from tests; no other rule regresses.
-- [ ] Tests cite rule IDs in their names; `pnpm test:unit` and `pnpm test:int` pass for touched packages.
-- [ ] `pnpm verify` is green (and `pnpm e2e:smoke` if e2e specs changed)
-- [ ] Task file updated (status, branch, pr, Result)
+- [x] Every rule listed in Context is referenced by ID in the name or a comment of a test that asserts it (list rule -> test file in `## Result`).
+- [x] New tests were written only where none existed and each one fails when the behavior is broken (mutation check noted in `## Result`).
+- [x] `node scripts/spec-check.mjs --verbose` reports none of these rules as unreferenced from tests; no other rule regresses.
+- [x] Tests cite rule IDs in their names; `pnpm test:unit` and `pnpm test:int` pass for touched packages.
+- [x] `pnpm verify` is green (and `pnpm e2e:smoke` if e2e specs changed)
+- [x] Task file updated (status, branch, pr, Result)
 
 ## Out of scope
 
@@ -48,4 +48,25 @@ Every item must be verifiable by a command or a named test.
 
 ## Result
 
-<!-- Filled at the end: PR link, notes, deviations. -->
+PR: see the `pr:` field. NFR-29 was already bound by T-072 (PR #62, `apps/api/src/prisma/migrations.populated-db.int-spec.ts`); verified, not touched.
+
+| Rule | Test | Status |
+|------|------|--------|
+| UI-01 | `e2e/smoke/app.e2e.ts` "UI-01: opens on the Month dashboard; the bottom navigation switches..." | renamed; **phone half only** (see finding) |
+| UI-04 | `e2e/analytics.e2e.ts` "UI-04: the year switcher loads the neighbouring year..." (new) and the three reports + drill-down test (renamed) | new + renamed |
+| UI-15 | `acceptance.mvp-scenarios.int-spec.ts` "UI-15: changing a distribution recalculates the operations already added to this and the later months" | new |
+| HIST-01..HIST-04 | `apps/api/src/modules/operations/operations.history-fields.int-spec.ts` (one test per rule) | new |
+| DOD-01 | `acceptance.mvp-scenarios.int-spec.ts` "AC-22 / DOD-01: ... after a server restart and after rebuilding from source" | renamed |
+| DOD-03 | `calculation-engine.service.spec.ts`: 8 tests with uncovered amounts (expense, transfer, negative adjustment, engine recalculation) prefixed `DOD-03:`; engine branch coverage 87 %, the uncovered lines are not uncovered-amount branches | renamed |
+| DOD-04 | `scripts/__tests__/repo-state.rules.test.mjs` (README command, compose services and start order, smoke script runs `up`) | new (repo-state test) |
+| DOD-05 | same file: migrations committed, every compose variable in `.env.example` and README, README sections | new (repo-state test) |
+| DOD-06 | same file: only the four sections as routes, no out-of-MVP words (SCOPE-16..22) and no stub markers in UI sources | new (repo-state test; static scan, not a rendered-UI check) |
+| NFR-02 (E-00, also unbound) | same file: NestJS dependency, one Nest module per domain, controllers never touch Prisma | new (repo-state test) |
+| NFR-27 | `e2e/journeys/{first-launch,regular-month,draft-and-close,correct-the-past}.e2e.ts` (first run / regular month / draft+close / correct the past) | renamed |
+| NFR-29 | T-072 test above | already covered |
+
+Mutation checks: UI-15 test fails with the recalculation after `PUT /allocations` removed; HIST tests fail when the operation destination is not stored (HIST-03 for the right reason, the others because setup breaks); DOD-06 fails with a `TODO` in a UI file; DOD-04 fails when the README launch command changes.
+
+Strict mode: `node scripts/spec-check.mjs --strict-epics` fails if a rule from any `epics/E-*.md` `spec:` list has no test reference; allowlist `scripts/spec-epics-deferred.json` (empty: nothing needed an exception), wired into `pnpm verify` (`spec:check` step), documented in `docs/testing.md`. `scripts/__tests__/*.rules.test.mjs` now count as test files for coverage.
+
+**Finding (not fixed, outside this task):** the wide-screen half of UI-01 (sidebar from 768 px) is not implemented: `apps/mobile/app/(tabs)/_layout.tsx` hides the tab bar at width >= 768 and renders no sidebar, so on a wide screen there is no navigation at all. A wide-viewport e2e test failed accordingly and was not committed. Needs a follow-up implementation task (planner to decide).
