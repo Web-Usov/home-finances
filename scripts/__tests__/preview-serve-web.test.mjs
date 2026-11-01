@@ -141,3 +141,25 @@ test('a release that lost its files answers 404/503 instead of crashing', async 
   }
   assert.equal((await get('/')).status, 200);
 });
+
+test('WEB_ROOT serves a plain export directory with its own version.json (PREVIEW_HOME is only the preview alias)', async () => {
+  const root = makeTmp('web-root-');
+  fs.writeFileSync(path.join(root, 'index.html'), '<html>root</html>');
+  fs.writeFileSync(path.join(root, 'version.json'), '{"image":"x"}');
+  const port = await freePort();
+  const proc = spawn(process.execPath, [path.join(repoRoot, 'scripts/preview/serve-web.mjs')], {
+    env: { ...process.env, WEB_ROOT: root, PREVIEW_HOME: path.join(root, 'nonexistent'), WEB_PORT: String(port), WEB_HOST: '127.0.0.1' },
+    stdio: 'ignore',
+  });
+  try {
+    let res;
+    for (let i = 0; i < 100 && !res; i++) {
+      res = await fetch(`http://127.0.0.1:${port}/deep/route`).catch(() => null);
+      if (!res) await new Promise((r) => setTimeout(r, 100));
+    }
+    assert.equal(await res.text(), '<html>root</html>');
+    assert.equal(await (await fetch(`http://127.0.0.1:${port}/version.json`)).text(), '{"image":"x"}');
+  } finally {
+    proc.kill();
+  }
+});

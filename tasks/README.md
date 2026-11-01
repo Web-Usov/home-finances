@@ -54,7 +54,7 @@
 
 - [T-051](T-051-spec-follow-ups-batch-3.md) Spec follow-ups batch 3 — **done** · docs · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/51)
 
-- [T-056](T-056-docker-hardening-and-compose-smoke.md) Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke — **todo** · infra · S · depends: T-050 · —
+- [T-056](T-056-docker-hardening-and-compose-smoke.md) Docker hardening: WEB_ROOT, non-root API, watchdog state dir, compose smoke — **done** · infra · S · depends: T-050 · [PR](https://github.com/Web-Usov/home-finances/pull/55)
 
 - [T-057](T-057-e2e-lock-in-playwright-global-setup.md) E2E: take the machine-wide lock inside Playwright globalSetup — **done** · infra · S · depends: — · [PR](https://github.com/Web-Usov/home-finances/pull/56)
 

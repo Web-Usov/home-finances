@@ -37,13 +37,13 @@ before(async () => {
 
 after(() => server.close());
 
-async function run(unitState = 'active') {
+async function run(unitState = 'active', stateFile = path.join(dir, 'failures')) {
   const r = await execFileAsync('bash', [script], {
     encoding: 'utf8',
     env: {
       PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`,
       HEALTH_URL: `http://127.0.0.1:${port}/api/v1/health`,
-      WATCHDOG_STATE: path.join(dir, 'failures'),
+      WATCHDOG_STATE: stateFile,
       FAKE_UNIT_STATE: unitState,
     },
   });
@@ -82,4 +82,11 @@ test('T-039: a unit stopped on purpose (inactive) is never restarted', async () 
   await run('inactive');
   await run('inactive');
   assert.equal(restarts(), before);
+});
+
+test('T-056: the state directory is created when it is missing', async () => {
+  healthy = false;
+  const stateFile = path.join(dir, 'fresh', 'state', 'failures');
+  await run('active', stateFile);
+  assert.equal(fs.readFileSync(stateFile, 'utf8').trim(), '1');
 });

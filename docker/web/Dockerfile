@@ -24,14 +24,14 @@ RUN pnpm --filter @family-budget/types build \
 FROM node:20-alpine AS production
 
 ENV NODE_ENV=production \
-    PREVIEW_HOME=/srv/web \
+    WEB_ROOT=/srv/web \
     WEB_PORT=8080 \
     WEB_HOST=0.0.0.0 \
     API_PROXY_TARGET=http://api:3000
-# serve-web.mjs resolves the release as $PREVIEW_HOME/current/.preview/web (+ version.json).
+# serve-web.mjs serves $WEB_ROOT (+ $WEB_ROOT/version.json).
 WORKDIR /srv/web
-COPY --from=builder /out/web ./release/.preview/web
-RUN ln -s release current && echo '{"image":"family-budget-web"}' > release/.preview/version.json
+COPY --from=builder /out/web ./
+RUN echo '{"image":"family-budget-web"}' > version.json
 COPY scripts/preview/serve-web.mjs /srv/serve-web.mjs
 
 EXPOSE 8080

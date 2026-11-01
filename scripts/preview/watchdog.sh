@@ -26,6 +26,7 @@ if [ "$unit_state" = inactive ]; then
   exit 0
 fi
 
+mkdir -p "$(dirname "$STATE_FILE")"
 failures=$(( $(cat "$STATE_FILE" 2>/dev/null || echo 0) + 1 ))
 if [ "$failures" -lt "$FAIL_THRESHOLD" ]; then
   echo "$failures" > "$STATE_FILE"
