@@ -114,6 +114,8 @@
 
 - [T-037](T-037-mobile-reopen-preview.md) Mobile: show the recalculation range before reopening (reopen preview) — **done** · mobile · S · depends: T-009, T-024 · [PR](https://github.com/Web-Usov/home-finances/pull/37)
 
+- [T-075](T-075-mobile-wide-screen-navigation-sidebar.md) Mobile: wide-screen navigation (sidebar) — UI-01 — **in_progress** · mobile · S · depends: — · —
+
 ## E-04. Операции и история (UI) — accepted, принят 2026-11-01
 
 Эпик: [E-04-operations-ui.md](../epics/E-04-operations-ui.md)
