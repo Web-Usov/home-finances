@@ -162,6 +162,17 @@ test('--new skips ids held by task files of unmerged branches (PR with T-023..T-
   assert.ok(fs.existsSync(path.join(fx.dir, 'main', 'finance-wt', 't-042-after-pending', 'tasks/T-042-after-pending.md')));
 });
 
+test('T-074: the claim commit hook runs without FAMILY_BUDGET_LOCKS_HELD, even when --new holds task-id', () => {
+  const fx = fixture();
+  const seen = path.join(fx.dir, 'hook-saw-held-env');
+  const hooks = path.join(fx.main, '.git', 'hooks');
+  fs.writeFileSync(path.join(hooks, 'pre-commit'), `#!/bin/sh\nprintf '%s' "\${FAMILY_BUDGET_LOCKS_HELD-UNSET}" > '${seen}'\n`, { mode: 0o755 });
+  const r = start(fx, ['--new', 'Hooked claim', '--epic', 'E-00', '--area', 'infra', '--size', 'S'], { FAMILY_BUDGET_LOCKS_HELD: 'e2e' });
+  assert.equal(r.status, 0, r.stderr + r.stdout);
+  assert.equal(fs.readFileSync(seen, 'utf8'), 'UNSET');
+  assert.equal(fs.existsSync(path.join(fx.locks, 'family-budget-task-id.lock')), false);
+});
+
 test('concurrent --new calls get distinct ids; each claim branch is pushed to origin and the task-id lock is released', async () => {
   const fx = fixture();
   const titles = ['Alpha work', 'Bravo work', 'Charlie work'];

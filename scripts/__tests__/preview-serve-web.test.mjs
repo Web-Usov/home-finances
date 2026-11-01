@@ -6,7 +6,7 @@ import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { installGuards, makeTmp, repoRoot } from './helpers.mjs';
+import { cleanEnv, installGuards, makeTmp, repoRoot } from './helpers.mjs';
 
 installGuards();
 
@@ -48,7 +48,7 @@ before(async () => {
 
   webPort = await freePort();
   child = spawn(process.execPath, [path.join(repoRoot, 'scripts/preview/serve-web.mjs')], {
-    env: { ...process.env, PREVIEW_HOME: home, WEB_PORT: String(webPort), WEB_HOST: '127.0.0.1', API_PROXY_TARGET: `http://127.0.0.1:${apiPort}` },
+    env: cleanEnv({ PREVIEW_HOME: home, WEB_PORT: String(webPort), WEB_HOST: '127.0.0.1', API_PROXY_TARGET: `http://127.0.0.1:${apiPort}` }),
     stdio: 'ignore',
   });
   for (let i = 0; i < 100; i++) {
@@ -148,7 +148,7 @@ test('WEB_ROOT serves a plain export directory with its own version.json (PREVIE
   fs.writeFileSync(path.join(root, 'version.json'), '{"image":"x"}');
   const port = await freePort();
   const proc = spawn(process.execPath, [path.join(repoRoot, 'scripts/preview/serve-web.mjs')], {
-    env: { ...process.env, WEB_ROOT: root, PREVIEW_HOME: path.join(root, 'nonexistent'), WEB_PORT: String(port), WEB_HOST: '127.0.0.1' },
+    env: cleanEnv({ WEB_ROOT: root, PREVIEW_HOME: path.join(root, 'nonexistent'), WEB_PORT: String(port), WEB_HOST: '127.0.0.1' }),
     stdio: 'ignore',
   });
   try {
